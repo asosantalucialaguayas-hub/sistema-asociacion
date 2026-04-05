@@ -50,8 +50,8 @@ body {
 }
 
 .panel-marca .logo-circle img {
-  width: 72px;
-  height: 72px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
 }
 
