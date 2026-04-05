@@ -38,8 +38,8 @@ body {
 }
 
 .panel-marca .logo-circle {
-  width: 100px;
-  height: 100px;
+  width: 200px;
+  height: 200px;
   background: rgba(255,255,255,0.15);
   border-radius: 50%;
   display: flex;
@@ -50,8 +50,8 @@ body {
 }
 
 .panel-marca .logo-circle img {
-  width: 100px;
-  height: 100px;
+  width: 175px;
+  height: 175px;
   object-fit: contain;
 }
 
