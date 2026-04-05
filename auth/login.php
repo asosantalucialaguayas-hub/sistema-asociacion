@@ -38,20 +38,20 @@ body {
 }
 
 .panel-marca .logo-circle {
-  width: 72px;
-  height: 72px;
+  width: 100px;
+  height: 100px;
   background: rgba(255,255,255,0.15);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 1rem;
-  border: 1.5px solid rgba(255,255,255,0.3);
+  border: 2px solid rgba(255,255,255,0.35);
 }
 
 .panel-marca .logo-circle img {
-  width: 42px;
-  height: 42px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
 }
 
@@ -74,18 +74,20 @@ body {
   width: 100%;
   border-top: 1px solid rgba(255,255,255,0.1);
   padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .feature-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
-  color: rgba(255,255,255,0.45);
-  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
 }
 
-.feature-item i { font-size: 13px; }
+.feature-item i { font-size: 15px; }
 
 /* PANEL DERECHO */
 .panel-form {
@@ -195,7 +197,6 @@ body {
   margin-top: 1.5rem;
 }
 
-/* Responsive */
 @media (max-width: 580px) {
   .panel-marca { display: none; }
   .panel-form { padding: 2rem; }
@@ -216,13 +217,7 @@ body {
 
     <div class="panel-features">
       <div class="feature-item">
-        <i class="fa fa-users"></i> Gestión de socios
-      </div>
-      <div class="feature-item">
-        <i class="fa fa-chart-line"></i> Control de ventas
-      </div>
-      <div class="feature-item">
-        <i class="fa fa-dollar-sign"></i> Reportes financieros
+        <i class="fa fa-database"></i> Gestión de datos
       </div>
     </div>
   </div>
