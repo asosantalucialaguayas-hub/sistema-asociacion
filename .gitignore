@@ -1,0 +1,23 @@
+# IDE
+.idea/
+
+# Archivos temporales
+*.log
+*.tmp
+
+# Archivos de entorno
+.env
+
+# uploads de usuarios
+uploads/
+
+# documentos generados
+documentos/pdf/
+
+# facturas generadas
+facturas/
+
+# backups
+*.sql
+*.zip
+*.rar
