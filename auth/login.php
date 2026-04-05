@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -10,151 +11,165 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 <style>
 
 *{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-    font-family:"Segoe UI", Arial, sans-serif;
+box-sizing:border-box;
+margin:0;
+padding:0;
+font-family:"Segoe UI", Arial, sans-serif;
 }
 
 body{
-    height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:linear-gradient(135deg,#0f4c75,#3282b8,#1b6ca8);
+
+height:100vh;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+background:linear-gradient(135deg,#1e3a8a 0%, #3b82f6 100%);
+
 }
 
 /* CONTENEDOR */
 
 .login-wrapper{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    width:100%;
+width:100%;
+display:flex;
+justify-content:center;
+align-items:center;
 }
 
-/* TARJETA */
+/* TARJETA LOGIN */
 
 .login-card{
 
-    width:360px;
-    padding:40px;
+background:white;
 
-    background:rgba(255,255,255,0.18);
+width:380px;
 
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+border-radius:14px;
 
-    border-radius:20px;
-    border:1px solid rgba(255,255,255,0.35);
+padding:40px;
 
-    box-shadow:
-        0 10px 40px rgba(0,0,0,0.25),
-        inset 0 0 12px rgba(255,255,255,0.2);
+box-shadow:0 10px 30px rgba(0,0,0,0.15);
 
-    text-align:center;
-    color:white;
+text-align:center;
 
 }
 
 /* LOGO */
 
 .logo{
-    width:80px;
-    margin-bottom:10px;
+width:90px;
+margin-bottom:10px;
 }
 
 /* TITULOS */
 
 h2{
-    margin-top:10px;
-    margin-bottom:5px;
+color:#1f3a5f;
+margin-bottom:5px;
 }
 
-p{
-    margin-bottom:25px;
-    opacity:0.9;
-    font-size:14px;
+.subtitle{
+font-size:14px;
+color:#6c757d;
+margin-bottom:25px;
 }
 
-/* CAMPOS */
+/* INPUTS */
 
 .field{
 
-    display:flex;
-    align-items:center;
+display:flex;
+align-items:center;
 
-    background:rgba(255,255,255,0.25);
+background:#f3f4f6;
 
-    border-radius:12px;
-    padding:12px;
-    margin-bottom:15px;
+border-radius:8px;
+
+padding:12px;
+
+margin-bottom:15px;
+
+border:1px solid #e5e7eb;
+
+transition:all .2s;
 
 }
 
+.field:focus-within{
+border-color:#3b82f6;
+background:white;
+}
+
 .field i{
-    margin-right:10px;
-    opacity:0.8;
+margin-right:10px;
+color:#3b82f6;
 }
 
 .field input{
 
-    border:none;
-    background:transparent;
-    outline:none;
+border:none;
+background:none;
+outline:none;
 
-    color:white;
-    width:100%;
+width:100%;
+font-size:14px;
 
-}
-
-.field input::placeholder{
-    color:rgba(255,255,255,0.7);
 }
 
 /* BOTON */
 
 button{
 
-    width:100%;
-    padding:12px;
+width:100%;
 
-    border:none;
-    border-radius:12px;
+padding:12px;
 
-    background:rgba(255,255,255,0.35);
+border:none;
 
-    color:white;
-    font-weight:600;
+border-radius:8px;
 
-    cursor:pointer;
+background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%);
 
-    transition:all .3s;
+color:white;
+
+font-size:15px;
+font-weight:600;
+
+cursor:pointer;
+
+transition:all .3s;
 
 }
 
 button:hover{
 
-    background:rgba(255,255,255,0.55);
-    transform:translateY(-2px);
+transform:translateY(-2px);
+
+box-shadow:0 6px 15px rgba(59,130,246,0.4);
 
 }
 
-/* MENSAJE ERROR */
+/* ERROR */
 
 .error-msg{
 
-    background:rgba(255,0,0,0.15);
-    border:1px solid rgba(255,0,0,0.4);
+background:#fee2e2;
 
-    padding:10px;
-    border-radius:10px;
+color:#b91c1c;
 
-    margin-bottom:15px;
+padding:10px;
 
-    display:flex;
-    align-items:center;
-    gap:8px;
+border-radius:8px;
+
+margin-bottom:15px;
+
+font-size:13px;
+
+display:flex;
+align-items:center;
+gap:8px;
 
 }
 
@@ -162,15 +177,16 @@ button:hover{
 
 .footer{
 
-    display:block;
-    margin-top:20px;
+margin-top:20px;
 
-    font-size:12px;
-    opacity:0.8;
+font-size:12px;
+
+color:#6c757d;
 
 }
 
 </style>
+
 </head>
 
 <body>
@@ -179,11 +195,11 @@ button:hover{
 
 <div class="login-card">
 
-<img src="../img/logo.png" class="logo" alt="Logo Asociación">
+<img src="../img/logo.png" class="logo">
 
-<h2>Sistema de Gestión NUEVO2</h2>
+<h2>Sistema de Gestión</h2>
 
-<p>Asociación Santa Lucía Corotú</p>
+<p class="subtitle">Asociación Santa Lucía Corotú</p>
 
 <?php if (isset($_GET['error'])): ?>
 
@@ -206,11 +222,15 @@ Usuario o contraseña incorrectos
 <input type="password" name="clave" placeholder="Contraseña" required>
 </div>
 
-<button type="submit">Ingresar</button>
+<button type="submit">
+<i class="fa fa-right-to-bracket"></i> Ingresar
+</button>
 
 </form>
 
-<span class="footer">© 2025 Asociación Santa Lucía Corotú</span>
+<span class="footer">
+© 2025 Asociación Santa Lucía Corotú
+</span>
 
 </div>
 
