@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<name>SLC-146_1</name>
+<Style id="sty"><LineStyle><color>fff59e0b</color><width>2</width></LineStyle><PolyStyle><color>4ff59e0b</color></PolyStyle></Style>
+<Placemark>
+  <name>SLC-146_1</name>
+  <description><![CDATA[<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;"><tr style="background:#9CBCE2;font-weight:bold;text-align:center;"><td colspan="2">SLC-146_1</td></tr><tr><td>ID_interno </td><td>SLC-146</td></tr><tr bgcolor="#D4E4F3"><td>ID_unidad </td><td>SLC-146_1</td></tr><tr><td>Area</td><td>1.0281</td></tr><tr bgcolor="#D4E4F3"><td>Latitud</td><td>-1.001286</td></tr><tr><td>Longitud</td><td>-79.621364</td></tr><tr bgcolor="#D4E4F3"><td>Perimetro</td><td>0.597</td></tr></table>]]></description>
+  <ExtendedData><Data name="ID_interno "><value>SLC-146</value></Data><Data name="ID_unidad "><value>SLC-146_1</value></Data><Data name="Area"><value>1.0281</value></Data><Data name="Latitud"><value>-1.001286</value></Data><Data name="Longitud"><value>-79.621364</value></Data><Data name="Perimetro"><value>0.597</value></Data></ExtendedData>
+  <styleUrl>#sty</styleUrl>
+  <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6218932792544,-1.00136181283236,0 -79.62182857096195,-1.0013437106864516,0 -79.62181985378267,-1.001382596777559,0 -79.6218004077673,-1.0013832672274048,0 -79.62179303169252,-1.0014550053597857,0 -79.621789008379,-1.0015073004459516,0 -79.62172329425812,-1.001505959546311,0 -79.62167635560036,-1.001497914148492,0 -79.62167367339136,-1.0014442781625201,0 -79.62167769670488,-1.0013839376772504,0 -79.62164148688318,-1.0013705286803727,0 -79.62164953351022,-1.0012914155976778,0 -79.62137955240902,-1.0012105425716675,0 -79.62086582556364,-1.001059272310975,0 -79.6198383718729,-1.00075673178959,0 -79.6195966377854,-1.00108659315861,0 -79.6218279004097,-1.00172586707908,0 -79.6218936145306,-1.0014084090964,0 -79.6218932792544,-1.00136181283236,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+</Placemark>
+</Document>
+</kml>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="begin" type="string"></SimpleField>
+	<SimpleField name="end" type="string"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+    <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-126_1</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-126</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad </td>
+      <td>SLC-126_1</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>5.0239</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-1.090426</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.519393</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>1.0812</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno"><value>SLC-126</value></Data>
+  <Data name="ID_unidad "><value>SLC-126_1</value></Data>
+  <Data name="Area"><value>5.0239</value></Data>
+  <Data name="Latitud"><value>-1.090426</value></Data>
+  <Data name="Longitud"><value>-79.519393</value></Data>
+  <Data name="Perimetro"><value>1.0812</value></Data>
+</ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.5198727151142,-1.08878473272634 -79.5198727151142,-1.08878473272634 -79.5188654467771,-1.08880865420915 -79.5189559465476,-1.08932512508475 -79.5189288615509,-1.08958920349658 -79.5189556898818,-1.08985059531649 -79.518928530559,-1.09026661691798 -79.5190090413521,-1.0909974314106 -79.5190086519671,-1.09179332437015 -79.5190533852313,-1.09218857986186 -79.5190954294776,-1.09257026767272 -79.5202662428086,-1.09252562715181 -79.5202349825769,-1.09214032680193 -79.519970971239,-1.08997862154831 -79.5198727151142,-1.08878473272634</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

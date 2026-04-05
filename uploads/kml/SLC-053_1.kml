@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="slc053_1" id="slc053_1">
+	<SimpleField name="descriptio" type="string"></SimpleField>
+	<SimpleField name="timestamp" type="string"></SimpleField>
+	<SimpleField name="begin" type="string"></SimpleField>
+	<SimpleField name="end" type="string"></SimpleField>
+	<SimpleField name="altitudeMo" type="string"></SimpleField>
+	<SimpleField name="tessellate" type="float"></SimpleField>
+	<SimpleField name="extrude" type="float"></SimpleField>
+	<SimpleField name="visibility" type="float"></SimpleField>
+	<SimpleField name="drawOrder" type="float"></SimpleField>
+	<SimpleField name="icon" type="string"></SimpleField>
+	<SimpleField name="snippet" type="string"></SimpleField>
+</Schema>
+<Folder><name>slc053_1</name>
+  <Placemark>
+	<name>Palacios Velez Ericka Isabelle_Lote 1</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#slc053_1">
+		<SimpleData name="descriptio">&lt;html xmlns:fo=&quot;http://www.w3.org/1999/XSL/Format&quot; xmlns:msxsl=&quot;urn:schemas-microsoft-com:xslt&quot;&gt;
+
+&lt;head&gt;
+
+&lt;META http-equiv=&quot;Content-Type&quot; content=&quot;text/html&quot;&gt;
+
+&lt;meta http-equiv=&quot;content-type&quot; content=&quot;text/html; charset=UTF-8&quot;&gt;
+
+&lt;/head&gt;
+
+&lt;body style=&quot;mar</SimpleData>
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.657729008631,-1.06519881028312,0 -79.6584785369402,-1.06490462746191,0 -79.6585478862778,-1.06481429236863,0 -79.658228155078,-1.06457901042724,0 -79.6581979260779,-1.06446687831324,0 -79.6581075498836,-1.06424432102393,0 -79.658053234623,-1.06409023785764,0 -79.6579957643272,-1.0638797852225,0 -79.6579181364492,-1.06374809912459,0 -79.6577549661819,-1.06352090521186,0 -79.6575134083067,-1.06353258442441,0 -79.6573582230791,-1.06347586027846,0 -79.6573235687068,-1.0632872488779,0 -79.6570940466862,-1.06376017622655,0 -79.6562851517138,-1.06438999988069,0 -79.6563373615803,-1.06442713383602,0 -79.6564418599559,-1.06451642224978,0 -79.6565149046012,-1.06448642027358,0 -79.6566862694478,-1.06452397174277,0 -79.6568516988735,-1.06455608383687,0 -79.6570103026421,-1.06459338163838,0 -79.6570936365851,-1.06468583273301,0 -79.6571267175914,-1.06483192658141,0 -79.6571856206802,-1.06493492803745,0 -79.6573190293267,-1.06492764301222,0 -79.6573845060115,-1.06497001343006,0 -79.6573916830008,-1.0650710527705,0 -79.6575071554917,-1.0651280180221,0 -79.6576037827807,-1.06517293669046,0 -79.657729008631,-1.06519881028312,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

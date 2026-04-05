@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="slc062_1" id="slc062_1">
+	<SimpleField name="descriptio" type="string"></SimpleField>
+	<SimpleField name="timestamp" type="string"></SimpleField>
+	<SimpleField name="begin" type="string"></SimpleField>
+	<SimpleField name="end" type="string"></SimpleField>
+	<SimpleField name="altitudeMo" type="string"></SimpleField>
+	<SimpleField name="tessellate" type="float"></SimpleField>
+	<SimpleField name="extrude" type="float"></SimpleField>
+	<SimpleField name="visibility" type="float"></SimpleField>
+	<SimpleField name="drawOrder" type="float"></SimpleField>
+	<SimpleField name="icon" type="string"></SimpleField>
+	<SimpleField name="snippet" type="string"></SimpleField>
+</Schema>
+<Folder><name>slc062_1</name>
+  <Placemark>
+	<name>Carreño Bermello Nelly Isabel</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#slc062_1">
+		<SimpleData name="descriptio">&lt;html xmlns:fo=&quot;http://www.w3.org/1999/XSL/Format&quot; xmlns:msxsl=&quot;urn:schemas-microsoft-com:xslt&quot;&gt;
+
+&lt;head&gt;
+
+&lt;META http-equiv=&quot;Content-Type&quot; content=&quot;text/html&quot;&gt;
+
+&lt;meta http-equiv=&quot;content-type&quot; content=&quot;text/html; charset=UTF-8&quot;&gt;
+
+&lt;/head&gt;
+
+&lt;body style=&quot;mar</SimpleData>
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6561919772022,-1.06445935161605,0 -79.6555099502713,-1.06461758933684,0 -79.6558248643621,-1.06541629654315,0 -79.6559371227528,-1.06573420726839,0 -79.6560831883381,-1.06613543193141,0 -79.6563177751105,-1.06598401324522,0 -79.6559979872888,-1.06567327149723,0 -79.6561253140276,-1.06557810137963,0 -79.6564172136744,-1.06583534431055,0 -79.6566826552531,-1.0661086505604,0 -79.6570695208227,-1.06578142098404,0 -79.6575491016764,-1.06535417486128,0 -79.6575718051126,-1.06524411027687,0 -79.6574155431947,-1.06516273256332,0 -79.6573192737504,-1.06503458823795,0 -79.6572668634105,-1.0649896579431,0 -79.6572760290047,-1.06499039543133,0 -79.6571349412851,-1.06495211900831,0 -79.6570825836935,-1.06487244524813,0 -79.6570452562314,-1.06474332098656,0 -79.6569392987145,-1.06464552762627,0 -79.6567588289274,-1.06459732089623,0 -79.65665357765,-1.06455475876872,0 -79.6563983649884,-1.06458594568701,0 -79.6561919772022,-1.06445935161605,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

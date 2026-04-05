@@ -1,0 +1,46 @@
+/* Modal Message Styles */
+.modal-message-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999 !important;
+}
+.modal-message-box {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    padding: 32px 40px;
+    text-align: center;
+    min-width: 320px;
+    max-width: 90vw;
+    font-family: inherit;
+    position: relative;
+    z-index: 999999 !important;
+}
+.modal-message-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+.modal-success .modal-message-icon { color: #4caf50; }
+.modal-error .modal-message-icon { color: #f44336; }
+.modal-info .modal-message-icon { color: #2196f3; }
+.modal-message-btn {
+    margin-top: 24px;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    background: #1f3a5f;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.modal-message-btn:hover {
+    background: #16304d;
+}

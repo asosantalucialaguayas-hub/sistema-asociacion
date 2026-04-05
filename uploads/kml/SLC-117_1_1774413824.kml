@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<name>SLC-117_1</name>
+<Style id="sty"><LineStyle><color>ffef4444</color><width>2</width></LineStyle><PolyStyle><color>4fef4444</color></PolyStyle></Style>
+<Placemark>
+  <name>SLC-117_1</name>
+  <description><![CDATA[<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;"><tr style="background:#9CBCE2;font-weight:bold;text-align:center;"><td colspan="2">Arce Garcia Jefferson Fabian</td></tr><tr><td>Area</td><td>5.5472</td></tr><tr bgcolor="#D4E4F3"><td>ID_interno</td><td>SLC-117</td></tr><tr><td>ID_unidad</td><td>SLC-117-001</td></tr><tr bgcolor="#D4E4F3"><td>Latitud</td><td>-1.119008</td></tr><tr><td>Longitud</td><td>-79.629287</td></tr></table>]]></description>
+  <ExtendedData><Data name="Area"><value>5.5472</value></Data><Data name="ID_interno"><value>SLC-117</value></Data><Data name="ID_unidad"><value>SLC-117-001</value></Data><Data name="Latitud"><value>-1.119008</value></Data><Data name="Longitud"><value>-79.629287</value></Data></ExtendedData>
+  <styleUrl>#sty</styleUrl>
+  <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6296361966315,-1.11744528039869,0 -79.6291778550392,-1.1175807352512,0 -79.6291418948381,-1.11761689705405,0 -79.6279646094318,-1.11791481780666,0 -79.6281440535192,-1.11850280577753,0 -79.6284042862187,-1.1192717252779,0 -79.62854146957397,-1.119622255437535,0 -79.6287184003691,-1.12011302767688,0 -79.628906905838,-1.12053821609812,0 -79.6290233897257,-1.1212528001869,0 -79.6304433168168,-1.12090977137577,0 -79.6301014701497,-1.11960744818011,0 -79.6295657940188,-1.11966906177041,0 -79.6295453897111,-1.11948933446453,0 -79.6300810658006,-1.11942772083799,0 -79.6300576721366,-1.11929963720214,0 -79.6292758180276,-1.11948016295281,0 -79.62925225496294,-1.1192950883944899,0 -79.6292041411419,-1.11902789550609,0 -79.6291593126177,-1.11881080223788,0 -79.6290516754221,-1.11839469661701,0 -79.6296628187326,-1.11816886699446,0 -79.6297259072288,-1.11815216398596,0 -79.6298335710447,-1.11812372383716,0 -79.6296361966315,-1.11744528039869,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+</Placemark>
+</Document>
+</kml>

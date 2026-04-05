@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document id="root_doc">
+	<name>Garcia Delgado Victor Manuel_ Lote 3.kml</name>
+	<LookAt>
+		<longitude>-79.57733021570995</longitude>
+		<latitude>-0.9866812530470312</latitude>
+		<altitude>0</altitude>
+		<heading>-0.000138847664630088</heading>
+		<tilt>37.89493751683579</tilt>
+		<range>562.1822726174945</range>
+		<gx:altitudeMode>relativeToSeaFloor</gx:altitudeMode>
+	</LookAt>
+	<Style>
+		<ListStyle>
+			<listItemType>radioFolder</listItemType>
+			<bgColor>00ffffff</bgColor>
+			<maxSnippetLines>2</maxSnippetLines>
+		</ListStyle>
+	</Style>
+	<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.6.10441"></atom:link>
+	<Schema name="polgonos" id="polgonos">
+		<SimpleField type="float" name="Has"></SimpleField>
+		<SimpleField type="string" name="PROPIETARIO"></SimpleField>
+		<SimpleField type="string" name="CODIGO"></SimpleField>
+		<SimpleField type="string" name="CANTON"></SimpleField>
+		<SimpleField type="string" name="PROVINCIA"></SimpleField>
+	</Schema>
+	<StyleMap id="msn_ylw-pushpin">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_ylw-pushpin</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_ylw-pushpin</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="sh_ylw-pushpin">
+		<IconStyle>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<LineStyle>
+			<color>ffccff76</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>59d3ff56</color>
+		</PolyStyle>
+	</Style>
+	<Style id="sn_ylw-pushpin">
+		<IconStyle>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<LineStyle>
+			<color>ffccff76</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>59d3ff56</color>
+		</PolyStyle>
+	</Style>
+	<Folder>
+		<name>polgonos</name>
+		<Placemark>
+			<name>Garcia Delgado Victor Manuel_Lote 3</name>
+			<description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">Garcias Delgado Victor Manuel</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-105</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-105_3</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>1.2775</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-0.985179</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.579047</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.9048</td>
+    </tr>
+</table>
+]]></description>
+			<styleUrl>#msn_ylw-pushpin</styleUrl>
+			<ExtendedData>
+  <Data name="ID_interno"><value>SLC-105</value></Data>
+  <Data name="ID_unidad"><value>SLC-105_3</value></Data>
+  <Data name="Area"><value>1.2775</value></Data>
+  <Data name="Latitud"><value>-0.985179</value></Data>
+  <Data name="Longitud"><value>-79.579047</value></Data>
+  <Data name="Perimetro"><value>0.9048</value></Data>
+</ExtendedData>
+			<Polygon>
+				<outerBoundaryIs>
+					<LinearRing>
+						<coordinates>
+							-79.57936688543229,-0.9848109982671239,0 -79.57914206174731,-0.9852631261969469,0 -79.57882226783759,-0.985784065909137,0 -79.57873326366716,-0.985927104287233,0 -79.5786422450885,-0.9869529004818072,0 -79.5785514766185,-0.9871854140412425,0 -79.57861444438574,-0.987430803540976,0 -79.5782874962062,-0.98753292482532,0 -79.5783869872069,-0.985995405226272,0 -79.5784410025008,-0.9857512273455449,0 -79.57900894909159,-0.9848869011574788,0 -79.57901930905693,-0.9849844406397699,0 -79.57908908368907,-0.9850007111096658,0 -79.57912061622766,-0.9848945122171573,0 -79.57909951145359,-0.984853266731716,0 -79.57907320348453,-0.9847188539928984,0 -79.57914122637494,-0.9844830282249756,0 -79.57925476266867,-0.9844928152699036,0 -79.57926265474913,-0.9844428572247685,0 -79.57934071894124,-0.9844575759771378,0 -79.57936110683517,-0.984417941637704,0 -79.57939289685366,-0.9843605996006192,0 -79.57938916984895,-0.9843663562564634,0 -79.5793791203818,-0.984377734282664,0 -79.57923313171315,-0.9843065928202512,0 -79.57926721767349,-0.984213983166408,0 -79.57952927623104,-0.9843105600148426,0 -79.57936688543229,-0.9848109982671239,0 
+						</coordinates>
+					</LinearRing>
+				</outerBoundaryIs>
+			</Polygon>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>

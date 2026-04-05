@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="has" type="float"></SimpleField>
+	<SimpleField name="CODIGO" type="string"></SimpleField>
+	<SimpleField name="PROVINCIA" type="string"></SimpleField>
+	<SimpleField name="CANTON" type="string"></SimpleField>
+	<SimpleField name="PROPIETARIO" type="string"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-119-01</td>
+  </tr>
+    <tr>
+      <td>ID_unidad</td>
+      <td>SLC-119-01</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Area</td>
+      <td>1.879</td>
+    </tr>
+    <tr>
+      <td>Latitud</td>
+      <td>-1.094297</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Longitud</td>
+      <td>-79.697869</td>
+    </tr>
+    <tr>
+      <td>Perimetro</td>
+      <td>0.754</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_interno</td>
+      <td>SLC-119</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>FF232323</color><width>0.737006</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_unidad"><value>SLC-119-01</value></Data>
+  <Data name="Area"><value>1.879</value></Data>
+  <Data name="Latitud"><value>-1.094297</value></Data>
+  <Data name="Longitud"><value>-79.697869</value></Data>
+  <Data name="Perimetro"><value>0.754</value></Data>
+  <Data name="ID_interno"><value>SLC-119</value></Data>
+</ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6973586623521,-1.09364924262794 -79.6968522904488,-1.09325285358598 -79.6965283540697,-1.09364598540586 -79.696800348908,-1.09388308136415 -79.6988288919186,-1.09547062969741 -79.6990177393308,-1.09514509460134 -79.6990447520705,-1.09501847732154 -79.6990325564367,-1.09495958947126 -79.6973586623521,-1.09364924262794</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

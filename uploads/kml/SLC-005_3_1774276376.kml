@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://www.opengis.net/kml/2.2 http://schemas.opengis.net/kml/2.2.0/ogckml22.xsd http://www.google.com/kml/ext/2.2 http://code.google.com/apis/kml/schema/kml22gx.xsd">
+<Document id="Arana_Zambrano_Jose_LOTE_3">
+  <name>Arana Zambrano Jose LOTE 3</name>
+  <Snippet></Snippet>
+  <Style id="PolyStyle00">
+    <LabelStyle>
+      <color>00000000</color>
+      <scale>0.000000</scale>
+    </LabelStyle>
+    <LineStyle>
+      <color>ff6e6e6e</color>
+      <width>0.400000</width>
+    </LineStyle>
+    <PolyStyle>
+      <color>fffccfe6</color>
+      <outline>1</outline>
+    </PolyStyle>
+  </Style>
+  <Folder id="FeatureLayer0">
+    <name>Arana Zambrano Jose LOTE 3</name>
+    <Snippet></Snippet>
+    <Placemark id="ID_00000">
+      <name></name>
+      <Snippet></Snippet>
+      <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-005_3</td>
+  </tr>
+    <tr>
+      <td>ID_interno </td>
+      <td>SLC-005</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-005_3</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>1.5291</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-1.154782</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.571615</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.6351</td>
+    </tr>
+</table>
+]]></description>
+      <styleUrl>#PolyStyle00</styleUrl>
+      <MultiGeometry>
+        <Polygon>
+          <extrude>0</extrude><altitudeMode>clampToGround</altitudeMode>
+          <outerBoundaryIs><LinearRing><coordinates> -79.57226432899996,-1.154598628999967,0 -79.57227284837057,-1.154688550178621,0 -79.57232588199997,-1.155248315999913,0 -79.57212372599996,-1.155299779999918,0 -79.57208625899993,-1.155183504999975,0 -79.57163784699998,-1.155060684999955,0 -79.57141166299995,-1.155066724999929,0 -79.57125406899996,-1.155100096999949,0 -79.57104597199996,-1.155069507999922,0 -79.57100946299992,-1.154677280999949,0 -79.57080839099997,-1.154608195999966,0 -79.57061184499997,-1.154677094999948,0 -79.57051276399994,-1.154165169999947,0 -79.57166836399995,-1.154043431999978,0 -79.57176209199997,-1.154693847999938,0 -79.57196374777665,-1.15465561614065,0 -79.57204093460724,-1.15464098230717,0 -79.57226432899996,-1.154598628999967,0</coordinates></LinearRing></outerBoundaryIs>
+        </Polygon>
+      </MultiGeometry>
+    
+  <ExtendedData>
+  <Data name="ID_interno "><value>SLC-005</value></Data>
+  <Data name="ID_unidad"><value>SLC-005_3</value></Data>
+  <Data name="Area"><value>1.5291</value></Data>
+  <Data name="Latitud"><value>-1.154782</value></Data>
+  <Data name="Longitud"><value>-79.571615</value></Data>
+  <Data name="Perimetro"><value>0.6351</value></Data>
+</ExtendedData>
+</Placemark>
+  </Folder>
+</Document>
+</kml>

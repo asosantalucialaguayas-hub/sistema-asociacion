@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="final2" id="final2">
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Area" type="float"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+	<SimpleField name="Longitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>final2</name>
+  <Placemark>
+    <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-075_2</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-075</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-075_2</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>2.4297</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-0.92948</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.575226</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.9222</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno"><value>SLC-075</value></Data>
+  <Data name="ID_unidad"><value>SLC-075_2</value></Data>
+  <Data name="Area"><value>2.4297</value></Data>
+  <Data name="Latitud"><value>-0.92948</value></Data>
+  <Data name="Longitud"><value>-79.575226</value></Data>
+  <Data name="Perimetro"><value>0.9222</value></Data>
+</ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.576068852617,-0.928552480706398 -79.5756027314227,-0.928484638980679 -79.5755498009746,-0.928953573623856 -79.5751724583762,-0.928872020196731 -79.573827143585,-0.931265364141615 -79.5742907892573,-0.931679699311135 -79.576068852617,-0.928552480706398</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

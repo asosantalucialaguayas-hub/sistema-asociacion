@@ -1,0 +1,25 @@
+/* Toast Notification Styles */
+.toast-notification {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #323232;
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 16px;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.5s, transform 0.5s;
+}
+.toast-success {
+    background: #4caf50;
+}
+.toast-error {
+    background: #f44336;
+}
+.toast-hide {
+    opacity: 0;
+    transform: translateY(40px);
+}

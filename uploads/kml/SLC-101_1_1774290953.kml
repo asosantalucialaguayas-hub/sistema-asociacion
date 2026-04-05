@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="parcela_rosa_iza" id="parcela_rosa_iza">
+	<SimpleField name="id" type="string"></SimpleField>
+	<SimpleField name="Has" type="float"></SimpleField>
+	<SimpleField name="PROPIETARIO" type="string"></SimpleField>
+	<SimpleField name="CODIGO" type="string"></SimpleField>
+	<SimpleField name="CANTON" type="string"></SimpleField>
+	<SimpleField name="PROVINCIA" type="string"></SimpleField>
+</Schema>
+<Folder><name>parcela_rosa_iza</name>
+  <Placemark>
+	<description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-101_1</td>
+  </tr>
+    <tr>
+      <td>ID_interno </td>
+      <td>SLC-101</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-101_1</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>4.1253</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-1.105779</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.65491</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>1.2762</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>FF232323</color><width>0.737006</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno "><value>SLC-101</value></Data>
+  <Data name="ID_unidad"><value>SLC-101_1</value></Data>
+  <Data name="Area"><value>4.1253</value></Data>
+  <Data name="Latitud"><value>-1.105779</value></Data>
+  <Data name="Longitud"><value>-79.65491</value></Data>
+  <Data name="Perimetro"><value>1.2762</value></Data>
+</ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6569688618183,-1.1044407948055,0 -79.6566044166684,-1.10506429248186,0 -79.6557591855526,-1.1055821977103,0 -79.6552934870124,-1.10586612370982,0 -79.6548499166965,-1.10609172250707,0 -79.6540851518512,-1.10641285716957,0 -79.6538648754358,-1.10654526654534,0 -79.6541009098291,-1.10700786128013,0 -79.6532563492656,-1.10751369848359,0 -79.6532694250345,-1.10730720696497,0 -79.652800373733,-1.1062174276244,0 -79.6537381410599,-1.1056609729313,0 -79.6543101221323,-1.10549973513628,0 -79.6550470590591,-1.10530464074474,0 -79.6560971438885,-1.10491009414397,0 -79.6564505249262,-1.10436905904294,0 -79.6569688618183,-1.1044407948055,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

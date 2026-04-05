@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="poligono" id="poligono">
+	<SimpleField name="descripcion" type="string"></SimpleField>
+	<SimpleField name="codigo" type="string"></SimpleField>
+</Schema>
+<Folder><name>poligono</name>
+  <Placemark>
+    <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-100_1</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-100</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-100_1</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>2.9858</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-1.171052</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.684245</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>1.2727</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno"><value>SLC-100</value></Data>
+  <Data name="ID_unidad"><value>SLC-100_1</value></Data>
+  <Data name="Area"><value>2.9858</value></Data>
+  <Data name="Latitud"><value>-1.171052</value></Data>
+  <Data name="Longitud"><value>-79.684245</value></Data>
+  <Data name="Perimetro"><value>1.2727</value></Data>
+</ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6839768934026,-1.16906921608549 -79.6834714556726,-1.16893543907602 -79.6846628416474,-1.17409134616033 -79.6851378058042,-1.17409324434169 -79.6839768934026,-1.16906921608549</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

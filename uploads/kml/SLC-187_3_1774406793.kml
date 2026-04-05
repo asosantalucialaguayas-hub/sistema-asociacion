@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="veliz_carcamo_pablo_alfredo" id="veliz_carcamo_pablo_alfredo">
+	<SimpleField name="AREA" type="float"></SimpleField>
+	<SimpleField name="PRODUCTOR" type="string"></SimpleField>
+	<SimpleField name="COMUNIDAD" type="string"></SimpleField>
+	<SimpleField name="LOTE" type="string"></SimpleField>
+</Schema>
+<Folder><name>veliz_carcamo_pablo_alfredo</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#veliz_carcamo_pablo_alfredo">
+		<SimpleData name="AREA">2.00079272138235</SimpleData>
+		<SimpleData name="PRODUCTOR">VELIZ CARCAMO PABLO ALFREDO</SimpleData>
+		<SimpleData name="COMUNIDAD">SANTA LUCIA </SimpleData>
+		<SimpleData name="LOTE">LOTE 1</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.47818,-1.298998 -79.477796888596,-1.29902440366286 -79.4777307213304,-1.29911645138706 -79.4776994299007,-1.29925022224927 -79.4777025590436,-1.29935270168172 -79.4776795382141,-1.2994363274524 -79.4772771940476,-1.29945309179267 -79.4771790029117,-1.29954649311704 -79.4770736270586,-1.2997069518025 -79.4770281238493,-1.29986741048796 -79.477723,-1.299867 -79.4785105705105,-1.29987938501672 -79.479089,-1.299923 -79.479251,-1.299464 -79.47940442,-1.29896673 -79.47818,-1.298998</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

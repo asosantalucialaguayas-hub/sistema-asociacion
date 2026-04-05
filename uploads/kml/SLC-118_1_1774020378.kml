@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="Area" type="float"></SimpleField>
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+	<SimpleField name="Longitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<description>&lt;table style=&quot;font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;&quot;&gt;&lt;tr style=&quot;background:#9CBCE2;font-weight:bold;text-align:center;&quot;&gt;&lt;td colspan=&quot;2&quot;&gt;Información&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;ID_interno&lt;/td&gt;&lt;td&gt;SLC-118&lt;/td&gt;&lt;/tr&gt;&lt;tr bgcolor=&quot;#D4E4F3&quot;&gt;&lt;td&gt;ID_unidad&lt;/td&gt;&lt;td&gt;SLC-118-001&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Area&lt;/td&gt;&lt;td&gt;0,26&lt;/td&gt;&lt;/tr&gt;&lt;tr bgcolor=&quot;#D4E4F3&quot;&gt;&lt;td&gt;Latitud&lt;/td&gt;&lt;td&gt;9.895.028,463141&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Longitud&lt;/td&gt;&lt;td&gt;658.029,929000&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#polgonos">
+		<SimpleData name="Area">0.260</SimpleData>
+		<SimpleData name="ID_interno">SLC-118</SimpleData>
+		<SimpleData name="ID_unidad">SLC-118-001</SimpleData>
+		<SimpleData name="Latitud">9895028.463141</SimpleData>
+		<SimpleData name="Longitud">658029.929</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.5799748097766,-0.948967936567326 -79.5795343471146,-0.949429023568048 -79.5795611993084,-0.949682280433303 -79.5795341735579,-0.949854114587232 -79.5800105513009,-0.949456353970395 -79.5799748097766,-0.948967936567326</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

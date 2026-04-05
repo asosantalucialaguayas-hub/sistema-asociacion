@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Area" type="float"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+	<SimpleField name="Longitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<description>&lt;table style=&quot;font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;&quot;&gt;&lt;tr style=&quot;background:#9CBCE2;font-weight:bold;text-align:center;&quot;&gt;&lt;td colspan=&quot;2&quot;&gt;Información&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;ID_interno&lt;/td&gt;&lt;td&gt;SLC-114&lt;/td&gt;&lt;/tr&gt;&lt;tr bgcolor=&quot;#D4E4F3&quot;&gt;&lt;td&gt;ID_unidad&lt;/td&gt;&lt;td&gt;SLC-114-001&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Area&lt;/td&gt;&lt;td&gt;2,75&lt;/td&gt;&lt;/tr&gt;&lt;tr bgcolor=&quot;#D4E4F3&quot;&gt;&lt;td&gt;Latitud&lt;/td&gt;&lt;td&gt;9.891.331,353000&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Longitud&lt;/td&gt;&lt;td&gt;646.172,404000&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#polgonos">
+		<SimpleData name="ID_interno">SLC-114</SimpleData>
+		<SimpleData name="ID_unidad">SLC-114-001</SimpleData>
+		<SimpleData name="Area">2.755</SimpleData>
+		<SimpleData name="Latitud">9891331.353</SimpleData>
+		<SimpleData name="Longitud">646172.404</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.685414822762,-0.981752402887777 -79.685414822762,-0.981752402887777 -79.685442562393,-0.981819255612816 -79.6865100433588,-0.984393945535786 -79.6871930406066,-0.984177138743602 -79.6861607717152,-0.981399947174846 -79.685414822762,-0.981752402887777</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

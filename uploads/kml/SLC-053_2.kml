@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="palacios_velez_ericka_isabelle_lote_2_sha" id="palacios_velez_ericka_isabelle_lote_2_sha">
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Area" type="float"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+	<SimpleField name="Longitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>palacios_velez_ericka_isabelle_lote_2_sha</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#palacios_velez_ericka_isabelle_lote_2_sha">
+		<SimpleData name="ID_interno">SLC-053</SimpleData>
+		<SimpleData name="ID_unidad">SLC-053_2</SimpleData>
+		<SimpleData name="Area">2.507</SimpleData>
+		<SimpleData name="Latitud">-1.064</SimpleData>
+		<SimpleData name="Longitud">-79.658</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6575842472865,-1.06271249180281,0 -79.6573631748011,-1.06319350810662,0 -79.657404024046,-1.06337379672957,0 -79.6574519038619,-1.06346981106733,0 -79.6575600369829,-1.06348233411668,0 -79.6576744522409,-1.06345571202487,0 -79.6577896449947,-1.06349078785377,0 -79.6578789286785,-1.06360109705241,0 -79.6579756329449,-1.06374969482046,0 -79.6581742914639,-1.06365169957498,0 -79.6583154048164,-1.06376414601838,0 -79.6583437334191,-1.06396926881455,0 -79.6582094966027,-1.06401879245503,0 -79.658063952289,-1.06396884733445,0 -79.6581642252171,-1.06430089856693,0 -79.6582753399637,-1.06452593975715,0 -79.6583974958274,-1.06464572206391,0 -79.6585627473149,-1.06477162017195,0 -79.6587439747322,-1.06455207663651,0 -79.6586493207997,-1.0644865667401,0 -79.6586780060904,-1.06443357019495,0 -79.6586617597379,-1.06431560524327,0 -79.6587415947251,-1.0642695640339,0 -79.6588683852476,-1.0643685777037,0 -79.6590643340384,-1.06410445684327,0 -79.6592657093919,-1.06350800016669,0 -79.6593882634623,-1.06318593642611,0 -79.6593878452381,-1.06318938120323,0 -79.6580249722446,-1.06282297638982,0 -79.6575842472865,-1.06271249180281,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

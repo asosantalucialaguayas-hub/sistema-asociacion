@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="sandro_cevallos" id="sandro_cevallos">
+	<SimpleField name="id" type="string"></SimpleField>
+	<SimpleField name="fill" type="string"></SimpleField>
+</Schema>
+<Folder><name>sandro_cevallos</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#sandro_cevallos">
+		<SimpleData name="id">cali1OBJ_</SimpleData>
+		<SimpleData name="fill">#FF0000</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.4333366677165,-1.31639014027545,0 -79.435164257884,-1.31642332385161,0 -79.4351334124804,-1.31412795786569,0 -79.4334419444203,-1.31404214975052,0 -79.4333366677165,-1.31639014027545,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

@@ -1,0 +1,103 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef1f5;
+}
+
+.login-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+
+/* Card */
+.login-card {
+    width: 380px;
+    background: #ffffff;
+    padding: 42px 38px;
+    border-radius: 12px;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.12);
+    text-align: center;
+}
+
+.logo {
+    width: 85px;
+    margin-bottom: 18px;
+}
+
+.login-card h2 {
+    color: #1f3a5f;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.login-card p {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 28px;
+}
+
+/* Campos */
+.field {
+    display: flex;
+    align-items: center;
+    border: 1px solid #d1d5db;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    background: #fafafa;
+}
+
+.field i {
+    color: #4b5563; /* UN SOLO COLOR */
+    margin-right: 10px;
+    font-size: 15px;
+}
+
+.field input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 15px;
+    background: transparent;
+}
+
+/* Botón */
+button {
+    width: 100%;
+    padding: 13px;
+    background: #1f3a5f;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #16304d;
+}
+
+.footer {
+    display: block;
+    margin-top: 26px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+.footer a {
+    color: #1f3a5f;
+    text-decoration: none;
+}

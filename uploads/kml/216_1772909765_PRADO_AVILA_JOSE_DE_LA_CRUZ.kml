@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="DATOS" type="string"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<Style><LineStyle><color>FF232323</color><width>0.737006</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#polgonos">
+		<SimpleData name="DATOS">NOMBRE: PRADO ÁVILA JOSÉ DE LA CRUZ
+CÓDIGO: 081-001
+ÁREA: 6.3748 ha
+ABREV: pavilaj</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6160153072123,-0.947454098903515 -79.6111722453428,-0.94738883564897 -79.6115767765805,-0.947808759494764 -79.6112886291459,-0.948456147185232 -79.6159609246934,-0.948638923957992 -79.6160150343046,-0.94814149091895 -79.6160153072123,-0.947454098903515</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

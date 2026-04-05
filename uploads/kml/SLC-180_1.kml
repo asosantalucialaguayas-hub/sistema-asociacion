@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="begin" type="int"></SimpleField>
+	<SimpleField name="end" type="int"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#polgonos">
+		<SimpleData name="begin">1</SimpleData>
+		<SimpleData name="end">17</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.617809,-0.89312 -79.617552,-0.892542 -79.611895,-0.894918 -79.612099,-0.895052 -79.612061,-0.895304 -79.611935,-0.895486 -79.611716,-0.895742 -79.611884,-0.895775 -79.612038,-0.895672 -79.612215,-0.895472 -79.612145,-0.895784 -79.611931,-0.89647 -79.613013,-0.896048 -79.613748,-0.895705 -79.615628,-0.894918 -79.617014,-0.89434 -79.618026,-0.893866 -79.617809,-0.89312</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

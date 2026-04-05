@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="PROPIETARIO" type="string"></SimpleField>
+	<SimpleField name="CODIGO" type="string"></SimpleField>
+	<SimpleField name="Has" type="float"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<description>&lt;b style=&quot;font-size:16px;&quot;&gt;Moran Aroca Gloria Pilar&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Propietario:&lt;/b&gt; Moran Aroca Gloria Pilar&lt;br&gt;&lt;b&gt;Código:&lt;/b&gt; magp 088-001&lt;br&gt;&lt;b&gt;Hectáreas:&lt;/b&gt; 5.793&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#666;&quot;&gt;magp 088-001&lt;/span&gt;</description>
+	<Style><LineStyle><color>FF232323</color><width>0.737006</width></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#polgonos">
+		<SimpleData name="PROPIETARIO">Moran Aroca Gloria Pilar</SimpleData>
+		<SimpleData name="CODIGO">magp 088-001</SimpleData>
+		<SimpleData name="Has">5.793</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.586165243053,-1.07436363359962 -79.586165243053,-1.07436363359962 -79.5836311242252,-1.07477849916258 -79.5837201539927,-1.07656935194677 -79.5843849769827,-1.07680481982329 -79.5863083796539,-1.07573846599133 -79.586165243053,-1.07436363359962</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

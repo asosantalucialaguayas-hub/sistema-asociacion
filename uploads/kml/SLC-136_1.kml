@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="mariajimenez" id="mariajimenez">
+	<SimpleField name="id" type="string"></SimpleField>
+	<SimpleField name="fill" type="string"></SimpleField>
+</Schema>
+<Folder><name>mariajimenez</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#mariajimenez">
+		<SimpleData name="id">CVS.MARIAJIMENEZ</SimpleData>
+		<SimpleData name="fill">#FF0000</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.5655162632465,-1.00408484375403,0 -79.5657258108258,-1.0040721052175,0 -79.5659293234348,-1.00397757186597,0 -79.566109366715,-1.00398829905494,0 -79.5664023980498,-1.00390181109292,0 -79.5666112750769,-1.0039001349696,0 -79.5666005462408,-1.00414216716776,0 -79.5662753283978,-1.0042239619786,0 -79.5662330836058,-1.00431145560596,0 -79.5661539584398,-1.00432587026466,0 -79.5660597458482,-1.00439291518796,0 -79.5658723264933,-1.00446834072503,0 -79.5658032596111,-1.00445861921146,0 -79.5657073706388,-1.00450253363459,0 -79.5656688138843,-1.0045601922656,0 -79.5656077936292,-1.00459773742012,0 -79.5655581727624,-1.00456253883777,0 -79.5654961466789,-1.00439123906489,0 -79.5655155926943,-1.00408551420331,0 -79.5655162632465,-1.00408484375403,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

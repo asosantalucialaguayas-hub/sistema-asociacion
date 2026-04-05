@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="hhhh" id="hhhh">
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Area" type="string"></SimpleField>
+	<SimpleField name="Latitud" type="string"></SimpleField>
+	<SimpleField name="Longitud" type="string"></SimpleField>
+	<SimpleField name="Perimetro" type="string"></SimpleField>
+</Schema>
+<Folder><name>hhhh</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#hhhh">
+		<SimpleData name="ID_interno">SLC-098</SimpleData>
+		<SimpleData name="ID_unidad">SLC-098_1</SimpleData>
+		<SimpleData name="Area">1.6685</SimpleData>
+		<SimpleData name="Latitud">-0.98333</SimpleData>
+		<SimpleData name="Longitud">-79.630846</SimpleData>
+		<SimpleData name="Perimetro">0.7633</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6310520948557,-0.98170330831505,0 -79.6310520948557,-0.98170330831505,0 -79.6305759015087,-0.981612665154832,0 -79.630386067708,-0.984407394963955,0 -79.6306601359506,-0.984380374195029,0 -79.6309342041932,-0.984353353426104,0 -79.6309407055378,-0.984134559004699,0 -79.6307529509068,-0.984129195377969,0 -79.6307596564293,-0.984008513774359,0 -79.6307636797428,-0.98388380944604,0 -79.6309541165829,-0.983886491259595,0 -79.6309636768588,-0.98369084214834,0 -79.6309931495244,-0.983028330870577,0 -79.6310520948557,-0.98170330831505,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

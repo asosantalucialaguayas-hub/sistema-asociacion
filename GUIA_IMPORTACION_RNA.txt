@@ -1,0 +1,81 @@
+================================================================================
+GUÍA DE IMPORTACIÓN EXCEL - RNA (Registro Nacional Agropecuario)
+================================================================================
+
+📌 NOMBRES DE COLUMNAS EXACTOS QUE DEBE TENER TU EXCEL:
+
+1. cedula (OBLIGATORIO - sin esto no importa la fila)
+2. nombres
+3. apellidos
+4. genero
+5. fecha_nacimiento
+6. celular
+7. correo
+8. contrasena_correo
+9. se_registra_como
+10. nacionalidad
+11. autoidentificacion
+12. instruccion_formal
+13. anios_educacion
+14. lugar_nacimiento
+15. situacion_movilidad
+
+DOMICILIO (ubicación actual):
+16. provincia
+17. canton
+18. parroquia
+19. recinto
+20. referencia
+
+PREDIO:
+21. nombre_predio
+22. pred_provincia
+23. pred_canton
+24. pred_parroquia
+25. pred_recinto
+26. vive_en_predio
+27. forma_tenencia
+28. area_has
+
+GEORREFERENCIACIÓN:
+29. x (coordenada X)
+30. y (coordenada Y)
+31. z (coordenada Z)
+
+ACTIVIDAD:
+32. actividad (OBLIGATORIO si hay predio)
+33. rubro
+34. principal_ingreso
+
+USUARIO RNA:
+35. usuario_rna
+36. contrasena_rna
+
+================================================================================
+⚠️ IMPORTANTE:
+================================================================================
+
+✅ La primera fila DEBE contener exactamente estos nombres de columnas
+✅ cedula es OBLIGATORIO (sin este campo, la fila se salta)
+✅ Las filas en blanco o sin cédula se ignoran automáticamente
+✅ Si falta alguna columna opcional, se importa NULL en esa columna
+✅ Las fechas deben estar en formato: YYYY-MM-DD (ej: 2024-01-15)
+✅ Las coordenadas X,Y deben ser números decimales (ej: -78.5234, -0.3245)
+
+✅ Las transacciones están protegidas: si hay error, se revierte TODO
+✅ Verás el mensaje exacto si hay algún problema
+
+================================================================================
+FLUJO DE IMPORTACIÓN:
+================================================================================
+
+1. El sistema busca si la cédula ya existe
+2. Si existe → ACTUALIZA los datos personales
+3. Si NO existe → INSERTA registro nuevo
+4. Elimina domicilios viejos y agrega los nuevos
+5. Elimina predios viejos y agrega los nuevos (con GEO y ACTIVIDAD)
+6. Crea/actualiza usuario RNA si se proporciona
+7. Si todo va bien → "Importación completada: X registros"
+8. Si hay error → "Error: [mensaje exacto]" (y se revierte TODO)
+
+================================================================================

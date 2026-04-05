@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Carreno Carreno Carlos Antonio_Lote 1.kmz</name>
+	<Style id="PolyStyle00">
+		<LabelStyle>
+			<color>00000000</color>
+			<scale>0</scale>
+		</LabelStyle>
+		<LineStyle>
+			<color>ff6e6e6e</color>
+			<width>0.4</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>fffcf0c2</color>
+		</PolyStyle>
+	</Style>
+	<Placemark id="ID_00000">
+		<name>Carreno Carreno Carlos Antonio_Lote 1</name>
+		<Snippet maxLines="0"></Snippet>
+		<description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-010_1</td>
+  </tr>
+    <tr>
+      <td>ID_interno </td>
+      <td>SLC-010</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-010_1</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>1.1199</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-0.891907</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.610038</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.4886</td>
+    </tr>
+</table>
+]]></description>
+		<styleUrl>#PolyStyle00</styleUrl>
+		<gx:balloonVisibility>1</gx:balloonVisibility>
+		<MultiGeometry>
+			<Polygon>
+				<outerBoundaryIs>
+					<LinearRing>
+						<coordinates>
+							-79.60912576405778,-0.8915628455383776,0 -79.61052364827175,-0.8915250879426667,0 -79.61088499892861,-0.8915347974409591,0 -79.61092289267472,-0.8919177013570325,0 -79.61083725491014,-0.8920612523830725,0 -79.61066605117317,-0.8921569096841692,0 -79.61041880158662,-0.8921759601601067,0 -79.61021910581746,-0.8921758842285448,0 -79.61009552415184,-0.8920705426510805,0 -79.60995287356093,-0.892099205107455,0 -79.60984830337084,-0.8920130152342168,0 -79.60946794497509,-0.8919745816372021,0 -79.60930630453703,-0.8919266589908575,0 -79.60917320284508,-0.8918500305079785,0 -79.60912576405778,-0.8915628455383776,0 
+						</coordinates>
+					</LinearRing>
+				</outerBoundaryIs>
+			</Polygon>
+		</MultiGeometry>
+		<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.6.10441"></atom:link>
+	
+  <ExtendedData>
+  <Data name="ID_interno "><value>SLC-010</value></Data>
+  <Data name="ID_unidad"><value>SLC-010_1</value></Data>
+  <Data name="Area"><value>1.1199</value></Data>
+  <Data name="Latitud"><value>-0.891907</value></Data>
+  <Data name="Longitud"><value>-79.610038</value></Data>
+  <Data name="Perimetro"><value>0.4886</value></Data>
+</ExtendedData>
+</Placemark>
+</Document>
+</kml>

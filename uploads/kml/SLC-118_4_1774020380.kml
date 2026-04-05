@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="Area" type="float"></SimpleField>
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+	<SimpleField name="Longitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<description>&lt;table style=&quot;font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;&quot;&gt;&lt;tr style=&quot;background:#9CBCE2;font-weight:bold;text-align:center;&quot;&gt;&lt;td colspan=&quot;2&quot;&gt;Información&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;ID_interno&lt;/td&gt;&lt;td&gt;SLC-118&lt;/td&gt;&lt;/tr&gt;&lt;tr bgcolor=&quot;#D4E4F3&quot;&gt;&lt;td&gt;ID_unidad&lt;/td&gt;&lt;td&gt;SLC-118-004&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Area&lt;/td&gt;&lt;td&gt;2,51&lt;/td&gt;&lt;/tr&gt;&lt;tr bgcolor=&quot;#D4E4F3&quot;&gt;&lt;td&gt;Latitud&lt;/td&gt;&lt;td&gt;9.895.120,696000&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;Longitud&lt;/td&gt;&lt;td&gt;657.897,792000&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#polgonos">
+		<SimpleData name="Area">2.506</SimpleData>
+		<SimpleData name="ID_interno">SLC-118</SimpleData>
+		<SimpleData name="ID_unidad">SLC-118-004</SimpleData>
+		<SimpleData name="Latitud">9895120.696</SimpleData>
+		<SimpleData name="Longitud">657897.792</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.5822668519316,-0.946961003553354 -79.5820782657087,-0.946707679861713 -79.5811882642586,-0.947855964595048 -79.5800197099202,-0.949031266575432 -79.58004649577,-0.949447324338787 -79.5802798672267,-0.950044357438299 -79.5803157378568,-0.95021621766851 -79.5808370934337,-0.949691852527235 -79.5806395666501,-0.949329991051556 -79.5817631548602,-0.948254159655236 -79.5817362139915,-0.948217970543637 -79.5814667464253,-0.948000791421791 -79.5817274349005,-0.94771147492225 -79.5822668519316,-0.946961003553354</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

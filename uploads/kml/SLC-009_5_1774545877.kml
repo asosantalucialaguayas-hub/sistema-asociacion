@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Luis Antonio Parraga Romero_Lote 5.kml</name>
+	<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.7.1094"></atom:link>
+	<Style id="PolyStyle0037">
+		<LabelStyle>
+			<color>00000000</color>
+			<scale>0</scale>
+		</LabelStyle>
+		<LineStyle>
+			<color>ff000000</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>80beeaff</color>
+		</PolyStyle>
+	</Style>
+	<Style id="PolyStyle0038">
+		<LabelStyle>
+			<color>00000000</color>
+			<scale>0</scale>
+		</LabelStyle>
+		<LineStyle>
+			<color>ff000000</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>80beeaff</color>
+		</PolyStyle>
+	</Style>
+	<StyleMap id="PolyStyle0099">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#PolyStyle0038</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#PolyStyle0037</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Placemark id="ID_00000">
+		<name>Luis Antonio Parraga Romero_Lote 5</name>
+		<Snippet maxLines="0"></Snippet>
+		<description><![CDATA[<html xmlns:fo="http://www.w3.org/1999/XSL/Format" xmlns:msxsl="urn:schemas-microsoft-com:xslt">
+
+<head>
+
+<META http-equiv="Content-Type" content="text/html">
+
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+</head>
+
+<body style="margin:0px 0px 0px 0px;overflow:auto;background:#FFFFFF;">
+
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-collapse:collapse;padding:3px 3px 3px 3px">
+
+<tr style="text-align:center;font-weight:bold;background:#9CBCE2">
+
+<td>5</td>
+
+</tr>
+
+<tr>
+
+<td>
+
+<table style="font-family:Arial,Verdana,Times;font-size:12px;text-align:left;width:100%;border-spacing:0px; padding:3px 3px 3px 3px">
+
+<tr>
+
+<td>Id</td>
+
+<td>SLC</td>
+
+</tr>
+
+<tr bgcolor="#D4E4F3">
+
+<td>Nombre</td>
+
+<td>Luis Antonio Parraga Romero</td>
+
+</tr>
+
+<tr>
+
+<td>Unidad</td>
+
+<td>Cacao</td>
+
+</tr>
+
+<tr bgcolor="#D4E4F3">
+
+<td>Detalle</td>
+
+<td>Cacao CCN-51</td>
+
+</tr>
+
+<tr>
+
+<td>Canton</td>
+
+<td>El Empalme</td>
+
+</tr>
+
+<tr bgcolor="#D4E4F3">
+
+<td>Recinto</td>
+
+<td>Santa Rosa</td>
+
+</tr>
+
+<tr>
+
+<td>Hectarea</td>
+
+<td>0,36</td>
+
+</tr>
+
+<tr bgcolor="#D4E4F3">
+
+<td>Latitud</td>
+
+<td>-1,00653056</td>
+
+</tr>
+
+<tr>
+
+<td>Longitud<
+
+<td>-79,63306944</td>
+
+</tr>
+
+</table>
+
+</td>
+
+</tr>
+
+</table>
+
+</body>
+
+</html>]]></description>
+		<styleUrl>#PolyStyle0099</styleUrl>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-79.63281098330629,-1.006965733085729,0 -79.63286743850016,-1.00677112840828,0 -79.63290828449963,-1.006606383956187,0 -79.63296642248319,-1.006464946240471,0 -79.63302847818234,-1.00610854340826,0 -79.63308774355644,-1.005979415053577,0 -79.6331054457135,-1.005814321796011,0 -79.63316667335442,-1.005788563672124,0 -79.63324679302293,-1.0059445743122,0 -79.63325494550884,-1.006061973658592,0 -79.63331594886206,-1.006079683098994,0 -79.63327406501227,-1.006235656074636,0 -79.63324330568602,-1.00634057824474,0 -79.63317277504677,-1.00663190587914,0 -79.63308276975089,-1.006875227285038,0 -79.63301284159959,-1.007131297332742,0 -79.63281098330629,-1.006965733085729,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

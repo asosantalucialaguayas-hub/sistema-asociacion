@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+	<name>Garcia Delgado Victor Manuel_Lote 1.kmz</name>
+	<open>1</open>
+	<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.6.10441"></atom:link>
+	<Schema name="polgonos" id="polgonos">
+		<SimpleField type="float" name="Has"></SimpleField>
+		<SimpleField type="string" name="PROPIETARIO"></SimpleField>
+		<SimpleField type="string" name="CODIGO"></SimpleField>
+		<SimpleField type="string" name="CANTON"></SimpleField>
+		<SimpleField type="string" name="PROVINCIA"></SimpleField>
+	</Schema>
+	<StyleMap id="m_ylw-pushpin">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#s_ylw-pushpin</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#s_ylw-pushpin_hl</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="s_ylw-pushpin">
+		<IconStyle>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<LineStyle>
+			<color>ffccff76</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>59f60045</color>
+		</PolyStyle>
+	</Style>
+	<Style id="s_ylw-pushpin_hl">
+		<IconStyle>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<LineStyle>
+			<color>ffccff76</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>59f60045</color>
+		</PolyStyle>
+	</Style>
+	<Placemark>
+		<name>Garcia Delgado Victor Manuel_Lote 1</name>
+		<description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-105_01</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-105</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad </td>
+      <td>SLC-105_01</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>2.5457</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-0.984987</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.578522</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>1.0493</td>
+    </tr>
+</table>
+]]></description>
+		<styleUrl>#m_ylw-pushpin</styleUrl>
+		<ExtendedData>
+  <Data name="ID_interno"><value>SLC-105</value></Data>
+  <Data name="ID_unidad "><value>SLC-105_01</value></Data>
+  <Data name="Area"><value>2.5457</value></Data>
+  <Data name="Latitud"><value>-0.984987</value></Data>
+  <Data name="Longitud"><value>-79.578522</value></Data>
+  <Data name="Perimetro"><value>1.0493</value></Data>
+</ExtendedData>
+		<Polygon>
+			<outerBoundaryIs>
+				<LinearRing>
+					<coordinates>
+						-79.5791287480788,-0.9842129565593943,0 -79.57910474949684,-0.9844644611646118,0 -79.57898316524289,-0.9844921940079159,0 -79.5789460920136,-0.9845460737248897,0 -79.57895985356564,-0.9845784907711502,0 -79.57894134793993,-0.98464205573477,0 -79.57888351333997,-0.9847411650641689,0 -79.57880462606218,-0.9847045520821803,0 -79.5782703243129,-0.985651664663885,0 -79.5784410025008,-0.9857512273455449,0 -79.5783869872069,-0.985995405226272,0 -79.5782874962062,-0.98753292482532,0 -79.57768545506769,-0.987595976926999,0 -79.57759583288021,-0.987053269412935,0 -79.5776049910822,-0.9866462716740551,0 -79.5776773494391,-0.9855247870288641,0 -79.5778391535474,-0.985362055889677,0 -79.57802739562521,-0.9854635386508637,0 -79.57860671129922,-0.9844037795086182,0 -79.57842573249901,-0.9843285643508189,0 -79.57846575561759,-0.9841957485638861,0 -79.57856904265469,-0.9841222705328521,0 -79.57865591672079,-0.9841374972151624,0 -79.57864680200667,-0.9841775154864203,0 -79.57859527579424,-0.984230652413259,0 -79.5786509709107,-0.9842651946437853,0 -79.57869158824472,-0.9842035445543904,0 -79.57871116774832,-0.9841570841485231,0 -79.57893468771677,-0.9842087921688113,0 -79.5791287480788,-0.9842129565593943,0 
+					</coordinates>
+				</LinearRing>
+			</outerBoundaryIs>
+		</Polygon>
+	</Placemark>
+</Document>
+</kml>

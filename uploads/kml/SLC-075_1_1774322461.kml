@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="finalee" id="finalee">
+	<SimpleField name="Area" type="float"></SimpleField>
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+	<SimpleField name="Longitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>finalee</name>
+  <Placemark>
+    <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-075_1</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-075</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-075_1</td>
+    </tr>
+    <tr>
+      <td>Latitud</td>
+      <td>-0.927759</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Longitud</td>
+      <td>-79.576183</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>0.7394</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno"><value>SLC-075</value></Data>
+  <Data name="ID_unidad"><value>SLC-075_1</value></Data>
+  <Data name="Latitud"><value>-0.927759</value></Data>
+  <Data name="Longitud"><value>-79.576183</value></Data>
+  <Data name="Area"><value>0.7394</value></Data>
+</ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.5762658139,-0.92718593971908 -79.5756244139171,-0.928413829520694 -79.5761068864453,-0.928485657430263 -79.5766535666651,-0.927524088931314 -79.5762658139,-0.92718593971908</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

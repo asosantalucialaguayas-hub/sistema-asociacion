@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="polgonos" id="polgonos">
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad " type="string"></SimpleField>
+	<SimpleField name="Area " type="float"></SimpleField>
+	<SimpleField name="Longitud " type="float"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>polgonos</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#polgonos">
+		<SimpleData name="ID_interno">SLC-112</SimpleData>
+		<SimpleData name="ID_unidad ">SLC-112_1</SimpleData>
+		<SimpleData name="Area ">1.055</SimpleData>
+		<SimpleData name="Longitud ">-79.606</SimpleData>
+		<SimpleData name="Latitud">-1.081</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.606701,-1.080462 -79.606316,-1.082546 -79.60601,-1.079333 -79.606185,-1.079624 -79.60635594,-1.07991909 -79.60616511,-1.08018751 -79.60633373,-1.08035388 -79.60647531,-1.08014827 -79.606701,-1.080462</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

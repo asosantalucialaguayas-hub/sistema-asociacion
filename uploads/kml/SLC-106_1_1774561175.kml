@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<name>SLC-106_1</name>
+<Style id="sty"><LineStyle><color>ff34d399</color><width>2</width></LineStyle><PolyStyle><color>4f34d399</color></PolyStyle></Style>
+<Placemark>
+  <name>SLC-106_1</name>
+  <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-106_1</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-106</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-106_1</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>0,80</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-0.930148</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.652832</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.4189</td>
+    </tr>
+</table>
+]]></description>
+  <ExtendedData>
+  <Data name="ID_interno"><value>SLC-106</value></Data>
+  <Data name="ID_unidad"><value>SLC-106_1</value></Data>
+  <Data name="Area"><value>0,80</value></Data>
+  <Data name="Latitud"><value>-0.930148</value></Data>
+  <Data name="Longitud"><value>-79.652832</value></Data>
+  <Data name="Perimetro"><value>0.4189</value></Data>
+</ExtendedData>
+  <styleUrl>#sty</styleUrl>
+  <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.65355038642885,-0.9299963613813175,0 -79.65357050299644,-0.9299467470506386,0 -79.65360403060915,-0.9298595867383161,0 -79.6525340738937,-0.929984594073592,0 -79.6524879765212,-0.929990274564588,0 -79.6519691340566,-0.930054112100733,0 -79.6520174092325,-0.930229056522262,0 -79.6520296745624,-0.930346824150647,0 -79.6526560237999,-0.930411644662406,0 -79.6527002360617,-0.930401169722474,0 -79.65336665511133,-0.930431827672633,0 -79.65350344777109,-0.9301291132356286,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+</Placemark>
+</Document>
+</kml>

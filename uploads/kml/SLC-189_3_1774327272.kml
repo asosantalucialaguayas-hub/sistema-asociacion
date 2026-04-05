@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Folder><name>lote_3_veliz</name>
+  <Placemark>
+    <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-189_3</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-189</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-189_3</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>1.4325</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-1.172264</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.802257</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.5106</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.8020383121301,-1.172642663624,0 -79.8021939593175,-1.17292755668728,0 -79.8022902903938,-1.17314238333583,0 -79.8030739599969,-1.17168631670769,0 -79.8026663623811,-1.17148511754386,0 -79.8023086000626,-1.17130110715503,0 -79.8018426919229,-1.17215042333365,0 -79.8018562650821,-1.1723980181504,0 -79.8020383121301,-1.172642663624,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  
+  <ExtendedData>
+  <Data name="ID_interno"><value>SLC-189</value></Data>
+  <Data name="ID_unidad"><value>SLC-189_3</value></Data>
+  <Data name="Area"><value>1.4325</value></Data>
+  <Data name="Latitud"><value>-1.172264</value></Data>
+  <Data name="Longitud"><value>-79.802257</value></Data>
+  <Data name="Perimetro"><value>0.5106</value></Data>
+</ExtendedData>
+</Placemark>
+</Folder>
+</Document></kml>

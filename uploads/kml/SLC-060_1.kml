@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="slc060_1" id="slc060_1">
+	<SimpleField name="descriptio" type="string"></SimpleField>
+	<SimpleField name="timestamp" type="string"></SimpleField>
+	<SimpleField name="begin" type="string"></SimpleField>
+	<SimpleField name="end" type="string"></SimpleField>
+	<SimpleField name="altitudeMo" type="string"></SimpleField>
+	<SimpleField name="tessellate" type="float"></SimpleField>
+	<SimpleField name="extrude" type="float"></SimpleField>
+	<SimpleField name="visibility" type="float"></SimpleField>
+	<SimpleField name="drawOrder" type="float"></SimpleField>
+	<SimpleField name="icon" type="string"></SimpleField>
+	<SimpleField name="snippet" type="string"></SimpleField>
+</Schema>
+<Folder><name>slc060_1</name>
+  <Placemark>
+	<name>Velez Carreno Marlene Isabel</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#slc060_1">
+		<SimpleData name="descriptio">&lt;html xmlns:fo=&quot;http://www.w3.org/1999/XSL/Format&quot; xmlns:msxsl=&quot;urn:schemas-microsoft-com:xslt&quot;&gt;
+
+&lt;head&gt;
+
+&lt;META http-equiv=&quot;Content-Type&quot; content=&quot;text/html&quot;&gt;
+
+&lt;meta http-equiv=&quot;content-type&quot; content=&quot;text/html; charset=UTF-8&quot;&gt;
+
+&lt;/head&gt;
+
+&lt;body style=&quot;mar</SimpleData>
+		<SimpleData name="tessellate">-1</SimpleData>
+		<SimpleData name="extrude">0</SimpleData>
+		<SimpleData name="visibility">-1</SimpleData>
+	</SchemaData></ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6597584578739,-1.06213854294224,0 -79.6598885007763,-1.06113470589495,0 -79.6591622942702,-1.06088659466085,0 -79.6580589333241,-1.06067099596988,0 -79.657808762319,-1.06182316986098,0 -79.658038882664,-1.06189634734194,0 -79.6579945001942,-1.06197318631397,0 -79.6577896457514,-1.06189057048458,0 -79.6576333795094,-1.06262328407645,0 -79.6575897243877,-1.06270932086511,0 -79.6593811306521,-1.06318643980309,0 -79.6597584578739,-1.06213854294224,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<name>Export 2026-03-28 0638</name>
+<Style id="sty"><LineStyle><color>ff38bdf8</color><width>2</width></LineStyle><PolyStyle><color>4f38bdf8</color></PolyStyle></Style>
+<Placemark>
+  <name>Export 2026-03-28 0638</name>
+  <description><![CDATA[<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;"><tr style="background:#9CBCE2;font-weight:bold;text-align:center;"><td colspan="2">Export 2026-03-28 0638</td></tr></table>]]></description>
+  <ExtendedData></ExtendedData>
+  <styleUrl>#sty</styleUrl>
+  <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.56591624766588,-1.0828304861492368,0 -79.56568859517574,-1.0828164070665596,0 -79.5656818896532,-1.0825264449922807,0 -79.56564802676439,-1.0821821778461203,0 -79.56562120467424,-1.0818670744843284,0 -79.56720136106014,-1.0813431312688084,0 -79.56727780401707,-1.082199273878647,0 -79.56698477268219,-1.0821999443112924,0 -79.56699348986149,-1.0825753865697687,0 -79.56632394343615,-1.0827118195932592,0 -79.56621229648592,-1.0826253337953025,0 -79.56607148051265,-1.0826347198510144,0 -79.5660550519824,-1.0827212056487039,0 -79.56591624766588,-1.0828304861492368,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+</Placemark>
+</Document>
+</kml>

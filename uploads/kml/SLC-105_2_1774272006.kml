@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document id="root_doc">
+	<name>Garcia Delgado Victor Manuel_Lote 2.kml</name>
+	<open>1</open>
+	<atom:link rel="app" href="https://www.google.com/earth/about/versions/#earth-pro" title="Google Earth Pro 7.3.6.10441"></atom:link>
+	<Schema name="polgonos" id="polgonos">
+		<SimpleField type="float" name="Has"></SimpleField>
+		<SimpleField type="string" name="PROPIETARIO"></SimpleField>
+		<SimpleField type="string" name="CODIGO"></SimpleField>
+		<SimpleField type="string" name="CANTON"></SimpleField>
+		<SimpleField type="string" name="PROVINCIA"></SimpleField>
+	</Schema>
+	<StyleMap id="msn_ylw-pushpin">
+		<Pair>
+			<key>normal</key>
+			<styleUrl>#sn_ylw-pushpin</styleUrl>
+		</Pair>
+		<Pair>
+			<key>highlight</key>
+			<styleUrl>#sh_ylw-pushpin</styleUrl>
+		</Pair>
+	</StyleMap>
+	<Style id="sh_ylw-pushpin">
+		<IconStyle>
+			<scale>1.3</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<BalloonStyle>
+		</BalloonStyle>
+		<LineStyle>
+			<color>ffccff76</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>590036ff</color>
+		</PolyStyle>
+	</Style>
+	<Style id="sn_ylw-pushpin">
+		<IconStyle>
+			<scale>1.1</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+			</Icon>
+			<hotSpot x="20" y="2" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
+		<BalloonStyle>
+		</BalloonStyle>
+		<LineStyle>
+			<color>ffccff76</color>
+		</LineStyle>
+		<PolyStyle>
+			<color>590036ff</color>
+		</PolyStyle>
+	</Style>
+	<Folder>
+		<name>polgonos</name>
+		<open>1</open>
+		<Placemark>
+			<name>Garcia Delgado Victor Manuel_Lote 2</name>
+			<description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-105_2</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-105</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-105_2</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>0.362</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-0.984633</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.578379</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.378</td>
+    </tr>
+</table>
+]]></description>
+			<styleUrl>#msn_ylw-pushpin</styleUrl>
+			<ExtendedData>
+  <Data name="ID_interno"><value>SLC-105</value></Data>
+  <Data name="ID_unidad"><value>SLC-105_2</value></Data>
+  <Data name="Area"><value>0.362</value></Data>
+  <Data name="Latitud"><value>-0.984633</value></Data>
+  <Data name="Longitud"><value>-79.578379</value></Data>
+  <Data name="Perimetro"><value>0.378</value></Data>
+</ExtendedData>
+			<Polygon>
+				<outerBoundaryIs>
+					<LinearRing>
+						<coordinates>
+							-79.57850933114311,-0.984579321161503,0 -79.57802605074812,-0.9854637722380514,0 -79.57783783848106,-0.985361023193038,0 -79.57838246543351,-0.9843597099126112,0 -79.57841861414504,-0.9844771682004907,0 -79.57839562167733,-0.9845557764394205,0 -79.57849051819738,-0.9845887161522052,0 -79.57852566314793,-0.984469599549375,0 -79.57842586682602,-0.9844344707244213,0 -79.5784248216426,-0.9843287728826551,0 -79.57860603216632,-0.9844031681269818,0 -79.57850933114311,-0.984579321161503,0 
+						</coordinates>
+					</LinearRing>
+				</outerBoundaryIs>
+			</Polygon>
+		</Placemark>
+	</Folder>
+</Document>
+</kml>

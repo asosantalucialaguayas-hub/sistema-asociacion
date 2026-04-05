@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="lote_2_veliz" id="lote_2_veliz">
+	<SimpleField name="ID_interno" type="string"></SimpleField>
+	<SimpleField name="ID_unidad" type="string"></SimpleField>
+	<SimpleField name="Area" type="float"></SimpleField>
+	<SimpleField name="Latitud" type="float"></SimpleField>
+	<SimpleField name="Longitud" type="float"></SimpleField>
+</Schema>
+<Folder><name>lote_2_veliz</name>
+  <Placemark>
+    <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-189_2</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-189</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-189_2</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>1.4442</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-1.172504</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.801181</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.495</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno"><value>SLC-189</value></Data>
+  <Data name="ID_unidad"><value>SLC-189_2</value></Data>
+  <Data name="Area"><value>1.4442</value></Data>
+  <Data name="Latitud"><value>-1.172504</value></Data>
+  <Data name="Longitud"><value>-79.801181</value></Data>
+  <Data name="Perimetro"><value>0.495</value></Data>
+</ExtendedData>
+      <MultiGeometry><Polygon><outerBoundaryIs><LinearRing><coordinates>-79.8011429542292,-1.17170192960755,0 -79.8009047472798,-1.17214043056049,0 -79.8004579065185,-1.17296552578295,0 -79.8007294298476,-1.17312954944915,0 -79.8009323188543,-1.17327685822719,0 -79.8011553990763,-1.17339549681449,0 -79.8014423579516,-1.17283620068006,0 -79.8017626073887,-1.17228488039443,0 -79.8016887684794,-1.17218560297077,0 -79.8016367563066,-1.17193083314846,0 -79.8011429542292,-1.17170192960755,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

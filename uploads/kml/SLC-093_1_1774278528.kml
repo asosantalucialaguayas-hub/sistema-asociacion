@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+<name>CASTRO CEDEÑO ISDEL OSWALDO.kml</name>
+<Style id="sty"><LineStyle><color>ffa78bfa</color><width>2</width></LineStyle><PolyStyle><color>4fa78bfa</color></PolyStyle></Style>
+<Placemark>
+  <name>CASTRO CEDEÑO ISDEL OSWALDO.kml</name>
+  <description><![CDATA[<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;"><tr style="background:#9CBCE2;font-weight:bold;text-align:center;"><td colspan="2">SLC-093_1</td></tr><tr><td>ID_interno</td><td>SLC-093</td></tr><tr bgcolor="#D4E4F3"><td>ID_unidad </td><td>SLC-093_1</td></tr><tr><td>Area</td><td>7.9873</td></tr><tr bgcolor="#D4E4F3"><td>Latitud</td><td>-0.945883</td></tr><tr><td>Longitud</td><td>-79.612673</td></tr><tr bgcolor="#D4E4F3"><td>Perimetro</td><td>1.7811</td></tr></table>]]></description>
+  <ExtendedData><Data name="ID_interno"><value>SLC-093</value></Data><Data name="ID_unidad "><value>SLC-093_1</value></Data><Data name="Area"><value>7.9873</value></Data><Data name="Latitud"><value>-0.945883</value></Data><Data name="Longitud"><value>-79.612673</value></Data><Data name="Perimetro"><value>1.7811</value></Data></ExtendedData>
+  <styleUrl>#sty</styleUrl>
+  <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.6160430986251,-0.945346710496369,0 -79.61231410503387,-0.9454679527782516,0 -79.61049556732179,-0.9454840438412467,0 -79.6086564944503,-0.945697835157135,0 -79.6092486772099,-0.946019609853659,0 -79.61012542247774,-0.9463797795640025,0 -79.6115416288376,-0.946347597446231,0 -79.61228905387489,-0.9464294248205167,0 -79.61259573698045,-0.9464334164262936,0 -79.612694978714,-0.9463610066620073,0 -79.6127513051033,-0.9463020061122123,0 -79.612829759717,-0.9462181985113425,0 -79.61288541555406,-0.9461545047333421,0 -79.61292564868928,-0.946104890631765,0 -79.6129819750786,-0.9460338217823223,0 -79.61299739778043,-0.9460110261133283,0 -79.61303494870663,-0.9459795144529978,0 -79.613099321723,-0.9459245366619448,0 -79.61321264505388,-0.9459117979053524,0 -79.61329713463783,-0.9459171615923474,0 -79.61332798004152,-0.9459949350527632,0 -79.61331591010095,-0.9460713675897479,0 -79.61323946714401,-0.9460874586499568,0 -79.61312144994737,-0.9460767312765012,0 -79.61300242692234,-0.9460606402162414,0 -79.61298130452634,-0.9460760608156507,0 -79.61288474500181,-0.9461796470142697,0 -79.61278684437276,-0.946298989038614,0 -79.61272448301317,-0.9463677112698764,0 -79.61268290877342,-0.9464387801124744,0 -79.61302359749476,-0.9464444180370946,0 -79.6159617719742,-0.946504390903406,0 -79.6160430986251,-0.945346710496369,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+</Placemark>
+</Document>
+</kml>

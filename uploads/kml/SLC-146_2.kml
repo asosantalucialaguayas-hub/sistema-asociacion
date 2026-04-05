@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="dpfb__mapa_2_1" id="dpfb__mapa_2_1">
+	<SimpleField name="id" type="string"></SimpleField>
+	<SimpleField name="fill" type="string"></SimpleField>
+</Schema>
+<Folder><name>dpfb__mapa_2_1</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#dpfb__mapa_2_1">
+		<SimpleData name="id">OBJ_ DPFB2</SimpleData>
+		<SimpleData name="fill">#FF0000</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.621931836009,-1.00179324728054,0 -79.6228048950434,-1.00196488241428,0 -79.6228367462754,-1.00196153016566,0 -79.6230932325125,-1.00068834589186,0 -79.6221977099776,-1.00056766489239,0 -79.6219117194414,-1.00176508839055,0 -79.621931836009,-1.00179324728054,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>

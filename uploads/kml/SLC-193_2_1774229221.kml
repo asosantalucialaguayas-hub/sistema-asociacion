@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="fin2genesisromero" id="fin2genesisromero">
+	<SimpleField name="id" type="string"></SimpleField>
+	<SimpleField name="fill" type="string"></SimpleField>
+</Schema>
+<Folder><name>fin2genesisromero</name>
+  <Placemark>
+    <description><![CDATA[
+<table style="font-family:Arial;font-size:12px;width:100%;border-collapse:collapse;">
+  <tr style="background:#9CBCE2;font-weight:bold;text-align:center;">
+    <td colspan="2">SLC-193_2</td>
+  </tr>
+    <tr>
+      <td>ID_interno</td>
+      <td>SLC-193</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>ID_unidad</td>
+      <td>SLC-193_2</td>
+    </tr>
+    <tr>
+      <td>Area</td>
+      <td>0.99</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Latitud</td>
+      <td>-1.166992</td>
+    </tr>
+    <tr>
+      <td>Longitud</td>
+      <td>-79.799974</td>
+    </tr>
+    <tr bgcolor="#D4E4F3">
+      <td>Perimetro</td>
+      <td>0.985</td>
+    </tr>
+</table>
+]]></description>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno"><value>SLC-193</value></Data>
+  <Data name="ID_unidad"><value>SLC-193_2</value></Data>
+  <Data name="Area"><value>0.99</value></Data>
+  <Data name="Latitud"><value>-1.166992</value></Data>
+  <Data name="Longitud"><value>-79.799974</value></Data>
+  <Data name="Perimetro"><value>0.985</value></Data>
+</ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.7993422017883,-1.1706586391152,0 -79.7993492335081,-1.17066254194517,0 -79.7993395105004,-1.17066488838819,0 -79.7993422017883,-1.1706586391152,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData>
+  <Data name="ID_interno"><value>SLC-193</value></Data>
+  <Data name="ID_unidad"><value>SLC-193_2</value></Data>
+  <Data name="Area"><value>0.99</value></Data>
+  <Data name="Latitud"><value>-1.166992</value></Data>
+  <Data name="Longitud"><value>-79.799974</value></Data>
+  <Data name="Perimetro"><value>0.985</value></Data>
+</ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-79.7999326139688,-1.16553086635802,0 -79.8001129925251,-1.1652492926666,0 -79.8003738373518,-1.16512258449629,0 -79.8006330057979,-1.16519096668414,0 -79.8008630052209,-1.16541790167805,0 -79.8006527870893,-1.16573869454076,0 -79.8002497851849,-1.16640810230896,0 -79.8000895231962,-1.16623345963667,0 -79.7996409237385,-1.16598339544596,0 -79.7997616231441,-1.16583389325161,0 -79.7999326139688,-1.16553086635802,0</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>
