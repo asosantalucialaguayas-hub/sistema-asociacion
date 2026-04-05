@@ -181,7 +181,7 @@ button:hover{
 
 <img src="../img/logo.png" class="logo" alt="Logo Asociación">
 
-<h2>Sistema de Gestión</h2>
+<h2>Sistema de Gestión NUEVO</h2>
 
 <p>Asociación Santa Lucía Corotú</p>
 
