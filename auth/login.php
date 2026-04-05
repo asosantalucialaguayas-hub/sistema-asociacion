@@ -197,7 +197,7 @@ color:#6c757d;
 
 <img src="../img/logo.png" class="logo">
 
-<h2>Sistema de Gestión</h2>
+<h2>Sistema de Gestión0</h2>
 
 <p class="subtitle">Asociación Santa Lucía Corotú</p>
 
