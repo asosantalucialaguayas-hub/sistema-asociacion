@@ -124,31 +124,21 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .flash{padding:12px 18px;border-radius:10px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:.875rem;}
 .flash.success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
 .flash.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
-
-/* selector */
 .conv-selector{background:#fff;border-radius:14px;border:1.5px solid var(--borde);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--sombra);}
 .conv-selector select{flex:1;min-width:200px;border:1.5px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:.875rem;font-family:inherit;}
-
-/* info bar */
 .conv-bar{background:linear-gradient(135deg,#1f3a5f 0%,#2563eb 100%);border-radius:16px;padding:20px 26px;color:#fff;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
 .conv-bar h2{margin:0 0 6px;font-size:1.05rem;font-weight:800;}
 .conv-bar .meta{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;opacity:.9;}
 .conv-bar .meta span{display:flex;align-items:center;gap:5px;}
 .estado-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
-
-/* kpis */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
 @media(max-width:600px){.kpi-row{grid-template-columns:1fr 1fr;}}
 .kpi-box{background:#fff;border-radius:14px;padding:16px;text-align:center;border:1.5px solid var(--borde);box-shadow:var(--sombra);}
 .kpi-box .num{font-size:1.9rem;font-weight:800;line-height:1;}
 .kpi-box .lbl{font-size:.75rem;color:#64748b;margin-top:4px;font-weight:600;}
-
-/* progreso */
 .prog-card{background:#fff;border-radius:14px;padding:18px;border:1.5px solid var(--borde);box-shadow:var(--sombra);margin-bottom:20px;}
 .prog-wrap{background:#e2e8f0;border-radius:50px;height:26px;overflow:hidden;margin-top:10px;}
 .prog-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#16a34a,#22c55e);transition:width 1.2s;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;min-width:44px;}
-
-/* registro */
 .reg-card{background:#fff;border-radius:14px;padding:18px;border:1.5px solid var(--borde);box-shadow:var(--sombra);margin-bottom:20px;}
 .srch-wrap{position:relative;}
 .srch-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#94a3b8;}
@@ -158,8 +148,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .res-item:hover:not(.ya){background:#eff6ff;border-color:var(--azul2);}
 .res-item.ya{background:#f0fdf4;border-color:#bbf7d0;cursor:default;}
 .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;}
-
-/* tabla */
 .tbl-card{background:#fff;border-radius:14px;border:1.5px solid var(--borde);box-shadow:var(--sombra);overflow:hidden;}
 .tbl-card table{width:100%;border-collapse:collapse;}
 .tbl-card thead{background:var(--azul);color:#fff;}
@@ -172,14 +160,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .m-qr{background:#fef3c7;color:#92400e;}
 .btn-del{background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;padding:4px 8px;font-size:.73rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
 .btn-del:hover{background:#fecaca;}
-
-/* acta */
 .acta-card{border-radius:14px;padding:18px;margin-bottom:20px;border:2px solid;}
 .acta-ok{background:#f0fdf4;border-color:#bbf7d0;}
 .acta-pend{background:#fffbeb;border-color:#fde68a;}
 .acta-block{background:#fef2f2;border-color:#fecaca;}
-
-/* modal */
 .moverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);z-index:10000;overflow-y:auto;padding:20px;}
 .moverlay.show{display:flex;align-items:center;justify-content:center;}
 .mbox{background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.22);}
@@ -195,7 +179,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </style>
 </head>
 <body>
-<script src="layout/modal-message.js"></script>
 <div class="app">
 <?php include __DIR__ . "/layout/sidebar.php"; ?>
 <main class="content">
@@ -211,7 +194,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </div>
 <?php endif; ?>
 
-<!-- ── Header de página ──────────────────────────────────── -->
 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:22px;">
     <div>
         <h1 style="font-size:1.4rem;font-weight:800;color:var(--azul);margin:0;display:flex;align-items:center;gap:10px;">
@@ -241,7 +223,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
 </div>
 
-<!-- ── Selector convocatoria ────────────────────────────── -->
 <div class="conv-selector">
     <i class="fa-solid fa-calendar-check" style="color:var(--azul2);font-size:1.1rem;"></i>
     <label style="font-weight:700;font-size:.85rem;color:var(--azul);white-space:nowrap;">Convocatoria:</label>
@@ -267,7 +248,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     $est = $convocatoria['estado'];
 ?>
 
-<!-- ── Info convocatoria ──────────────────────────────────── -->
 <div class="conv-bar">
     <div style="flex:1;">
         <div style="margin-bottom:8px;">
@@ -296,7 +276,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?php endif; ?>
 </div>
 
-<!-- ── KPIs ──────────────────────────────────────────────── -->
 <div class="kpi-row">
     <div class="kpi-box"><div class="num" style="color:var(--azul);"><?= $total_socios ?></div><div class="lbl"><i class="fa-solid fa-users"></i> Total Socios</div></div>
     <div class="kpi-box"><div class="num" style="color:var(--verde);"><?= $presentes ?></div><div class="lbl"><i class="fa-solid fa-user-check"></i> Presentes</div></div>
@@ -304,7 +283,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <div class="kpi-box"><div class="num" style="color:<?= $porcentaje>=50?'var(--verde)':'var(--rojo)' ?>;"><?= $porcentaje ?>%</div><div class="lbl"><i class="fa-solid fa-percent"></i> Asistencia</div></div>
 </div>
 
-<!-- ── Barra de progreso ─────────────────────────────────── -->
 <div class="prog-card">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span style="font-weight:700;font-size:.9rem;color:var(--azul);">Progreso de Asistencia</span>
@@ -318,7 +296,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
 </div>
 
-<!-- ── SECCIÓN ACTA (solo si cerrada) ───────────────────── -->
 <?php if ($est === 'cerrada'): ?>
     <?php if ($convocatoria['acta_pdf_path']): ?>
     <div class="acta-card acta-ok">
@@ -367,7 +344,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?php endif; ?>
 <?php endif; ?>
 
-<!-- ── Registro manual (solo si activa) ─────────────────── -->
 <?php if ($es_editor && $est === 'activa'): ?>
 <div class="reg-card">
     <div style="font-weight:700;color:var(--azul);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
@@ -381,7 +357,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </div>
 <?php endif; ?>
 
-<!-- ── Tabla de asistentes ─────────────────────────────── -->
 <div class="tbl-card">
     <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--borde);flex-wrap:wrap;gap:8px;">
         <span style="font-weight:700;color:var(--azul);"><i class="fa-solid fa-clipboard-list"></i> Asistentes registrados</span>
@@ -441,12 +416,11 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
 </div>
 
-<?php endif; // fin si hay convocatoria ?>
+<?php endif; ?>
 </section>
 </main>
 </div>
 
-<!-- ══ MODAL RESUMEN ════════════════════════════════════════ -->
 <div class="moverlay" id="mResumen">
 <div class="mbox">
     <div class="mhead">
