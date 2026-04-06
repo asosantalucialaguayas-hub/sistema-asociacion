@@ -118,7 +118,7 @@ $puede = fn($clave) => in_array($clave, $permitidos);
         <?php endif; ?>
 
         <?php if ($puede('asistencia')): ?>
-            <a href="asistencia.php" target="_top"><i class="fa-solid fa-calendar-check"></i> Asistencia</a>
+          <a href="asistencia.php"><i class="fa-solid fa-calendar-check"></i> Asistencia</a>
   
         <?php endif; ?>
 
