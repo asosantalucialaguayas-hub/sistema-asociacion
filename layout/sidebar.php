@@ -3,6 +3,8 @@
 // layout/sidebar.php
 // ============================================================
 
+// El $pdo ya viene del archivo padre que hace include de este sidebar.
+// Solo cargamos el helper si existe (no rompe si aún no está instalado).
 $_helper = dirname(__DIR__) . '/auditoria_helper.php';
 if (file_exists($_helper)) {
     require_once $_helper;
@@ -13,6 +15,7 @@ $id_usr = (int)($_SESSION['id_usuario'] ?? 0);
 if ($id_usr && function_exists('getModulosPermitidos') && isset($pdo)) {
     $permitidos = getModulosPermitidos($pdo, $id_usr);
 } else {
+    // Si aún no hay sistema de permisos, muestra todo (no rompe nada)
     $permitidos = ['dashboard','socios','solicitud_ingreso','acuerdo_productor',
         'consulta_socios','pago_inscripcion','rna','consulta_general','lpa',
         'datos_lpa','estimacion_cosecha','plan_abastecimiento','ventas',
@@ -23,12 +26,9 @@ if ($id_usr && function_exists('getModulosPermitidos') && isset($pdo)) {
 
 $puede = fn($clave) => in_array($clave, $permitidos);
 ?>
-
-{{!-- CORRECCIÓN: link y script movidos FUERA del <aside> --}}
+<aside class="sidebar" style="position:fixed!important;top:0!important;left:0!important;height:100vh!important;width:240px!important;overflow-y:auto!important;z-index:9999!important;">
 <link rel="stylesheet" href="css/modal-message.css">
 <script src="layout/modal-message.js"></script>
-
-<aside class="sidebar" style="position:fixed!important;top:0!important;left:0!important;height:100vh!important;width:240px!important;overflow-y:auto!important;z-index:9999!important;">
 
     <div class="brand">
         <img src="img/logo.png" alt="Logo">
@@ -118,7 +118,8 @@ $puede = fn($clave) => in_array($clave, $permitidos);
         <?php endif; ?>
 
         <?php if ($puede('asistencia')): ?>
-        <a href="asistencia.php"><i class="fa-solid fa-calendar-check"></i> Asistencia</a>
+          <a href="asistencia.php"><i class="fa-solid fa-calendar-check"></i> Asistencia</a>
+  
         <?php endif; ?>
 
         <?php if ($puede('herramientas') || $puede('periodo_comercializacion') || $puede('asignacion_cupos')): ?>
@@ -157,11 +158,12 @@ $puede = fn($clave) => in_array($clave, $permitidos);
                 <li><a href="lpa_consulta.php"><i class="fa-solid fa-clipboard"></i> Actas</a></li>
                 <?php endif; ?>
                 <?php if ($puede('convocatorias')): ?>
+
                 <li>
-                    <a href="convocatorias.php">
-                        <i class="fa-solid fa-calendar-days"></i> Convocatorias
-                    </a>
-                </li>
+  <a href="convocatorias.php">
+    <i class="fa-solid fa-calendar-days"></i> Convocatorias
+  </a>
+</li>
                 <?php endif; ?>
                 <?php if ($puede('documentos_socios')): ?>
                 <li><a href="documentos_socios.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>

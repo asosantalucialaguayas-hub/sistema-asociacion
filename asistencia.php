@@ -1,6 +1,7 @@
 <?php
 // ============================================================
 // asistencia.php  – Registro de asistencia
+// Colocar en: /asosantalu/asistencia.php
 // ============================================================
 if (session_status() === PHP_SESSION_NONE) session_start();
 header('X-Frame-Options: SAMEORIGIN');
@@ -60,6 +61,7 @@ if ($convocatoria) {
     $porcentaje   = $total_socios > 0 ? round(($presentes/$total_socios)*100,1) : 0;
     $faltantes    = max(0, $total_socios - $presentes);
 
+    // Verificar bloqueo acta 48h
     if ($convocatoria['estado']==='cerrada' && $convocatoria['fecha_cierre_real'] && !$convocatoria['acta_pdf_path']) {
         $horas = (time()-strtotime($convocatoria['fecha_cierre_real']))/3600;
         if ($horas > 48 && !$convocatoria['acta_bloqueada']) {
@@ -122,21 +124,31 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .flash{padding:12px 18px;border-radius:10px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:.875rem;}
 .flash.success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
 .flash.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+
+/* selector */
 .conv-selector{background:#fff;border-radius:14px;border:1.5px solid var(--borde);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--sombra);}
 .conv-selector select{flex:1;min-width:200px;border:1.5px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:.875rem;font-family:inherit;}
+
+/* info bar */
 .conv-bar{background:linear-gradient(135deg,#1f3a5f 0%,#2563eb 100%);border-radius:16px;padding:20px 26px;color:#fff;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
 .conv-bar h2{margin:0 0 6px;font-size:1.05rem;font-weight:800;}
 .conv-bar .meta{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;opacity:.9;}
 .conv-bar .meta span{display:flex;align-items:center;gap:5px;}
 .estado-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
+
+/* kpis */
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
 @media(max-width:600px){.kpi-row{grid-template-columns:1fr 1fr;}}
 .kpi-box{background:#fff;border-radius:14px;padding:16px;text-align:center;border:1.5px solid var(--borde);box-shadow:var(--sombra);}
 .kpi-box .num{font-size:1.9rem;font-weight:800;line-height:1;}
 .kpi-box .lbl{font-size:.75rem;color:#64748b;margin-top:4px;font-weight:600;}
+
+/* progreso */
 .prog-card{background:#fff;border-radius:14px;padding:18px;border:1.5px solid var(--borde);box-shadow:var(--sombra);margin-bottom:20px;}
 .prog-wrap{background:#e2e8f0;border-radius:50px;height:26px;overflow:hidden;margin-top:10px;}
 .prog-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#16a34a,#22c55e);transition:width 1.2s;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;min-width:44px;}
+
+/* registro */
 .reg-card{background:#fff;border-radius:14px;padding:18px;border:1.5px solid var(--borde);box-shadow:var(--sombra);margin-bottom:20px;}
 .srch-wrap{position:relative;}
 .srch-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#94a3b8;}
@@ -146,6 +158,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .res-item:hover:not(.ya){background:#eff6ff;border-color:var(--azul2);}
 .res-item.ya{background:#f0fdf4;border-color:#bbf7d0;cursor:default;}
 .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;}
+
+/* tabla */
 .tbl-card{background:#fff;border-radius:14px;border:1.5px solid var(--borde);box-shadow:var(--sombra);overflow:hidden;}
 .tbl-card table{width:100%;border-collapse:collapse;}
 .tbl-card thead{background:var(--azul);color:#fff;}
@@ -158,10 +172,14 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .m-qr{background:#fef3c7;color:#92400e;}
 .btn-del{background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;padding:4px 8px;font-size:.73rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
 .btn-del:hover{background:#fecaca;}
+
+/* acta */
 .acta-card{border-radius:14px;padding:18px;margin-bottom:20px;border:2px solid;}
 .acta-ok{background:#f0fdf4;border-color:#bbf7d0;}
 .acta-pend{background:#fffbeb;border-color:#fde68a;}
 .acta-block{background:#fef2f2;border-color:#fecaca;}
+
+/* modal */
 .moverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);z-index:10000;overflow-y:auto;padding:20px;}
 .moverlay.show{display:flex;align-items:center;justify-content:center;}
 .mbox{background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.22);}
@@ -177,7 +195,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </style>
 </head>
 <body>
-{{!-- CORRECCIÓN: script modal-message eliminado aquí, ya viene del sidebar --}}
+<script src="layout/modal-message.js"></script>
 <div class="app">
 <?php include __DIR__ . "/layout/sidebar.php"; ?>
 <main class="content">
@@ -423,7 +441,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
 </div>
 
-<?php endif; ?>
+<?php endif; // fin si hay convocatoria ?>
 </section>
 </main>
 </div>
