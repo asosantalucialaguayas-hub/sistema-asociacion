@@ -1,675 +1,544 @@
 <?php
 // ============================================================
-// asistencia.php - Módulo principal de Asistencia
-// Sistema Asociación Santa Lucía
+// asistencia.php  – Registro de asistencia
+// Colocar en: /asosantalu/asistencia.php
 // ============================================================
-session_start();
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: ../login.php');
-    exit;
+if (session_status() === PHP_SESSION_NONE) session_start();
+if (!isset($_SESSION['usuario'])) { header("Location: /auth/login.php"); exit; }
+
+require __DIR__ . "/layout/bootstrap.php";
+
+$id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
+$rol        = $_SESSION['rol'] ?? 'viewer';
+$es_editor  = in_array($rol, ['admin','secretario','presidente']);
+
+// ── Determinar convocatoria ──────────────────────────────────
+$id_periodo = intval($periodoSeleccionado['id_periodo'] ?? 0);
+$conv_id    = intval($_GET['conv_id'] ?? 0);
+$convocatoria = null;
+
+if ($conv_id) {
+    $st = $pdo->prepare("SELECT * FROM convocatorias WHERE id=?");
+    $st->execute([$conv_id]);
+    $convocatoria = $st->fetch(PDO::FETCH_ASSOC);
+} elseif ($id_periodo) {
+    $st = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado='activa' ORDER BY fecha_reunion DESC LIMIT 1");
+    $st->execute([$id_periodo]);
+    $convocatoria = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$convocatoria) {
+        $st2 = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado IN('publicada','cerrada') ORDER BY fecha_reunion DESC LIMIT 1");
+        $st2->execute([$id_periodo]);
+        $convocatoria = $st2->fetch(PDO::FETCH_ASSOC);
+    }
 }
 
-require_once '../config/db.php';      // Tu conexión PDO existente: $pdo
-require_once '../config/funciones.php'; // Tus funciones auxiliares
-
-$usuario_id = $_SESSION['usuario_id'];
-$rol        = $_SESSION['rol'] ?? 'socio';
-
-// ── Parámetros de vista ──────────────────────────────────────
-$vista = $_GET['vista'] ?? 'lista'; // lista | nueva | detalle
-$conv_id = intval($_GET['id'] ?? 0);
-
-// ── Datos para lista de convocatorias ───────────────────────
-if ($vista === 'lista') {
-    $stmt = $pdo->query("
-        SELECT c.*,
-               COUNT(a.id) AS total_asistieron,
-               (SELECT COUNT(*) FROM socios WHERE estado='activo') AS total_socios
-        FROM convocatorias c
-        LEFT JOIN asistencia a ON a.convocatoria_id = c.id
-        GROUP BY c.id
-        ORDER BY c.fecha DESC
-    ");
-    $convocatorias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// ── Lista de convocatorias del período ───────────────────────
+$lista_convocatorias = [];
+if ($id_periodo) {
+    $stList = $pdo->prepare("SELECT id,titulo,fecha_reunion,estado FROM convocatorias WHERE id_periodo=? ORDER BY fecha_reunion DESC");
+    $stList->execute([$id_periodo]);
+    $lista_convocatorias = $stList->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// ── Datos para detalle / registro ───────────────────────────
-if ($vista === 'detalle' && $conv_id > 0) {
-    $stmt = $pdo->prepare("SELECT * FROM convocatorias WHERE id = ?");
-    $stmt->execute([$conv_id]);
-    $convocatoria = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$convocatoria) { header('Location: asistencia.php'); exit; }
+// ── Datos asistencia ─────────────────────────────────────────
+$asistentes = []; $total_socios = 0; $presentes = 0;
+$porcentaje = 0; $faltantes = 0; $puntos = [];
 
-    $puntos = $pdo->prepare("SELECT * FROM convocatoria_puntos WHERE convocatoria_id = ? ORDER BY numero");
-    $puntos->execute([$conv_id]);
-    $puntos = $puntos->fetchAll(PDO::FETCH_ASSOC);
+if ($convocatoria) {
+    $cid = $convocatoria['id'];
+    $stP = $pdo->prepare("SELECT * FROM convocatoria_puntos WHERE convocatoria_id=? ORDER BY numero");
+    $stP->execute([$cid]); $puntos = $stP->fetchAll(PDO::FETCH_ASSOC);
 
-    // Socios que YA asistieron
-    $stmt2 = $pdo->prepare("
-        SELECT a.*, s.cedula, s.nombres, s.apellidos, s.foto, a.metodo, a.hora_registro
-        FROM asistencia a
-        JOIN socios s ON s.id = a.socio_id
-        WHERE a.convocatoria_id = ?
-        ORDER BY a.hora_registro DESC
-    ");
-    $stmt2->execute([$conv_id]);
-    $asistieron = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+    $stA = $pdo->prepare("
+        SELECT a.*, s.cedula, s.nombre_completo, a.metodo, a.hora_registro
+        FROM conv_asistencia a JOIN socios s ON s.id_socio=a.id_socio
+        WHERE a.convocatoria_id=? ORDER BY a.hora_registro DESC");
+    $stA->execute([$cid]); $asistentes = $stA->fetchAll(PDO::FETCH_ASSOC);
 
-    // Total socios activos
-    $total_socios = $pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
-    $total_presentes = count($asistieron);
-    $porcentaje = $total_socios > 0 ? round(($total_presentes / $total_socios) * 100, 1) : 0;
-    $faltantes = $total_socios - $total_presentes;
+    $total_socios = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
+    $presentes    = count($asistentes);
+    $porcentaje   = $total_socios > 0 ? round(($presentes/$total_socios)*100,1) : 0;
+    $faltantes    = max(0, $total_socios - $presentes);
+
+    // Verificar bloqueo acta 48h
+    if ($convocatoria['estado']==='cerrada' && $convocatoria['fecha_cierre_real'] && !$convocatoria['acta_pdf_path']) {
+        $horas = (time()-strtotime($convocatoria['fecha_cierre_real']))/3600;
+        if ($horas > 48 && !$convocatoria['acta_bloqueada']) {
+            $pdo->prepare("UPDATE convocatorias SET acta_bloqueada=1 WHERE id=?")->execute([$cid]);
+            $convocatoria['acta_bloqueada'] = 1;
+        }
+    }
+}
+
+// ── Subida de acta ───────────────────────────────────────────
+$flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
+
+if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta') {
+    $cid_p = intval($_POST['conv_id']??0);
+    if ($cid_p && $es_editor) {
+        $stCk = $pdo->prepare("SELECT acta_bloqueada,acta_pdf_path FROM convocatorias WHERE id=?");
+        $stCk->execute([$cid_p]); $ck = $stCk->fetch();
+        if ($ck['acta_bloqueada']) {
+            $_SESSION['flash'] = ['tipo'=>'error','msg'=>'El plazo de 48h venció. Contacta al administrador.'];
+        } elseif (isset($_FILES['acta_pdf']) && $_FILES['acta_pdf']['error']===0) {
+            $ext = strtolower(pathinfo($_FILES['acta_pdf']['name'],PATHINFO_EXTENSION));
+            if ($ext!=='pdf') { $_SESSION['flash']=['tipo'=>'error','msg'=>'Solo archivos PDF.']; }
+            else {
+                $dir = __DIR__.'/uploads/actas/';
+                if (!is_dir($dir)) mkdir($dir,0755,true);
+                $nombre = 'acta_'.$cid_p.'_'.date('Ymd_His').'.pdf';
+                if (move_uploaded_file($_FILES['acta_pdf']['tmp_name'],$dir.$nombre)) {
+                    $pdo->prepare("UPDATE convocatorias SET acta_pdf_path=?,acta_subida_en=NOW() WHERE id=?")->execute(['uploads/actas/'.$nombre,$cid_p]);
+                    $_SESSION['flash']=['tipo'=>'success','msg'=>'Acta subida correctamente.'];
+                } else { $_SESSION['flash']=['tipo'=>'error','msg'=>'Error al guardar el archivo.']; }
+            }
+        } else { $_SESSION['flash']=['tipo'=>'error','msg'=>'No se recibió archivo.']; }
+        header("Location: asistencia.php?conv_id=$cid_p"); exit;
+    }
+}
+
+$horas_para_acta = null;
+if ($convocatoria && $convocatoria['estado']==='cerrada' && $convocatoria['fecha_cierre_real'] && !$convocatoria['acta_pdf_path']) {
+    $horas_para_acta = max(0, round(48 - ((time()-strtotime($convocatoria['fecha_cierre_real']))/3600), 1));
 }
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Asistencia - Asociación</title>
-<!-- Bootstrap 5 (igual que tu sistema) -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-<!-- Font Awesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!-- SweetAlert2 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Asistencia – Asociación Santa Lucía</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/modal-message.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-    --azul:    #2c3e7a;
-    --verde:   #27ae60;
-    --naranja: #e67e22;
-    --rojo:    #e74c3c;
-    --gris:    #f4f6f9;
-}
-body { background: var(--gris); font-family: 'Segoe UI', sans-serif; }
+:root{--azul:#1f3a5f;--azul2:#2563eb;--verde:#16a34a;--rojo:#dc2626;--gris:#f8fafc;--borde:#e2e8f0;--sombra:0 2px 12px rgba(0,0,0,.08);}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
+.btn-prim{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:700;font-size:.875rem;cursor:pointer;text-decoration:none;transition:.2s;box-shadow:0 4px 14px rgba(37,99,235,.25);}
+.btn-prim:hover{transform:translateY(-2px);color:#fff;}
+.btn-sec{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--azul);border:1.5px solid var(--borde);border-radius:10px;padding:9px 16px;font-weight:600;font-size:.85rem;cursor:pointer;text-decoration:none;transition:.2s;}
+.btn-sec:hover{background:#f1f5f9;color:var(--azul);}
+.flash{padding:12px 18px;border-radius:10px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:.875rem;}
+.flash.success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
+.flash.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
 
-/* ── Tarjetas KPI ──────────────────────────────────────── */
-.kpi-card {
-    border-radius: 16px;
-    padding: 24px 20px;
-    color: #fff;
-    display: flex; align-items: center; gap: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,.12);
-    transition: transform .2s;
-}
-.kpi-card:hover { transform: translateY(-3px); }
-.kpi-card .kpi-icon { font-size: 2.4rem; opacity: .85; }
-.kpi-card .kpi-num  { font-size: 2rem; font-weight: 700; line-height: 1; }
-.kpi-card .kpi-lbl  { font-size: .85rem; opacity: .9; margin-top: 2px; }
-.bg-kpi-blue   { background: linear-gradient(135deg,#2c3e7a,#4a6cf7); }
-.bg-kpi-green  { background: linear-gradient(135deg,#27ae60,#2ecc71); }
-.bg-kpi-orange { background: linear-gradient(135deg,#e67e22,#f39c12); }
-.bg-kpi-red    { background: linear-gradient(135deg,#e74c3c,#c0392b); }
+/* selector */
+.conv-selector{background:#fff;border-radius:14px;border:1.5px solid var(--borde);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--sombra);}
+.conv-selector select{flex:1;min-width:200px;border:1.5px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:.875rem;font-family:inherit;}
 
-/* ── Barra de progreso asistencia ──────────────────────── */
-.progreso-wrap { background:#e9ecef; border-radius:50px; height:28px; overflow:hidden; }
-.progreso-bar  {
-    height:100%; border-radius:50px;
-    background: linear-gradient(90deg,#27ae60,#2ecc71);
-    display:flex; align-items:center; justify-content:center;
-    color:#fff; font-weight:700; font-size:.9rem;
-    transition: width 1s ease;
-    min-width: 40px;
-}
+/* info bar */
+.conv-bar{background:linear-gradient(135deg,#1f3a5f 0%,#2563eb 100%);border-radius:16px;padding:20px 26px;color:#fff;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
+.conv-bar h2{margin:0 0 6px;font-size:1.05rem;font-weight:800;}
+.conv-bar .meta{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;opacity:.9;}
+.conv-bar .meta span{display:flex;align-items:center;gap:5px;}
+.estado-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
 
-/* ── Tabla socios ──────────────────────────────────────── */
-.tbl-socios thead { background: var(--azul); color:#fff; }
-.tbl-socios tbody tr:hover { background:#eef2ff; }
-.badge-metodo {
-    font-size:.75rem; padding:4px 10px; border-radius:20px; font-weight:600;
-}
-.badge-bio    { background:#dff0d8; color:#27ae60; }
-.badge-manual { background:#d9edf7; color:#2c3e7a; }
-.badge-qr     { background:#fcf8e3; color:#e67e22; }
+/* kpis */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+@media(max-width:600px){.kpi-row{grid-template-columns:1fr 1fr;}}
+.kpi-box{background:#fff;border-radius:14px;padding:16px;text-align:center;border:1.5px solid var(--borde);box-shadow:var(--sombra);}
+.kpi-box .num{font-size:1.9rem;font-weight:800;line-height:1;}
+.kpi-box .lbl{font-size:.75rem;color:#64748b;margin-top:4px;font-weight:600;}
 
-/* ── Buscar socio ─────────────────────────────────────── */
-#inputBuscar { border-radius:50px; padding-left:40px; }
-.search-wrap { position:relative; }
-.search-wrap .fa-magnifying-glass { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#aaa; }
+/* progreso */
+.prog-card{background:#fff;border-radius:14px;padding:18px;border:1.5px solid var(--borde);box-shadow:var(--sombra);margin-bottom:20px;}
+.prog-wrap{background:#e2e8f0;border-radius:50px;height:26px;overflow:hidden;margin-top:10px;}
+.prog-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#16a34a,#22c55e);transition:width 1.2s;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;min-width:44px;}
 
-/* ── Card convocatoria lista ──────────────────────────── */
-.conv-card {
-    border:none; border-radius:14px;
-    box-shadow: 0 2px 12px rgba(0,0,0,.08);
-    transition: transform .2s, box-shadow .2s;
-    overflow: hidden;
-}
-.conv-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(0,0,0,.14); }
-.conv-card .conv-header {
-    background: linear-gradient(135deg,#2c3e7a,#4a6cf7);
-    color:#fff; padding:16px 20px;
-}
-.conv-card .conv-body { padding:16px 20px; }
-.badge-estado { font-size:.78rem; padding:5px 12px; border-radius:20px; font-weight:600; }
-.estado-programada { background:#d9edf7; color:#2c3e7a; }
-.estado-activa     { background:#dff0d8; color:#27ae60; }
-.estado-cerrada    { background:#f2f2f2; color:#555; }
-.estado-cancelada  { background:#f9d6d5; color:#e74c3c; }
+/* registro */
+.reg-card{background:#fff;border-radius:14px;padding:18px;border:1.5px solid var(--borde);box-shadow:var(--sombra);margin-bottom:20px;}
+.srch-wrap{position:relative;}
+.srch-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#94a3b8;}
+.srch-wrap input{width:100%;border:1.5px solid var(--borde);border-radius:10px;padding:10px 12px 10px 38px;font-size:.9rem;outline:none;font-family:inherit;transition:.2s;}
+.srch-wrap input:focus{border-color:var(--azul2);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+.res-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1.5px solid var(--borde);border-radius:10px;margin-top:8px;cursor:pointer;transition:.2s;background:#fff;}
+.res-item:hover:not(.ya){background:#eff6ff;border-color:var(--azul2);}
+.res-item.ya{background:#f0fdf4;border-color:#bbf7d0;cursor:default;}
+.av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;}
 
-/* ── Ficha socio en modal biométrico ─────────────────── */
-.ficha-socio {
-    text-align:center; padding:20px;
-    border-radius:14px; background:#f0f7ff;
-    border: 2px solid #4a6cf7;
-}
-.ficha-socio img { width:90px; height:90px; border-radius:50%; object-fit:cover; border:3px solid #4a6cf7; }
+/* tabla */
+.tbl-card{background:#fff;border-radius:14px;border:1.5px solid var(--borde);box-shadow:var(--sombra);overflow:hidden;}
+.tbl-card table{width:100%;border-collapse:collapse;}
+.tbl-card thead{background:var(--azul);color:#fff;}
+.tbl-card th{padding:11px 14px;font-size:.78rem;font-weight:700;text-align:left;}
+.tbl-card td{padding:10px 14px;font-size:.82rem;border-bottom:1px solid #f1f5f9;}
+.tbl-card tr:hover td{background:#f8fafc;}
+.mpill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;}
+.m-biometrico{background:#d1fae5;color:#065f46;}
+.m-manual{background:#dbeafe;color:#1e40af;}
+.m-qr{background:#fef3c7;color:#92400e;}
+.btn-del{background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;padding:4px 8px;font-size:.73rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+.btn-del:hover{background:#fecaca;}
+
+/* acta */
+.acta-card{border-radius:14px;padding:18px;margin-bottom:20px;border:2px solid;}
+.acta-ok{background:#f0fdf4;border-color:#bbf7d0;}
+.acta-pend{background:#fffbeb;border-color:#fde68a;}
+.acta-block{background:#fef2f2;border-color:#fecaca;}
+
+/* modal */
+.moverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);z-index:10000;overflow-y:auto;padding:20px;}
+.moverlay.show{display:flex;align-items:center;justify-content:center;}
+.mbox{background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.22);}
+.mhead{background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;padding:18px 24px;border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:center;}
+.mhead h2{margin:0;font-size:1rem;font-weight:800;}
+.mcls{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.mbody{padding:24px;}
+.mfoot{padding:14px 24px;border-top:1px solid var(--borde);display:flex;justify-content:flex-end;gap:10px;background:#f8fafc;border-radius:0 0 20px 20px;}
+.donut-wrap{position:relative;display:inline-block;}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.donut-center .dpct{font-size:1.9rem;font-weight:800;color:var(--azul);}
+.donut-center .dsub{font-size:.68rem;color:#94a3b8;font-weight:700;text-transform:uppercase;}
 </style>
 </head>
 <body>
+<script src="layout/modal-message.js"></script>
+<div class="app">
+<?php include __DIR__ . "/layout/sidebar.php"; ?>
+<main class="content">
+<header class="topbar">
+    <span>Bienvenido, <strong><?= htmlspecialchars($_SESSION['usuario']) ?></strong></span>
+</header>
+<section class="page">
 
-<?php include '../includes/navbar.php'; ?>
-<?php include '../includes/sidebar.php'; ?>
+<?php if ($flash): ?>
+<div class="flash <?= $flash['tipo'] ?>">
+    <i class="fa-solid <?= $flash['tipo']==='success'?'fa-circle-check':'fa-triangle-exclamation' ?>"></i>
+    <?= htmlspecialchars($flash['msg']) ?>
+</div>
+<?php endif; ?>
 
-<div class="main-content" style="margin-left:220px; padding:30px 24px;">
-
-<!-- ══════════════════════════════════════════════════════ -->
-<!--  VISTA: LISTA DE CONVOCATORIAS                        -->
-<!-- ══════════════════════════════════════════════════════ -->
-<?php if ($vista === 'lista'): ?>
-
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- ── Header de página ──────────────────────────────────── -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:22px;">
     <div>
-        <h3 class="fw-bold mb-0"><i class="fa-solid fa-calendar-check text-primary me-2"></i>Módulo de Asistencia</h3>
-        <p class="text-muted mb-0">Gestión de convocatorias y control de asistencia</p>
+        <h1 style="font-size:1.4rem;font-weight:800;color:var(--azul);margin:0;display:flex;align-items:center;gap:10px;">
+            <i class="fa-solid fa-calendar-check" style="color:var(--azul2);"></i> Asistencia
+        </h1>
+        <p style="margin:4px 0 0;font-size:.875rem;color:#64748b;">
+            Período: <b><?= htmlspecialchars($periodoSeleccionado['nombre'] ?? 'Sin período') ?></b>
+        </p>
     </div>
-    <?php if (in_array($rol, ['admin','secretario'])): ?>
-    <a href="nueva_convocatoria.php" class="btn btn-primary rounded-pill px-4">
-        <i class="fa-solid fa-plus me-1"></i> Nueva Convocatoria
-    </a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <?php if ($convocatoria): ?>
+        <button class="btn-sec" onclick="document.getElementById('mResumen').classList.add('show')">
+            <i class="fa-solid fa-chart-pie"></i> Resumen
+        </button>
+        <a href="reporte_asistencia.php?id=<?= $convocatoria['id'] ?>" target="_blank" class="btn-sec">
+            <i class="fa-solid fa-print"></i> Reporte
+        </a>
+        <?php if ($convocatoria['acta_pdf_path']): ?>
+        <a href="descargar_conjunto.php?id=<?= $convocatoria['id'] ?>" class="btn-prim" style="background:linear-gradient(135deg,#166534,#16a34a);">
+            <i class="fa-solid fa-file-zipper"></i> Descargar Todo
+        </a>
+        <?php endif; ?>
+        <?php endif; ?>
+        <a href="convocatorias.php" class="btn-prim">
+            <i class="fa-solid fa-calendar-days"></i> Convocatorias
+        </a>
+    </div>
+</div>
+
+<!-- ── Selector convocatoria ────────────────────────────── -->
+<div class="conv-selector">
+    <i class="fa-solid fa-calendar-check" style="color:var(--azul2);font-size:1.1rem;"></i>
+    <label style="font-weight:700;font-size:.85rem;color:var(--azul);white-space:nowrap;">Convocatoria:</label>
+    <select onchange="window.location='asistencia.php?conv_id='+this.value" style="flex:1;min-width:200px;border:1.5px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:.875rem;font-family:inherit;">
+        <option value="">— Selecciona —</option>
+        <?php foreach ($lista_convocatorias as $lc): ?>
+        <option value="<?= $lc['id'] ?>" <?= ($convocatoria && $convocatoria['id']==$lc['id'])?'selected':'' ?>>
+            <?= htmlspecialchars($lc['titulo']) ?> · <?= date('d/m/Y',strtotime($lc['fecha_reunion'])) ?> [<?= ucfirst($lc['estado']) ?>]
+        </option>
+        <?php endforeach; ?>
+    </select>
+</div>
+
+<?php if (!$convocatoria): ?>
+<div style="text-align:center;padding:60px 20px;color:#94a3b8;">
+    <i class="fa-solid fa-calendar-xmark" style="font-size:3.5rem;display:block;margin-bottom:14px;"></i>
+    <p style="font-size:1rem;">Selecciona una convocatoria o crea una nueva.</p>
+    <a href="convocatorias.php" class="btn-prim" style="margin-top:14px;display:inline-flex;"><i class="fa-solid fa-plus"></i> Ir a Convocatorias</a>
+</div>
+<?php else:
+    $col_bg = ['borrador'=>'#f3f4f6','publicada'=>'#dbeafe','activa'=>'#dcfce7','cerrada'=>'#fee2e2','cancelada'=>'#fef3c7'];
+    $col_tx = ['borrador'=>'#6b7280','publicada'=>'#1d4ed8','activa'=>'#15803d','cerrada'=>'#b91c1c','cancelada'=>'#92400e'];
+    $est = $convocatoria['estado'];
+?>
+
+<!-- ── Info convocatoria ──────────────────────────────────── -->
+<div class="conv-bar">
+    <div style="flex:1;">
+        <div style="margin-bottom:8px;">
+            <span class="estado-pill" style="background:<?= $col_bg[$est]??'#f3f4f6' ?>;color:<?= $col_tx[$est]??'#374151' ?>;">
+                <i class="fa-solid fa-circle" style="font-size:.45rem;"></i> <?= ucfirst($est) ?>
+            </span>
+            <span style="font-size:.77rem;opacity:.75;margin-left:10px;"><?= ucfirst($convocatoria['tipo_reunion']) ?> · <?= $convocatoria['tipo_asistentes']==='general'?'General':'Solo Directivos' ?></span>
+        </div>
+        <h2><?= htmlspecialchars($convocatoria['titulo']) ?></h2>
+        <div class="meta">
+            <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y',strtotime($convocatoria['fecha_reunion'])) ?></span>
+            <span><i class="fa-solid fa-clock"></i> <?= substr($convocatoria['hora_reunion'],0,5) ?></span>
+            <span><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($convocatoria['lugar']) ?></span>
+            <?php if ($convocatoria['nombre_creador']): ?>
+            <span><i class="fa-solid fa-user-pen"></i> <?= htmlspecialchars($convocatoria['nombre_creador']) ?></span>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php if ($puntos): ?>
+    <div style="background:rgba(255,255,255,.12);border-radius:10px;padding:12px 16px;min-width:210px;">
+        <div style="font-size:.73rem;font-weight:800;opacity:.8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Orden del Día</div>
+        <ol style="margin:0;padding-left:14px;font-size:.78rem;opacity:.9;line-height:1.8;">
+            <?php foreach($puntos as $p): ?><li><?= htmlspecialchars($p['descripcion']) ?></li><?php endforeach; ?>
+        </ol>
+    </div>
     <?php endif; ?>
 </div>
 
-<!-- KPIs rápidos -->
-<?php
-$tot_conv  = count($convocatorias);
-$activas   = array_filter($convocatorias, fn($c) => $c['estado'] === 'activa');
-$cerradas  = array_filter($convocatorias, fn($c) => $c['estado'] === 'cerrada');
-?>
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card bg-kpi-blue">
-            <div class="kpi-icon"><i class="fa-solid fa-calendar-days"></i></div>
-            <div><div class="kpi-num"><?= $tot_conv ?></div><div class="kpi-lbl">Total Convocatorias</div></div>
-        </div>
+<!-- ── KPIs ──────────────────────────────────────────────── -->
+<div class="kpi-row">
+    <div class="kpi-box"><div class="num" style="color:var(--azul);"><?= $total_socios ?></div><div class="lbl"><i class="fa-solid fa-users"></i> Total Socios</div></div>
+    <div class="kpi-box"><div class="num" style="color:var(--verde);"><?= $presentes ?></div><div class="lbl"><i class="fa-solid fa-user-check"></i> Presentes</div></div>
+    <div class="kpi-box"><div class="num" style="color:var(--rojo);"><?= $faltantes ?></div><div class="lbl"><i class="fa-solid fa-user-xmark"></i> Ausentes</div></div>
+    <div class="kpi-box"><div class="num" style="color:<?= $porcentaje>=50?'var(--verde)':'var(--rojo)' ?>;"><?= $porcentaje ?>%</div><div class="lbl"><i class="fa-solid fa-percent"></i> Asistencia</div></div>
+</div>
+
+<!-- ── Barra de progreso ─────────────────────────────────── -->
+<div class="prog-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span style="font-weight:700;font-size:.9rem;color:var(--azul);">Progreso de Asistencia</span>
+        <span style="font-size:.82rem;color:#64748b;">
+            <?= $presentes ?> / <?= $total_socios ?> · Quórum (50%):
+            <?= $porcentaje>=50 ? '<span style="color:var(--verde);font-weight:700;">✅ Alcanzado</span>' : '<span style="color:var(--rojo);font-weight:700;">❌ Faltan '.($faltantes).'</span>' ?>
+        </span>
     </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card bg-kpi-green">
-            <div class="kpi-icon"><i class="fa-solid fa-circle-play"></i></div>
-            <div><div class="kpi-num"><?= count($activas) ?></div><div class="kpi-lbl">Activas Ahora</div></div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card bg-kpi-orange">
-            <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
-            <div><div class="kpi-num"><?= $convocatorias[0]['total_socios'] ?? 0 ?></div><div class="kpi-lbl">Socios Activos</div></div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card bg-kpi-red" style="background:linear-gradient(135deg,#555,#333);">
-            <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
-            <div><div class="kpi-num"><?= count($cerradas) ?></div><div class="kpi-lbl">Cerradas</div></div>
-        </div>
+    <div class="prog-wrap">
+        <div class="prog-fill" style="width:<?= $porcentaje ?>%;"><?= $porcentaje ?>%</div>
     </div>
 </div>
 
-<!-- Tarjetas de convocatorias -->
-<div class="row g-3">
-<?php if (empty($convocatorias)): ?>
-    <div class="col-12 text-center py-5 text-muted">
-        <i class="fa-solid fa-calendar-xmark fa-3x mb-3"></i>
-        <p>No hay convocatorias registradas aún.</p>
-    </div>
-<?php else: ?>
-    <?php foreach ($convocatorias as $c): ?>
-    <div class="col-md-6 col-xl-4">
-        <div class="conv-card card h-100">
-            <div class="conv-header d-flex justify-content-between align-items-start">
-                <div>
-                    <div class="fw-bold fs-6"><?= htmlspecialchars($c['titulo']) ?></div>
-                    <div class="small opacity-75 mt-1">
-                        <i class="fa-solid fa-calendar me-1"></i><?= date('d/m/Y', strtotime($c['fecha'])) ?>
-                        &nbsp;<i class="fa-solid fa-clock ms-2 me-1"></i><?= substr($c['hora'],0,5) ?>
-                    </div>
-                </div>
-                <span class="badge-estado estado-<?= $c['estado'] ?>"><?= ucfirst($c['estado']) ?></span>
+<!-- ── SECCIÓN ACTA (solo si cerrada) ───────────────────── -->
+<?php if ($est === 'cerrada'): ?>
+    <?php if ($convocatoria['acta_pdf_path']): ?>
+    <div class="acta-card acta-ok">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+                <div style="font-weight:800;color:#166534;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-file-circle-check"></i> Acta subida</div>
+                <div style="font-size:.8rem;color:#64748b;margin-top:3px;">Subida el <?= date('d/m/Y H:i',strtotime($convocatoria['acta_subida_en'])) ?></div>
             </div>
-            <div class="conv-body">
-                <div class="text-muted small mb-2">
-                    <i class="fa-solid fa-location-dot me-1"></i><?= htmlspecialchars($c['lugar']) ?>
-                </div>
-                <!-- Mini barra de asistencia -->
-                <?php
-                    $pct = $c['total_socios'] > 0 ? round(($c['total_asistieron']/$c['total_socios'])*100) : 0;
-                ?>
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between small text-muted mb-1">
-                        <span>Asistencia</span>
-                        <span><b><?= $c['total_asistieron'] ?></b> / <?= $c['total_socios'] ?> (<?= $pct ?>%)</span>
-                    </div>
-                    <div class="progreso-wrap" style="height:12px;">
-                        <div class="progreso-bar" style="width:<?= $pct ?>%;font-size:.7rem;"><?= $pct > 15 ? $pct.'%' : '' ?></div>
-                    </div>
-                </div>
-                <div class="d-flex gap-2 mt-3">
-                    <a href="asistencia.php?vista=detalle&id=<?= $c['id'] ?>" class="btn btn-sm btn-primary rounded-pill flex-fill">
-                        <i class="fa-solid fa-eye me-1"></i>Ver / Registrar
-                    </a>
-                    <?php if (in_array($rol, ['admin','secretario'])): ?>
-                    <a href="editar_convocatoria.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-secondary rounded-pill">
-                        <i class="fa-solid fa-pen"></i>
-                    </a>
-                    <?php endif; ?>
-                </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <a href="<?= htmlspecialchars($convocatoria['acta_pdf_path']) ?>" target="_blank" class="btn-prim" style="background:linear-gradient(135deg,#166534,#16a34a);">
+                    <i class="fa-solid fa-file-pdf"></i> Ver Acta
+                </a>
+                <a href="descargar_conjunto.php?id=<?= $convocatoria['id'] ?>" class="btn-sec">
+                    <i class="fa-solid fa-file-zipper"></i> Descargar Todo (ZIP)
+                </a>
             </div>
         </div>
     </div>
-    <?php endforeach; ?>
-<?php endif; ?>
-</div>
-
-<!-- ══════════════════════════════════════════════════════ -->
-<!--  VISTA: DETALLE + REGISTRO DE ASISTENCIA              -->
-<!-- ══════════════════════════════════════════════════════ -->
-<?php elseif ($vista === 'detalle' && isset($convocatoria)): ?>
-
-<!-- Encabezado -->
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-        <a href="asistencia.php" class="btn btn-sm btn-outline-secondary rounded-pill me-2">
-            <i class="fa-solid fa-arrow-left me-1"></i>Regresar
-        </a>
-        <span class="fw-bold fs-5"><?= htmlspecialchars($convocatoria['titulo']) ?></span>
-        <span class="badge-estado estado-<?= $convocatoria['estado'] ?> ms-2"><?= ucfirst($convocatoria['estado']) ?></span>
+    <?php elseif ($convocatoria['acta_bloqueada']): ?>
+    <div class="acta-card acta-block">
+        <div style="font-weight:800;color:#991b1b;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-lock"></i> Plazo para subir el acta vencido</div>
+        <div style="font-size:.83rem;color:#64748b;margin-top:6px;">Han pasado más de 48h desde el cierre. Contacta al administrador del sistema.</div>
     </div>
-    <div class="d-flex gap-2">
-        <!-- Botón resumen -->
-        <button class="btn btn-success rounded-pill" onclick="mostrarResumen()">
-            <i class="fa-solid fa-chart-pie me-1"></i>Ver Resumen
-        </button>
-        <!-- Activar/cerrar sesión (solo admin/secretario) -->
-        <?php if (in_array($rol, ['admin','secretario'])): ?>
-            <?php if ($convocatoria['estado'] === 'programada'): ?>
-            <button class="btn btn-primary rounded-pill" onclick="cambiarEstado(<?= $conv_id ?>,'activa')">
-                <i class="fa-solid fa-circle-play me-1"></i>Iniciar Sesión
-            </button>
-            <?php elseif ($convocatoria['estado'] === 'activa'): ?>
-            <button class="btn btn-danger rounded-pill" onclick="cambiarEstado(<?= $conv_id ?>,'cerrada')">
-                <i class="fa-solid fa-lock me-1"></i>Cerrar Sesión
-            </button>
+    <?php else: ?>
+    <div class="acta-card acta-pend">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+                <div style="font-weight:800;color:#92400e;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Acta pendiente</div>
+                <div style="font-size:.8rem;color:#64748b;margin-top:3px;">
+                    Tiempo restante: <b style="color:<?= ($horas_para_acta??99)<6?'#dc2626':'#92400e' ?>;"><?= $horas_para_acta ?>h</b>
+                    <span style="margin-left:8px;font-size:.75rem;">(el secretario debe subir el acta en PDF)</span>
+                </div>
+            </div>
+            <?php if ($es_editor): ?>
+            <form method="POST" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="hidden" name="accion" value="subir_acta">
+                <input type="hidden" name="conv_id" value="<?= $convocatoria['id'] ?>">
+                <input type="file" name="acta_pdf" accept=".pdf" required style="font-size:.8rem;border:1.5px solid #fde68a;border-radius:8px;padding:5px 8px;background:#fff;">
+                <button type="submit" class="btn-prim" style="background:linear-gradient(135deg,#92400e,#d97706);">
+                    <i class="fa-solid fa-upload"></i> Subir Acta PDF
+                </button>
+            </form>
             <?php endif; ?>
-        <?php endif; ?>
+        </div>
     </div>
-</div>
+    <?php endif; ?>
+<?php endif; ?>
 
-<!-- Info convocatoria + Orden del día -->
-<div class="row g-3 mb-4">
-    <div class="col-md-5">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-            <div class="card-body">
-                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-circle-info me-2"></i>Información</h6>
-                <table class="table table-sm table-borderless mb-0">
-                    <tr><td class="text-muted" style="width:130px">Fecha</td><td><b><?= date('d/m/Y', strtotime($convocatoria['fecha'])) ?></b></td></tr>
-                    <tr><td class="text-muted">Hora</td><td><b><?= substr($convocatoria['hora'],0,5) ?></b></td></tr>
-                    <tr><td class="text-muted">Lugar</td><td><?= htmlspecialchars($convocatoria['lugar']) ?></td></tr>
-                    <tr><td class="text-muted">Tipo</td><td><?= ucfirst($convocatoria['tipo']) ?></td></tr>
-                </table>
-            </div>
-        </div>
+<!-- ── Registro manual (solo si activa) ─────────────────── -->
+<?php if ($es_editor && $est === 'activa'): ?>
+<div class="reg-card">
+    <div style="font-weight:700;color:var(--azul);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+        <i class="fa-solid fa-user-plus" style="color:var(--azul2);"></i> Registrar Asistencia Manual
     </div>
-    <div class="col-md-7">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
-            <div class="card-body">
-                <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-list-ol me-2"></i>Orden del Día</h6>
-                <?php if (empty($puntos)): ?>
-                    <p class="text-muted small">Sin puntos registrados.</p>
-                <?php else: ?>
-                    <ol class="mb-0 ps-3">
-                        <?php foreach ($puntos as $p): ?>
-                        <li class="mb-1 small"><?= htmlspecialchars($p['descripcion']) ?></li>
-                        <?php endforeach; ?>
-                    </ol>
-                <?php endif; ?>
-            </div>
-        </div>
+    <div class="srch-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="inputBuscar" placeholder="Buscar socio por nombre o cédula..." oninput="buscarSocio(this.value)" autocomplete="off">
     </div>
-</div>
-
-<!-- KPIs asistencia -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="kpi-card bg-kpi-blue p-3">
-            <div class="kpi-icon fs-3"><i class="fa-solid fa-users"></i></div>
-            <div><div class="kpi-num"><?= $total_socios ?></div><div class="kpi-lbl">Total Socios</div></div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="kpi-card bg-kpi-green p-3">
-            <div class="kpi-icon fs-3"><i class="fa-solid fa-user-check"></i></div>
-            <div><div class="kpi-num"><?= $total_presentes ?></div><div class="kpi-lbl">Presentes</div></div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="kpi-card bg-kpi-red p-3">
-            <div class="kpi-icon fs-3"><i class="fa-solid fa-user-xmark"></i></div>
-            <div><div class="kpi-num"><?= $faltantes ?></div><div class="kpi-lbl">Ausentes</div></div>
-        </div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="kpi-card bg-kpi-orange p-3">
-            <div class="kpi-icon fs-3"><i class="fa-solid fa-percent"></i></div>
-            <div><div class="kpi-num"><?= $porcentaje ?>%</div><div class="kpi-lbl">Porcentaje</div></div>
-        </div>
-    </div>
-</div>
-
-<!-- Barra de progreso grande -->
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body">
-        <div class="d-flex justify-content-between mb-2">
-            <span class="fw-semibold">Progreso de Asistencia</span>
-            <span class="text-muted"><?= $total_presentes ?> de <?= $total_socios ?> socios</span>
-        </div>
-        <div class="progreso-wrap">
-            <div class="progreso-bar" id="barraAsistencia" style="width:<?= $porcentaje ?>%">
-                <?= $porcentaje ?>%
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Registro manual + búsqueda -->
-<?php if (in_array($rol, ['admin','secretario']) && $convocatoria['estado'] === 'activa'): ?>
-<div class="card border-0 shadow-sm rounded-4 mb-4">
-    <div class="card-body">
-        <h6 class="fw-bold mb-3"><i class="fa-solid fa-user-plus me-2 text-primary"></i>Registrar Asistencia Manual</h6>
-        <div class="search-wrap mb-3">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" id="inputBuscar" class="form-control" placeholder="Buscar socio por nombre o cédula..." oninput="buscarSocio(this.value)">
-        </div>
-        <div id="resultadosBusqueda"></div>
-    </div>
+    <div id="resultadosBusqueda"></div>
 </div>
 <?php endif; ?>
 
-<!-- Tabla de asistentes -->
-<div class="card border-0 shadow-sm rounded-4">
-    <div class="card-header bg-white border-0 pt-3 pb-0">
-        <h6 class="fw-bold"><i class="fa-solid fa-clipboard-list me-2 text-success"></i>Lista de Asistentes</h6>
+<!-- ── Tabla de asistentes ─────────────────────────────── -->
+<div class="tbl-card">
+    <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--borde);flex-wrap:wrap;gap:8px;">
+        <span style="font-weight:700;color:var(--azul);"><i class="fa-solid fa-clipboard-list"></i> Asistentes registrados</span>
+        <span style="font-size:.8rem;color:#64748b;"><?= $presentes ?> persona(s)</span>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table tbl-socios mb-0" id="tablaAsistentes">
-                <thead>
-                    <tr>
-                        <th class="ps-4">#</th>
-                        <th>Socio</th>
-                        <th>Cédula</th>
-                        <th>Hora Registro</th>
-                        <th>Método</th>
-                        <?php if (in_array($rol, ['admin','secretario'])): ?>
-                        <th>Acción</th>
-                        <?php endif; ?>
-                    </tr>
-                </thead>
-                <tbody id="cuerpoTabla">
-                <?php if (empty($asistieron)): ?>
-                    <tr><td colspan="6" class="text-center py-4 text-muted">
-                        <i class="fa-solid fa-inbox fa-2x mb-2 d-block"></i>Aún no hay asistentes registrados
-                    </td></tr>
-                <?php else: ?>
-                    <?php foreach ($asistieron as $i => $a): ?>
-                    <tr>
-                        <td class="ps-4"><?= $i+1 ?></td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <?php if (!empty($a['foto'])): ?>
-                                <img src="<?= htmlspecialchars($a['foto']) ?>" width="36" height="36" class="rounded-circle object-fit-cover">
-                                <?php else: ?>
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:.8rem;flex-shrink:0;">
-                                    <?= strtoupper(substr($a['nombres'],0,1).substr($a['apellidos'],0,1)) ?>
-                                </div>
-                                <?php endif; ?>
-                                <span><?= htmlspecialchars($a['nombres'].' '.$a['apellidos']) ?></span>
-                            </div>
-                        </td>
-                        <td><?= htmlspecialchars($a['cedula']) ?></td>
-                        <td><?= date('H:i:s', strtotime($a['hora_registro'])) ?></td>
-                        <td>
-                            <span class="badge-metodo badge-<?= $a['metodo'] === 'biometrico' ? 'bio' : ($a['metodo'] === 'qr' ? 'qr' : 'manual') ?>">
-                                <?php if ($a['metodo'] === 'biometrico'): ?><i class="fa-solid fa-fingerprint me-1"></i>
-                                <?php elseif ($a['metodo'] === 'qr'): ?><i class="fa-solid fa-qrcode me-1"></i>
-                                <?php else: ?><i class="fa-solid fa-hand-pointer me-1"></i><?php endif; ?>
-                                <?= ucfirst($a['metodo']) ?>
-                            </span>
-                        </td>
-                        <?php if (in_array($rol, ['admin','secretario'])): ?>
-                        <td>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="eliminarAsistencia(<?= $a['id'] ?>, '<?= htmlspecialchars($a['nombres']) ?>')">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
-                        </td>
-                        <?php endif; ?>
-                    </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
-            </table>
+    <div style="overflow-x:auto;">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:40px;">#</th>
+                <th>Socio</th>
+                <th>Cédula</th>
+                <th>Hora</th>
+                <th>Método</th>
+                <?php if ($es_editor && $est==='activa'): ?><th style="width:60px;">Acc.</th><?php endif; ?>
+            </tr>
+        </thead>
+        <tbody id="cuerpoTabla">
+        <?php if (empty($asistentes)): ?>
+        <tr><td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">
+            <i class="fa-solid fa-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
+            Aún no hay asistentes
+        </td></tr>
+        <?php else: foreach ($asistentes as $i => $a):
+            $partes = explode(' ', $a['nombre_completo']);
+            $ini = strtoupper(substr($partes[0],0,1).(isset($partes[1])?substr($partes[1],0,1):''));
+        ?>
+        <tr id="fila-<?= $a['id'] ?>">
+            <td style="font-weight:700;color:#94a3b8;"><?= $i+1 ?></td>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="av"><?= $ini ?></div>
+                    <span style="font-weight:600;"><?= htmlspecialchars($a['nombre_completo']) ?></span>
+                </div>
+            </td>
+            <td><?= htmlspecialchars($a['cedula']) ?></td>
+            <td><?= date('H:i:s',strtotime($a['hora_registro'])) ?></td>
+            <td>
+                <span class="mpill m-<?= $a['metodo'] ?>">
+                    <?php if($a['metodo']==='biometrico'):?><i class="fa-solid fa-fingerprint"></i> Biométrico
+                    <?php elseif($a['metodo']==='qr'):?><i class="fa-solid fa-qrcode"></i> QR
+                    <?php else:?><i class="fa-solid fa-hand-pointer"></i> Manual
+                    <?php endif;?>
+                </span>
+            </td>
+            <?php if ($es_editor && $est==='activa'): ?>
+            <td>
+                <button class="btn-del" onclick="eliminarAsist(<?= $a['id'] ?>,'<?= htmlspecialchars($a['nombre_completo'],ENT_QUOTES) ?>')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+            <?php endif; ?>
+        </tr>
+        <?php endforeach; endif; ?>
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<?php endif; // fin si hay convocatoria ?>
+</section>
+</main>
+</div>
+
+<!-- ══ MODAL RESUMEN ════════════════════════════════════════ -->
+<div class="moverlay" id="mResumen">
+<div class="mbox">
+    <div class="mhead">
+        <h2><i class="fa-solid fa-chart-pie"></i> Resumen de Asistencia</h2>
+        <button class="mcls" onclick="document.getElementById('mResumen').classList.remove('show')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="mbody" style="text-align:center;">
+        <div class="donut-wrap" style="margin:0 auto 20px;">
+            <svg width="170" height="170" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3.8"/>
+                <circle cx="18" cy="18" r="15.9" fill="none"
+                    stroke="<?= $porcentaje>=50?'#16a34a':'#dc2626' ?>"
+                    stroke-width="3.8"
+                    stroke-dasharray="<?= $porcentaje ?> 100"
+                    stroke-linecap="round"
+                    transform="rotate(-90 18 18)"/>
+            </svg>
+            <div class="donut-center">
+                <div class="dpct"><?= $porcentaje ?>%</div>
+                <div class="dsub">asistencia</div>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+            <div style="background:#eff6ff;border-radius:10px;padding:12px 6px;">
+                <div style="font-size:1.5rem;font-weight:800;color:var(--azul);"><?= $total_socios ?></div>
+                <div style="font-size:.72rem;color:#64748b;">Total</div>
+            </div>
+            <div style="background:#f0fdf4;border-radius:10px;padding:12px 6px;">
+                <div style="font-size:1.5rem;font-weight:800;color:#16a34a;"><?= $presentes ?></div>
+                <div style="font-size:.72rem;color:#64748b;">Presentes</div>
+            </div>
+            <div style="background:#fef2f2;border-radius:10px;padding:12px 6px;">
+                <div style="font-size:1.5rem;font-weight:800;color:#dc2626;"><?= $faltantes ?></div>
+                <div style="font-size:.72rem;color:#64748b;">Ausentes</div>
+            </div>
+        </div>
+        <div style="background:<?= $porcentaje>=50?'#f0fdf4':'#fffbeb' ?>;border:1.5px solid <?= $porcentaje>=50?'#bbf7d0':'#fde68a' ?>;border-radius:10px;padding:11px 14px;font-weight:700;color:<?= $porcentaje>=50?'#166534':'#92400e' ?>;font-size:.88rem;">
+            <?= $porcentaje>=50 ? '✅ Quórum alcanzado — La sesión es válida.' : '⚠️ Quórum incompleto — Faltan '.$faltantes.' socio(s) para el 50%.' ?>
         </div>
     </div>
-</div>
-
-<?php endif; // fin vista detalle ?>
-</div><!-- /main-content -->
-
-<!-- ══════════════════════════════════════════════════════ -->
-<!--  MODAL RESUMEN DE ASISTENCIA                          -->
-<!-- ══════════════════════════════════════════════════════ -->
-<div class="modal fade" id="modalResumen" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 rounded-4 shadow-lg">
-      <div class="modal-header border-0" style="background:linear-gradient(135deg,#2c3e7a,#4a6cf7); color:#fff; border-radius:16px 16px 0 0;">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-chart-pie me-2"></i>Resumen de Asistencia</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-4">
-          <!-- Donut chart SVG dinámico -->
-          <div class="text-center mb-4">
-              <div style="position:relative; display:inline-block;">
-                  <svg width="180" height="180" viewBox="0 0 36 36">
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e9ecef" stroke-width="3.5"/>
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#27ae60" stroke-width="3.5"
-                              stroke-dasharray="<?= isset($porcentaje) ? $porcentaje : 0 ?> 100"
-                              stroke-linecap="round"
-                              transform="rotate(-90 18 18)"
-                              id="donutArc"/>
-                  </svg>
-                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
-                      <div style="font-size:1.8rem;font-weight:700;color:#2c3e7a;"><?= isset($porcentaje) ? $porcentaje : 0 ?>%</div>
-                      <div style="font-size:.75rem;color:#888;">asistencia</div>
-                  </div>
-              </div>
-          </div>
-
-          <!-- Stats detalladas -->
-          <div class="row g-3 text-center mb-3">
-              <div class="col-4">
-                  <div style="background:#f0f7ff;border-radius:12px;padding:16px 8px;">
-                      <div style="font-size:2rem;font-weight:700;color:#2c3e7a;"><?= isset($total_socios) ? $total_socios : 0 ?></div>
-                      <div class="text-muted small">Total Socios</div>
-                  </div>
-              </div>
-              <div class="col-4">
-                  <div style="background:#f0fff5;border-radius:12px;padding:16px 8px;">
-                      <div style="font-size:2rem;font-weight:700;color:#27ae60;"><?= isset($total_presentes) ? $total_presentes : 0 ?></div>
-                      <div class="text-muted small">Presentes</div>
-                  </div>
-              </div>
-              <div class="col-4">
-                  <div style="background:#fff5f5;border-radius:12px;padding:16px 8px;">
-                      <div style="font-size:2rem;font-weight:700;color:#e74c3c;"><?= isset($faltantes) ? $faltantes : 0 ?></div>
-                      <div class="text-muted small">Ausentes</div>
-                  </div>
-              </div>
-          </div>
-
-          <!-- Mensaje de quórum -->
-          <?php if (isset($porcentaje)): ?>
-          <?php $quorum = 50; // ajusta según estatutos ?>
-          <div class="alert <?= $porcentaje >= $quorum ? 'alert-success' : 'alert-warning' ?> rounded-3 text-center mb-0">
-              <i class="fa-solid <?= $porcentaje >= $quorum ? 'fa-circle-check' : 'fa-triangle-exclamation' ?> me-2"></i>
-              <?php if ($porcentaje >= $quorum): ?>
-                  <b>¡Quórum alcanzado!</b> La sesión puede proceder con validez.
-              <?php else: ?>
-                  <b>Quórum incompleto.</b> Faltan <?= $faltantes ?> socios para el <?= $quorum ?>%.
-              <?php endif; ?>
-          </div>
-          <?php endif; ?>
-      </div>
-      <div class="modal-footer border-0">
-          <button class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cerrar</button>
-          <button class="btn btn-primary rounded-pill" onclick="imprimirReporte()">
-              <i class="fa-solid fa-print me-1"></i>Imprimir
-          </button>
-      </div>
+    <div class="mfoot">
+        <button class="btn-sec" onclick="document.getElementById('mResumen').classList.remove('show')">Cerrar</button>
+        <button class="btn-prim" onclick="window.open('reporte_asistencia.php?id=<?= $convocatoria['id']??0 ?>','_blank')">
+            <i class="fa-solid fa-print"></i> Imprimir
+        </button>
     </div>
-  </div>
+</div>
 </div>
 
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-const CONV_ID = <?= json_encode($conv_id) ?>;
-
-// ── Mostrar modal resumen ────────────────────────────────
-function mostrarResumen() {
-    new bootstrap.Modal(document.getElementById('modalResumen')).show();
-}
-
-// ── Buscar socio (AJAX) ──────────────────────────────────
+const CONV_ID = <?= json_encode($convocatoria['id'] ?? 0) ?>;
 let timer;
+
 function buscarSocio(q) {
     clearTimeout(timer);
-    if (q.length < 2) { document.getElementById('resultadosBusqueda').innerHTML = ''; return; }
-    timer = setTimeout(() => {
+    const box = document.getElementById('resultadosBusqueda');
+    if (q.length < 2) { box.innerHTML=''; return; }
+    timer = setTimeout(()=>{
         fetch(`ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}`)
-            .then(r => r.json())
-            .then(data => {
-                let html = '<div class="list-group">';
-                if (data.length === 0) {
-                    html += '<div class="list-group-item text-muted">Sin resultados</div>';
-                } else {
-                    data.forEach(s => {
-                        const ya = s.ya_registro ? '✅ Ya registrado' : '';
-                        const dis = s.ya_registro ? 'disabled' : '';
-                        html += `
-                        <button class="list-group-item list-group-item-action d-flex align-items-center gap-3 ${dis}" 
-                                onclick="registrarManual(${s.id}, '${escHtml(s.nombres+' '+s.apellidos)}')">
-                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
-                                 style="width:38px;height:38px;flex-shrink:0;font-size:.8rem;">
-                                ${s.iniciales}
-                            </div>
-                            <div class="text-start">
-                                <div class="fw-semibold">${escHtml(s.nombres)} ${escHtml(s.apellidos)}</div>
-                                <small class="text-muted">${s.cedula}</small>
-                            </div>
-                            <div class="ms-auto">
-                                ${ya ? `<span class="badge bg-success">${ya}</span>` 
-                                     : '<span class="badge bg-primary">Registrar</span>'}
-                            </div>
-                        </button>`;
-                    });
-                }
-                html += '</div>';
-                document.getElementById('resultadosBusqueda').innerHTML = html;
+            .then(r=>r.json())
+            .then(data=>{
+                if (!data.length) { box.innerHTML='<p style="color:#94a3b8;font-size:.83rem;padding:8px 0;">Sin resultados</p>'; return; }
+                box.innerHTML = data.map(s=>`
+                    <div class="res-item ${s.ya_registro?'ya':''}" onclick="${!s.ya_registro?`registrarManual(${s.id},'${escH(s.nombre_completo)}')`:''}" >
+                        <div class="av">${s.iniciales}</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700;font-size:.88rem;">${escH(s.nombre_completo)}</div>
+                            <div style="font-size:.75rem;color:#64748b;">${s.cedula}</div>
+                        </div>
+                        ${s.ya_registro
+                            ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;">✅ Registrado</span>'
+                            : '<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;">Registrar ›</span>'}
+                    </div>`).join('');
             });
     }, 350);
 }
 
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escH(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;');}
 
-// ── Registrar asistencia manual ──────────────────────────
 function registrarManual(socio_id, nombre) {
-    Swal.fire({
-        title: '¿Registrar asistencia?',
-        html: `<b>${nombre}</b><br><small class="text-muted">Se marcará como presente (manual)</small>`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, registrar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#27ae60'
-    }).then(r => {
-        if (!r.isConfirmed) return;
-        fetch('ajax_registrar_asistencia.php', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ convocatoria_id: CONV_ID, socio_id, metodo: 'manual' })
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (d.ok) {
-                Swal.fire({ icon:'success', title:'¡Registrado!', text: nombre+' marcado como presente.', timer:2000, showConfirmButton:false });
-                setTimeout(() => location.reload(), 2000);
-            } else {
-                Swal.fire('Error', d.msg || 'No se pudo registrar', 'error');
-            }
-        });
+    if (!confirm(`¿Registrar asistencia de ${nombre}?`)) return;
+    fetch('ajax_registrar_asistencia.php',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({convocatoria_id:CONV_ID,socio_id,metodo:'manual'})})
+    .then(r=>r.json()).then(d=>{
+        if (d.ok) location.reload();
+        else alert(d.msg||'Error al registrar');
     });
 }
 
-// ── Eliminar asistencia ──────────────────────────────────
-function eliminarAsistencia(id, nombre) {
-    Swal.fire({
-        title: '¿Eliminar registro?',
-        html: `Se eliminará la asistencia de <b>${nombre}</b>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Eliminar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#e74c3c'
-    }).then(r => {
-        if (!r.isConfirmed) return;
-        fetch('ajax_eliminar_asistencia.php', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ id })
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (d.ok) { location.reload(); }
-            else { Swal.fire('Error', d.msg, 'error'); }
-        });
-    });
-}
-
-// ── Cambiar estado convocatoria ──────────────────────────
-function cambiarEstado(id, estado) {
-    const labels = { activa: 'iniciar', cerrada: 'cerrar' };
-    Swal.fire({
-        title: `¿${labels[estado]?.charAt(0).toUpperCase()+labels[estado]?.slice(1)} sesión?`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Confirmar',
-        confirmButtonColor: estado === 'activa' ? '#27ae60' : '#e74c3c'
-    }).then(r => {
-        if (!r.isConfirmed) return;
-        fetch('ajax_estado_convocatoria.php', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ id, estado })
-        })
-        .then(r => r.json())
-        .then(d => {
-            if (d.ok) location.reload();
-            else Swal.fire('Error', d.msg, 'error');
-        });
-    });
-}
-
-// ── Imprimir reporte ─────────────────────────────────────
-function imprimirReporte() {
-    window.open(`reporte_asistencia.php?id=${CONV_ID}`, '_blank');
+function eliminarAsist(id, nombre) {
+    if (!confirm(`¿Eliminar asistencia de ${nombre}?`)) return;
+    fetch('ajax_eliminar_asistencia.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})
+    .then(r=>r.json()).then(d=>{ if(d.ok) location.reload(); else alert(d.msg); });
 }
 </script>
 </body>

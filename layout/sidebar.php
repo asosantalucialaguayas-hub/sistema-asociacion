@@ -158,7 +158,12 @@ $puede = fn($clave) => in_array($clave, $permitidos);
                 <li><a href="lpa_consulta.php"><i class="fa-solid fa-clipboard"></i> Actas</a></li>
                 <?php endif; ?>
                 <?php if ($puede('convocatorias')): ?>
-                <li><a href="estimacion.php"><i class="fa-solid fa-people-group"></i> Convocatorias</a></li>
+
+                <li>
+  <a href="convocatorias.php">
+    <i class="fa-solid fa-calendar-days"></i> Convocatorias
+  </a>
+</li>
                 <?php endif; ?>
                 <?php if ($puede('documentos_socios')): ?>
                 <li><a href="documentos_socios.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>

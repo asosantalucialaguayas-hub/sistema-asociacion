@@ -2,18 +2,20 @@
 // ============================================================
 // ajax_eliminar_asistencia.php
 // ============================================================
-session_start();
-require_once '../config/db.php';
+if (session_status()===PHP_SESSION_NONE) session_start();
+if (!isset($_SESSION['usuario'])) { header('Content-Type: application/json'); echo json_encode(['ok'=>false,'msg'=>'No autorizado']); exit; }
+require __DIR__ . "/layout/bootstrap.php";
 header('Content-Type: application/json');
 
-if (!isset($_SESSION['usuario_id']) || !in_array($_SESSION['rol']??'', ['admin','secretario'])) {
+$rol = $_SESSION['rol']??'viewer';
+if (!in_array($rol,['admin','secretario','presidente'])) {
     echo json_encode(['ok'=>false,'msg'=>'Sin permisos']); exit;
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
-$id   = intval($data['id'] ?? 0);
+$data = json_decode(file_get_contents('php://input'),true) ?: [];
+$id   = intval($data['id']??0);
 if (!$id) { echo json_encode(['ok'=>false,'msg'=>'ID inválido']); exit; }
 
-$stmt = $pdo->prepare("DELETE FROM asistencia WHERE id = ?");
-$stmt->execute([$id]);
-echo json_encode(['ok'=>$stmt->rowCount()>0,'msg'=>'Eliminado']);
+$st = $pdo->prepare("DELETE FROM conv_asistencia WHERE id=?");
+$st->execute([$id]);
+echo json_encode(['ok'=>$st->rowCount()>0,'msg'=>'Eliminado']);
