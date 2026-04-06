@@ -118,7 +118,8 @@ $puede = fn($clave) => in_array($clave, $permitidos);
         <?php endif; ?>
 
         <?php if ($puede('asistencia')): ?>
-        <a href="#"><i class="fa fa-calendar-check"></i> Asistencia</a>
+            <a href="asistencia.php"><i class="fa-solid fa-calendar-check"></i> Asistencia</a>
+  
         <?php endif; ?>
 
         <?php if ($puede('herramientas') || $puede('periodo_comercializacion') || $puede('asignacion_cupos')): ?>
