@@ -4,6 +4,7 @@
 // Colocar en: /asosantalu/asistencia.php
 // ============================================================
 if (session_status() === PHP_SESSION_NONE) session_start();
+header('X-Frame-Options: SAMEORIGIN');
 if (!isset($_SESSION['usuario'])) { header("Location: /auth/login.php"); exit; }
 
 require __DIR__ . "/layout/bootstrap.php";
