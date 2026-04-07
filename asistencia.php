@@ -1,113 +1,56 @@
 <?php
 // ============================================================
-// asistencia.php  – VERSIÓN CORREGIDA (con detección defensiva)
+// asistencia.php – Adaptado a la BD real
+// socios: id_socio, identificacion, nombre_completo, estado
+// convocatorias: id, titulo, fecha, hora, lugar, tipo, estado
+// periodos: periodo_comercializacion
 // ============================================================
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['usuario'])) { header("Location: /auth/login.php"); exit; }
 
-// Activa errores temporalmente para depuración — quitar en producción
-// ini_set('display_errors', 1); error_reporting(E_ALL);
-
 require __DIR__ . "/layout/bootstrap.php";
 
 $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
-$rol        = $_SESSION['rol'] ?? 'viewer';
-$es_editor  = in_array($rol, ['admin','secretario','presidente']);
+$rol        = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
+$es_editor  = in_array($rol, ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
 
-// ── DETECCIÓN DEFENSIVA DE COLUMNAS DE SOCIOS ───────────────
-// Lee los nombres REALES de columnas de tu tabla socios
-// para no depender de suposiciones
-function detectarCamposSocios(PDO $pdo): array {
-    static $cache = null;
-    if ($cache !== null) return $cache;
-    try {
-        $cols = $pdo->query("SHOW COLUMNS FROM socios")->fetchAll(PDO::FETCH_COLUMN);
-    } catch(Exception $e) {
-        return ['pk'=>'id_socio','nombre'=>'nombre_completo','cedula'=>'cedula','estado'=>'estado'];
-    }
-
-    // PK (id)
-    $pk = 'id_socio';
-    foreach(['id_socio','id','socio_id'] as $c) { if(in_array($c,$cols)){$pk=$c;break;} }
-
-    // Nombre completo
-    $nombre = 'nombre_completo';
-    foreach(['nombre_completo','nombre','nombres','nombre_socio','razon_social'] as $c) { if(in_array($c,$cols)){$nombre=$c;break;} }
-
-    // Si no hay nombre_completo pero hay nombres+apellidos, lo concatenamos en SQL
-    $apellido = null;
-    if (!in_array($nombre,$cols)) {
-        foreach(['apellidos','apellido','primer_apellido'] as $c) { if(in_array($c,$cols)){$apellido=$c;break;} }
-    }
-
-    // Cedula
-    $cedula = 'cedula';
-    foreach(['cedula','ci','dni','documento','ruc'] as $c) { if(in_array($c,$cols)){$cedula=$c;break;} }
-
-    // Estado
-    $estado = 'estado';
-    foreach(['estado','status','activo'] as $c) { if(in_array($c,$cols)){$estado=$c;break;} }
-
-    $cache = compact('pk','nombre','cedula','estado','apellido','cols');
-    return $cache;
-}
-
-$campos = detectarCamposSocios($pdo);
-
-// Expresión SQL para el nombre completo
-$expr_nombre = $campos['nombre'];
-if ($campos['apellido']) {
-    // Si tiene campos separados, concatenar
-    $expr_nombre = "CONCAT({$campos['nombre']},' ',{$campos['apellido']})";
-}
-// Alias siempre como nombre_completo para el resto del código
-$sql_nombre = "$expr_nombre AS nombre_completo";
-
-// ── Guardar en sesión para que los AJAX también lo usen ──────
-$_SESSION['_campos_socios'] = $campos;
-$_SESSION['_expr_nombre']   = $expr_nombre;
-
-// ── Determinar convocatoria ──────────────────────────────────
 $id_periodo = intval($periodoSeleccionado['id_periodo'] ?? 0);
 $conv_id    = intval($_GET['conv_id'] ?? 0);
 $convocatoria = null;
 
+// ── Buscar convocatoria ──────────────────────────────────────
 try {
     if ($conv_id) {
         $st = $pdo->prepare("SELECT * FROM convocatorias WHERE id=?");
         $st->execute([$conv_id]);
         $convocatoria = $st->fetch(PDO::FETCH_ASSOC);
     } elseif ($id_periodo) {
-        // Primero busca activa
-        $st = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado='activa' ORDER BY fecha_reunion DESC LIMIT 1");
+        // Activa primero
+        $st = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado='activa' ORDER BY fecha DESC, hora DESC LIMIT 1");
         $st->execute([$id_periodo]);
         $convocatoria = $st->fetch(PDO::FETCH_ASSOC);
-        // Si no hay activa, la más reciente publicada o cerrada
         if (!$convocatoria) {
-            $st2 = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado IN('publicada','cerrada') ORDER BY fecha_reunion DESC LIMIT 1");
+            // Cualquier otra que no sea cancelada
+            $st2 = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado NOT IN('cancelada','borrador') ORDER BY fecha DESC LIMIT 1");
             $st2->execute([$id_periodo]);
             $convocatoria = $st2->fetch(PDO::FETCH_ASSOC);
         }
     }
-} catch(PDOException $e) {
-    // La tabla puede no existir todavía
-    $convocatoria = null;
-    $error_tabla = "La tabla 'convocatorias' no existe aún. Ejecuta el SQL primero. (".$e->getMessage().")";
-}
+} catch(PDOException $e) { $convocatoria = null; $err_conv = $e->getMessage(); }
 
-// ── Lista de convocatorias del período ───────────────────────
-$lista_convocatorias = [];
-if ($id_periodo && !isset($error_tabla)) {
+// ── Lista para selector ──────────────────────────────────────
+$lista_conv = [];
+if ($id_periodo) {
     try {
-        $stList = $pdo->prepare("SELECT id,titulo,fecha_reunion,estado FROM convocatorias WHERE id_periodo=? ORDER BY fecha_reunion DESC");
-        $stList->execute([$id_periodo]);
-        $lista_convocatorias = $stList->fetchAll(PDO::FETCH_ASSOC);
-    } catch(Exception $e) { $lista_convocatorias = []; }
+        $stL = $pdo->prepare("SELECT id,titulo,fecha,estado FROM convocatorias WHERE id_periodo=? ORDER BY fecha DESC");
+        $stL->execute([$id_periodo]);
+        $lista_conv = $stL->fetchAll(PDO::FETCH_ASSOC);
+    } catch(Exception $e) { $lista_conv=[]; }
 }
 
 // ── Datos asistencia ─────────────────────────────────────────
-$asistentes = []; $total_socios = 0; $presentes = 0;
-$porcentaje = 0; $faltantes = 0; $puntos = [];
+$asistentes  = []; $total_socios = 0; $presentes = 0;
+$porcentaje  = 0;  $faltantes = 0;    $puntos = [];
 
 if ($convocatoria) {
     $cid = $convocatoria['id'];
@@ -115,42 +58,38 @@ if ($convocatoria) {
     try {
         $stP = $pdo->prepare("SELECT * FROM convocatoria_puntos WHERE convocatoria_id=? ORDER BY numero");
         $stP->execute([$cid]); $puntos = $stP->fetchAll(PDO::FETCH_ASSOC);
-    } catch(Exception $e) { $puntos = []; }
+    } catch(Exception $e) { $puntos=[]; }
 
     try {
+        // Usa identificacion (no cedula) y nombre_completo
         $stA = $pdo->prepare("
             SELECT a.id, a.metodo, a.hora_registro,
-                   s.{$campos['cedula']} AS cedula,
-                   $sql_nombre
+                   s.identificacion AS cedula,
+                   s.nombre_completo
             FROM conv_asistencia a
-            JOIN socios s ON s.{$campos['pk']} = a.id_socio
+            JOIN socios s ON s.id_socio = a.id_socio
             WHERE a.convocatoria_id = ?
             ORDER BY a.hora_registro DESC
         ");
         $stA->execute([$cid]); $asistentes = $stA->fetchAll(PDO::FETCH_ASSOC);
-    } catch(Exception $e) {
-        $asistentes = [];
-        $error_asist = $e->getMessage();
-    }
+    } catch(Exception $e) { $asistentes=[]; $err_asist=$e->getMessage(); }
 
     try {
-        $val_activo = 'activo'; // Ajusta si tu campo usa 1/0 o 'si'/'no'
-        $total_socios = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE {$campos['estado']}='$val_activo'")->fetchColumn();
-    } catch(Exception $e) {
-        try { $total_socios = (int)$pdo->query("SELECT COUNT(*) FROM socios")->fetchColumn(); } catch(Exception $e2) { $total_socios = 0; }
-    }
+        $total_socios = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
+    } catch(Exception $e) { $total_socios=0; }
 
     $presentes  = count($asistentes);
-    $porcentaje = $total_socios > 0 ? round(($presentes/$total_socios)*100,1) : 0;
-    $faltantes  = max(0, $total_socios - $presentes);
+    $porcentaje = $total_socios>0 ? round(($presentes/$total_socios)*100,1) : 0;
+    $faltantes  = max(0,$total_socios-$presentes);
 
-    // Verificar bloqueo acta 48h
-    if (!empty($convocatoria['estado']) && $convocatoria['estado']==='cerrada'
-        && !empty($convocatoria['fecha_cierre_real']) && empty($convocatoria['acta_pdf_path'])) {
+    // Bloqueo acta 48h
+    if (($convocatoria['estado']??'')==='cerrada'
+        && !empty($convocatoria['fecha_cierre_real'])
+        && empty($convocatoria['acta_pdf_path'])) {
         $horas = (time()-strtotime($convocatoria['fecha_cierre_real']))/3600;
-        if ($horas > 48 && empty($convocatoria['acta_bloqueada'])) {
-            try { $pdo->prepare("UPDATE convocatorias SET acta_bloqueada=1 WHERE id=?")->execute([$cid]); } catch(Exception $e) {}
-            $convocatoria['acta_bloqueada'] = 1;
+        if ($horas>48 && empty($convocatoria['acta_bloqueada'])) {
+            try { $pdo->prepare("UPDATE convocatorias SET acta_bloqueada=1 WHERE id=?")->execute([$cid]); } catch(Exception $e){}
+            $convocatoria['acta_bloqueada']=1;
         }
     }
 }
@@ -158,45 +97,38 @@ if ($convocatoria) {
 // ── Subida de acta ───────────────────────────────────────────
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 
-if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta') {
+if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta' && $es_editor) {
     $cid_p = intval($_POST['conv_id']??0);
-    if ($cid_p && $es_editor) {
-        try {
-            $stCk = $pdo->prepare("SELECT acta_bloqueada,acta_pdf_path FROM convocatorias WHERE id=?");
-            $stCk->execute([$cid_p]); $ck = $stCk->fetch();
-            if ($ck && $ck['acta_bloqueada']) {
-                $_SESSION['flash'] = ['tipo'=>'error','msg'=>'El plazo de 48h venció. Contacta al administrador.'];
-            } elseif (isset($_FILES['acta_pdf']) && $_FILES['acta_pdf']['error']===0) {
-                $ext = strtolower(pathinfo($_FILES['acta_pdf']['name'],PATHINFO_EXTENSION));
-                if ($ext!=='pdf') {
-                    $_SESSION['flash']=['tipo'=>'error','msg'=>'Solo se permiten archivos PDF.'];
-                } else {
-                    $dir = __DIR__.'/uploads/actas/';
-                    if (!is_dir($dir)) mkdir($dir,0755,true);
-                    $nombre = 'acta_'.$cid_p.'_'.date('Ymd_His').'.pdf';
-                    if (move_uploaded_file($_FILES['acta_pdf']['tmp_name'],$dir.$nombre)) {
-                        $pdo->prepare("UPDATE convocatorias SET acta_pdf_path=?,acta_subida_en=NOW() WHERE id=?")->execute(['uploads/actas/'.$nombre,$cid_p]);
-                        $_SESSION['flash']=['tipo'=>'success','msg'=>'✅ Acta subida correctamente.'];
-                    } else {
-                        $_SESSION['flash']=['tipo'=>'error','msg'=>'Error al mover el archivo. Verifica permisos de /uploads/actas/'];
-                    }
-                }
-            } else {
-                $err_code = $_FILES['acta_pdf']['error'] ?? 'sin archivo';
-                $_SESSION['flash']=['tipo'=>'error','msg'=>'No se recibió archivo (código: '.$err_code.')'];
+    try {
+        $stCk=$pdo->prepare("SELECT acta_bloqueada FROM convocatorias WHERE id=?");
+        $stCk->execute([$cid_p]); $ck=$stCk->fetch();
+        if ($ck && $ck['acta_bloqueada']) {
+            $_SESSION['flash']=['tipo'=>'error','msg'=>'El plazo de 48h venció.'];
+        } elseif (isset($_FILES['acta_pdf']) && $_FILES['acta_pdf']['error']===0) {
+            $ext=strtolower(pathinfo($_FILES['acta_pdf']['name'],PATHINFO_EXTENSION));
+            if ($ext!=='pdf') { $_SESSION['flash']=['tipo'=>'error','msg'=>'Solo archivos PDF.']; }
+            else {
+                $dir=__DIR__.'/uploads/actas/';
+                if (!is_dir($dir)) mkdir($dir,0755,true);
+                $nf='acta_'.$cid_p.'_'.date('Ymd_His').'.pdf';
+                if (move_uploaded_file($_FILES['acta_pdf']['tmp_name'],$dir.$nf)) {
+                    $pdo->prepare("UPDATE convocatorias SET acta_pdf_path=?,acta_subida_en=NOW() WHERE id=?")->execute(['uploads/actas/'.$nf,$cid_p]);
+                    $_SESSION['flash']=['tipo'=>'success','msg'=>'✅ Acta subida correctamente.'];
+                } else { $_SESSION['flash']=['tipo'=>'error','msg'=>'Error al guardar. Verifica permisos de /uploads/actas/']; }
             }
-        } catch(Exception $e) {
-            $_SESSION['flash']=['tipo'=>'error','msg'=>'Error: '.$e->getMessage()];
-        }
-        header("Location: asistencia.php?conv_id=$cid_p"); exit;
-    }
+        } else { $_SESSION['flash']=['tipo'=>'error','msg'=>'No se recibió archivo.']; }
+    } catch(Exception $e) { $_SESSION['flash']=['tipo'=>'error','msg'=>$e->getMessage()]; }
+    header("Location: asistencia.php?conv_id=$cid_p"); exit;
 }
 
-$horas_para_acta = null;
+$horas_para_acta=null;
 if ($convocatoria && ($convocatoria['estado']??'')==='cerrada'
     && !empty($convocatoria['fecha_cierre_real']) && empty($convocatoria['acta_pdf_path'])) {
-    $horas_para_acta = max(0, round(48 - ((time()-strtotime($convocatoria['fecha_cierre_real']))/3600), 1));
+    $horas_para_acta = max(0,round(48-((time()-strtotime($convocatoria['fecha_cierre_real']))/3600),1));
 }
+
+$col_bg=['borrador'=>'#f1f5f9','programada'=>'#e0f2fe','publicada'=>'#dbeafe','activa'=>'#dcfce7','cerrada'=>'#fee2e2','cancelada'=>'#fef3c7'];
+$col_tx=['borrador'=>'#475569','programada'=>'#0369a1','publicada'=>'#1d4ed8','activa'=>'#15803d','cerrada'=>'#b91c1c','cancelada'=>'#92400e'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -215,19 +147,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .btn-prim{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:700;font-size:.875rem;cursor:pointer;text-decoration:none;transition:.2s;box-shadow:0 4px 14px rgba(37,99,235,.25);}
 .btn-prim:hover{transform:translateY(-2px);color:#fff;}
 .btn-sec{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--azul);border:1.5px solid var(--borde);border-radius:10px;padding:9px 16px;font-weight:600;font-size:.85rem;cursor:pointer;text-decoration:none;transition:.2s;}
-.btn-sec:hover{background:#f1f5f9;color:var(--azul);}
+.btn-sec:hover{background:#f1f5f9;}
 .flash{padding:12px 18px;border-radius:10px;margin-bottom:18px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:.875rem;}
 .flash.success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
-.flash.error  {background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
-.alert-box{padding:16px 20px;border-radius:12px;margin-bottom:18px;font-size:.875rem;}
-.alert-warn{background:#fffbeb;border:2px solid #fde68a;color:#92400e;}
-.alert-err {background:#fef2f2;border:2px solid #fecaca;color:#991b1b;}
+.flash.error{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
 .conv-selector{background:#fff;border-radius:14px;border:1.5px solid var(--borde);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:var(--sombra);}
-.conv-bar{background:linear-gradient(135deg,#1f3a5f 0%,#2563eb 100%);border-radius:16px;padding:20px 26px;color:#fff;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}
+.conv-bar{background:linear-gradient(135deg,#1f3a5f,#2563eb);border-radius:16px;padding:20px 26px;color:#fff;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:18px;}
 .conv-bar h2{margin:0 0 6px;font-size:1.05rem;font-weight:800;}
 .conv-bar .meta{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;opacity:.9;}
 .conv-bar .meta span{display:flex;align-items:center;gap:5px;}
-.estado-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
+.epill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
 .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
 @media(max-width:600px){.kpi-row{grid-template-columns:1fr 1fr;}}
 .kpi-box{background:#fff;border-radius:14px;padding:16px;text-align:center;border:1.5px solid var(--borde);box-shadow:var(--sombra);}
@@ -245,7 +174,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .res-item:hover:not(.ya){background:#eff6ff;border-color:var(--azul2);}
 .res-item.ya{background:#f0fdf4;border-color:#bbf7d0;cursor:default;}
 .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;}
-.tbl-card{background:#fff;border-radius:14px;border:1.5px solid var(--borde);box-shadow:var(--sombra);overflow:hidden;}
+.tbl-card{background:#fff;border-radius:14px;border:1.5px solid var(--borde);box-shadow:var(--sombra);overflow:hidden;margin-bottom:20px;}
 .tbl-card table{width:100%;border-collapse:collapse;}
 .tbl-card thead{background:var(--azul);color:#fff;}
 .tbl-card th{padding:11px 14px;font-size:.78rem;font-weight:700;text-align:left;}
@@ -261,18 +190,17 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .acta-ok{background:#f0fdf4;border-color:#bbf7d0;}
 .acta-pend{background:#fffbeb;border-color:#fde68a;}
 .acta-block{background:#fef2f2;border-color:#fecaca;}
-.moverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);z-index:10000;overflow-y:auto;padding:20px;}
-.moverlay.show{display:flex;align-items:center;justify-content:center;}
-.mbox{background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.22);}
+.moverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);z-index:10000;overflow-y:auto;padding:20px;align-items:center;justify-content:center;}
+.moverlay.show{display:flex;}
+.mbox{background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.22);margin:auto;}
 .mhead{background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;padding:18px 24px;border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:center;}
 .mhead h2{margin:0;font-size:1rem;font-weight:800;}
 .mcls{background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .mbody{padding:24px;}
 .mfoot{padding:14px 24px;border-top:1px solid var(--borde);display:flex;justify-content:flex-end;gap:10px;background:#f8fafc;border-radius:0 0 20px 20px;}
-.donut-wrap{position:relative;display:inline-block;}
 .donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
-.donut-center .dpct{font-size:1.9rem;font-weight:800;color:var(--azul);}
-.donut-center .dsub{font-size:.68rem;color:#94a3b8;font-weight:700;text-transform:uppercase;}
+.donut-center .dp{font-size:1.9rem;font-weight:800;color:var(--azul);}
+.donut-center .ds{font-size:.68rem;color:#94a3b8;font-weight:700;text-transform:uppercase;}
 </style>
 </head>
 <body>
@@ -291,19 +219,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </div>
 <?php endif; ?>
 
-<?php if (isset($error_tabla)): ?>
-<div class="alert-box alert-err">
-    <b><i class="fa-solid fa-triangle-exclamation"></i> Tabla no encontrada</b><br>
-    <?= htmlspecialchars($error_tabla) ?><br><br>
-    Ejecuta el archivo <b>01_schema_FIXED.sql</b> en phpMyAdmin primero.
-</div>
-<?php endif; ?>
-
-<?php if (isset($error_asist)): ?>
-<div class="alert-box alert-warn">
-    <b><i class="fa-solid fa-circle-info"></i> Aviso SQL asistencia</b><br>
-    <?= htmlspecialchars($error_asist) ?>
-</div>
+<?php if (isset($err_asist)): ?>
+<div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i> SQL asistencia: <?= htmlspecialchars($err_asist) ?></div>
 <?php endif; ?>
 
 <!-- Header -->
@@ -313,7 +230,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
             <i class="fa-solid fa-calendar-check" style="color:var(--azul2);"></i> Asistencia
         </h1>
         <p style="margin:4px 0 0;font-size:.875rem;color:#64748b;">
-            Período: <b><?= htmlspecialchars($periodoSeleccionado['nombre'] ?? '(sin período seleccionado)') ?></b>
+            Período: <b><?= htmlspecialchars($periodoSeleccionado['nombre'] ?? '—') ?></b>
         </p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -336,52 +253,50 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
 </div>
 
-<!-- Selector -->
+<!-- Selector convocatoria -->
 <div class="conv-selector">
     <i class="fa-solid fa-calendar-check" style="color:var(--azul2);font-size:1.1rem;"></i>
     <label style="font-weight:700;font-size:.85rem;color:var(--azul);white-space:nowrap;">Convocatoria:</label>
-    <select onchange="window.location='asistencia.php?conv_id='+this.value" style="flex:1;min-width:200px;border:1.5px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:.875rem;font-family:inherit;">
+    <select onchange="window.location='asistencia.php?conv_id='+this.value"
+            style="flex:1;min-width:200px;border:1.5px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:.875rem;font-family:inherit;">
         <option value="">— Selecciona —</option>
-        <?php foreach ($lista_convocatorias as $lc): ?>
+        <?php foreach($lista_conv as $lc): ?>
         <option value="<?= $lc['id'] ?>" <?= ($convocatoria && $convocatoria['id']==$lc['id'])?'selected':'' ?>>
-            <?= htmlspecialchars($lc['titulo']) ?> · <?= date('d/m/Y',strtotime($lc['fecha_reunion'])) ?> [<?= ucfirst($lc['estado']) ?>]
+            <?= htmlspecialchars($lc['titulo']) ?> · <?= date('d/m/Y',strtotime($lc['fecha'])) ?> [<?= ucfirst($lc['estado']) ?>]
         </option>
         <?php endforeach; ?>
     </select>
 </div>
 
-<?php if (!$id_periodo): ?>
-<div class="alert-box alert-warn">
-    <b>⚠️ Sin período activo.</b> Selecciona un período en el selector del dashboard para ver las convocatorias.
-</div>
-<?php elseif (!$convocatoria): ?>
+<?php if (!$convocatoria): ?>
 <div style="text-align:center;padding:60px 20px;color:#94a3b8;">
     <i class="fa-solid fa-calendar-xmark" style="font-size:3.5rem;display:block;margin-bottom:14px;"></i>
-    <p style="font-size:1rem;">No hay convocatorias en este período.<br>
-    <a href="convocatorias.php" class="btn-prim" style="margin-top:14px;display:inline-flex;"><i class="fa-solid fa-plus"></i> Crear convocatoria</a></p>
+    <p style="font-size:1rem;">No hay convocatorias en este período o ninguna está activa.</p>
+    <a href="convocatorias.php" class="btn-prim" style="margin-top:14px;display:inline-flex;">
+        <i class="fa-solid fa-plus"></i> Crear convocatoria
+    </a>
 </div>
 <?php else:
-    $col_bg = ['borrador'=>'#f3f4f6','publicada'=>'#dbeafe','activa'=>'#dcfce7','cerrada'=>'#fee2e2','cancelada'=>'#fef3c7'];
-    $col_tx = ['borrador'=>'#6b7280','publicada'=>'#1d4ed8','activa'=>'#15803d','cerrada'=>'#b91c1c','cancelada'=>'#92400e'];
-    $est = $convocatoria['estado'] ?? 'borrador';
+    $est = $convocatoria['estado'] ?? 'programada';
 ?>
 
-<!-- Info convocatoria -->
+<!-- Barra info convocatoria -->
 <div class="conv-bar">
     <div style="flex:1;">
         <div style="margin-bottom:8px;">
-            <span class="estado-pill" style="background:<?= $col_bg[$est]??'#f3f4f6' ?>;color:<?= $col_tx[$est]??'#374151' ?>;">
+            <span class="epill" style="background:<?= $col_bg[$est]??'#f1f5f9' ?>;color:<?= $col_tx[$est]??'#374151' ?>;">
                 <i class="fa-solid fa-circle" style="font-size:.45rem;"></i> <?= ucfirst($est) ?>
             </span>
             <span style="font-size:.77rem;opacity:.75;margin-left:10px;">
-                <?= ucfirst($convocatoria['tipo_reunion']??'') ?> · <?= ($convocatoria['tipo_asistentes']??'')==='general'?'General':'Solo Directivos' ?>
+                <?= ucfirst($convocatoria['tipo_reunion']??$convocatoria['tipo']??'') ?>
+                · <?= ($convocatoria['tipo_asistentes']??'general')==='general'?'General':'Solo Directivos' ?>
             </span>
         </div>
-        <h2><?= htmlspecialchars($convocatoria['titulo']??'') ?></h2>
+        <h2><?= htmlspecialchars($convocatoria['titulo']) ?></h2>
         <div class="meta">
-            <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y',strtotime($convocatoria['fecha_reunion'])) ?></span>
-            <span><i class="fa-solid fa-clock"></i> <?= substr($convocatoria['hora_reunion']??'00:00',0,5) ?></span>
-            <span><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($convocatoria['lugar']??'') ?></span>
+            <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y',strtotime($convocatoria['fecha'])) ?></span>
+            <span><i class="fa-solid fa-clock"></i> <?= substr($convocatoria['hora'],0,5) ?></span>
+            <span><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($convocatoria['lugar']) ?></span>
             <?php if (!empty($convocatoria['nombre_creador'])): ?>
             <span><i class="fa-solid fa-user-pen"></i> <?= htmlspecialchars($convocatoria['nombre_creador']) ?></span>
             <?php endif; ?>
@@ -410,8 +325,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
         <span style="font-weight:700;font-size:.9rem;color:var(--azul);">Progreso de Asistencia</span>
         <span style="font-size:.82rem;color:#64748b;">
-            <?= $presentes ?> / <?= $total_socios ?> · Quórum (50%):
-            <?= $porcentaje>=50 ? '<span style="color:var(--verde);font-weight:700;">✅ Alcanzado</span>' : '<span style="color:var(--rojo);font-weight:700;">❌ Faltan '.$faltantes.'</span>' ?>
+            <?= $presentes ?>/<?= $total_socios ?> socios ·
+            <?= $porcentaje>=50
+                ? '<span style="color:var(--verde);font-weight:700;">✅ Quórum alcanzado</span>'
+                : '<span style="color:var(--rojo);font-weight:700;">❌ Faltan '.$faltantes.' para quórum</span>' ?>
         </span>
     </div>
     <div class="prog-wrap">
@@ -425,7 +342,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <div class="acta-card acta-ok">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
             <div>
-                <div style="font-weight:800;color:#166534;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-file-circle-check"></i> Acta subida</div>
+                <div style="font-weight:800;color:#166534;display:flex;align-items:center;gap:8px;font-size:.95rem;"><i class="fa-solid fa-file-circle-check"></i> Acta subida</div>
                 <div style="font-size:.8rem;color:#64748b;margin-top:3px;">Subida el <?= date('d/m/Y H:i',strtotime($convocatoria['acta_subida_en'])) ?></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -440,8 +357,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
     <?php elseif (!empty($convocatoria['acta_bloqueada'])): ?>
     <div class="acta-card acta-block">
-        <div style="font-weight:800;color:#991b1b;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-lock"></i> Plazo vencido</div>
-        <div style="font-size:.83rem;color:#64748b;margin-top:6px;">Pasaron más de 48h desde el cierre. Contacta al administrador.</div>
+        <div style="font-weight:800;color:#991b1b;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-lock"></i> Plazo vencido (más de 48h)</div>
+        <div style="font-size:.83rem;color:#64748b;margin-top:6px;">Contacta al administrador del sistema.</div>
     </div>
     <?php else: ?>
     <div class="acta-card acta-pend">
@@ -450,6 +367,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                 <div style="font-weight:800;color:#92400e;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Acta pendiente</div>
                 <div style="font-size:.8rem;color:#64748b;margin-top:3px;">
                     Tiempo restante: <b style="color:<?= ($horas_para_acta??99)<6?'#dc2626':'#92400e' ?>;"><?= $horas_para_acta ?>h</b>
+                    — El secretario debe subir el acta en PDF
                 </div>
             </div>
             <?php if ($es_editor): ?>
@@ -467,15 +385,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?php endif; ?>
 <?php endif; ?>
 
-<!-- Registro manual -->
-<?php if ($es_editor && $est === 'activa'): ?>
+<!-- Registro manual (solo si activa) -->
+<?php if ($es_editor && $est==='activa'): ?>
 <div class="reg-card">
     <div style="font-weight:700;color:var(--azul);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
         <i class="fa-solid fa-user-plus" style="color:var(--azul2);"></i> Registrar Asistencia Manual
     </div>
     <div class="srch-wrap">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="inputBuscar" placeholder="Buscar socio por nombre o cédula..." oninput="buscarSocio(this.value)" autocomplete="off">
+        <input type="text" id="inputBuscar" placeholder="Buscar socio por nombre o identificación..." oninput="buscarSocio(this.value)" autocomplete="off">
     </div>
     <div id="resultadosBusqueda"></div>
 </div>
@@ -491,22 +409,28 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <table>
         <thead>
             <tr>
-                <th>#</th><th>Socio</th><th>Cédula</th><th>Hora</th><th>Método</th>
+                <th>#</th><th>Socio</th><th>Identificación</th><th>Hora</th><th>Método</th>
                 <?php if ($es_editor && $est==='activa'): ?><th>Acc.</th><?php endif; ?>
             </tr>
         </thead>
         <tbody id="cuerpoTabla">
         <?php if (empty($asistentes)): ?>
         <tr><td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">
-            <i class="fa-solid fa-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Aún no hay asistentes
+            <i class="fa-solid fa-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
+            Aún no hay asistentes registrados
         </td></tr>
         <?php else: foreach($asistentes as $i=>$a):
-            $partes = explode(' ', $a['nombre_completo']);
-            $ini = strtoupper(substr($partes[0],0,1).(isset($partes[1])?substr($partes[1],0,1):''));
+            $partes=explode(' ',$a['nombre_completo']);
+            $ini=strtoupper(substr($partes[0],0,1).(isset($partes[1])?substr($partes[1],0,1):''));
         ?>
         <tr id="fila-<?= $a['id'] ?>">
             <td style="color:#94a3b8;font-weight:700;"><?= $i+1 ?></td>
-            <td><div style="display:flex;align-items:center;gap:10px;"><div class="av"><?= $ini ?></div><span style="font-weight:600;"><?= htmlspecialchars($a['nombre_completo']) ?></span></div></td>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="av"><?= $ini ?></div>
+                    <span style="font-weight:600;"><?= htmlspecialchars($a['nombre_completo']) ?></span>
+                </div>
+            </td>
             <td><?= htmlspecialchars($a['cedula']) ?></td>
             <td><?= date('H:i:s',strtotime($a['hora_registro'])) ?></td>
             <td>
@@ -517,11 +441,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                 </span>
             </td>
             <?php if ($es_editor && $est==='activa'): ?>
-            <td>
-                <button class="btn-del" onclick="eliminarAsist(<?= $a['id'] ?>,'<?= htmlspecialchars($a['nombre_completo'],ENT_QUOTES) ?>')">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </td>
+            <td><button class="btn-del" onclick="eliminarAsist(<?= $a['id'] ?>,'<?= htmlspecialchars($a['nombre_completo'],ENT_QUOTES) ?>')"><i class="fa-solid fa-trash"></i></button></td>
             <?php endif; ?>
         </tr>
         <?php endforeach; endif; ?>
@@ -543,7 +463,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
         <button class="mcls" onclick="document.getElementById('mResumen').classList.remove('show')"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="mbody" style="text-align:center;">
-        <div class="donut-wrap" style="margin:0 auto 20px;">
+        <div style="position:relative;display:inline-block;margin:0 auto 20px;">
             <svg width="170" height="170" viewBox="0 0 36 36">
                 <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e2e8f0" stroke-width="3.8"/>
                 <circle cx="18" cy="18" r="15.9" fill="none"
@@ -553,7 +473,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                     stroke-linecap="round"
                     transform="rotate(-90 18 18)"/>
             </svg>
-            <div class="donut-center"><div class="dpct"><?= $porcentaje ?>%</div><div class="dsub">asistencia</div></div>
+            <div class="donut-center"><div class="dp"><?= $porcentaje ?>%</div><div class="ds">asistencia</div></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
             <div style="background:#eff6ff;border-radius:10px;padding:12px 6px;"><div style="font-size:1.5rem;font-weight:800;color:var(--azul);"><?= $total_socios ?></div><div style="font-size:.72rem;color:#64748b;">Total</div></div>
@@ -583,7 +503,12 @@ function buscarSocio(q) {
         fetch(`ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}`)
             .then(r=>r.json())
             .then(data=>{
-                if (!data.length) { box.innerHTML='<p style="color:#94a3b8;font-size:.83rem;padding:8px 0;">Sin resultados</p>'; return; }
+                if (!Array.isArray(data)||!data.length) {
+                    box.innerHTML='<p style="color:#94a3b8;font-size:.83rem;padding:8px 0;">Sin resultados</p>'; return;
+                }
+                if (data[0]?._error) {
+                    box.innerHTML=`<p style="color:#ef4444;font-size:.8rem;padding:8px 0;">Error SQL: ${data[0]._error}</p>`; return;
+                }
                 box.innerHTML = data.map(s=>`
                     <div class="res-item ${s.ya_registro?'ya':''}" onclick="${!s.ya_registro?`registrarManual(${s.id},'${escH(s.nombre_completo)}')`:''}" >
                         <div class="av">${s.iniciales}</div>
@@ -592,22 +517,32 @@ function buscarSocio(q) {
                             <div style="font-size:.75rem;color:#64748b;">${s.cedula}</div>
                         </div>
                         ${s.ya_registro
-                            ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;">✅ Registrado</span>'
-                            : '<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;">Registrar ›</span>'}
+                            ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;">✅ Ya registrado</span>'
+                            : '<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;cursor:pointer;">Registrar ›</span>'}
                     </div>`).join('');
-            }).catch(e=>{ box.innerHTML='<p style="color:#f87171;font-size:.83rem;">Error de conexión</p>'; });
+            }).catch(e=>{ box.innerHTML=`<p style="color:#ef4444;font-size:.8rem;">Error: ${e.message}</p>`; });
     }, 350);
 }
+
 function escH(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;');}
+
 function registrarManual(socio_id,nombre){
-    if(!confirm(`¿Registrar asistencia de ${nombre}?`))return;
-    fetch('ajax_registrar_asistencia.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({convocatoria_id:CONV_ID,socio_id,metodo:'manual'})})
-    .then(r=>r.json()).then(d=>{if(d.ok)location.reload();else alert(d.msg||'Error');});
+    if(!confirm(`¿Registrar asistencia de:\n${nombre}?`)) return;
+    fetch('ajax_registrar_asistencia.php',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({convocatoria_id:CONV_ID,socio_id,metodo:'manual'})
+    }).then(r=>r.json()).then(d=>{
+        if(d.ok) location.reload();
+        else alert('Error: '+(d.msg||'No se pudo registrar'));
+    });
 }
+
 function eliminarAsist(id,nombre){
-    if(!confirm(`¿Eliminar asistencia de ${nombre}?`))return;
-    fetch('ajax_eliminar_asistencia.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})
-    .then(r=>r.json()).then(d=>{if(d.ok)location.reload();else alert(d.msg);});
+    if(!confirm(`¿Eliminar asistencia de:\n${nombre}?`)) return;
+    fetch('ajax_eliminar_asistencia.php',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id})
+    }).then(r=>r.json()).then(d=>{if(d.ok)location.reload();else alert(d.msg);});
 }
 </script>
 </body>
