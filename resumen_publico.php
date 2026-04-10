@@ -437,7 +437,7 @@ if (!CONV_ID) {
     document.getElementById('metaConv').innerHTML = '<span>Usa: resumen_publico.php?conv_id=2</span>';
 } else {
     actualizarDatos();
-    setInterval(actualizarDatos, 8000); // Cada 8 segundos
+    setInterval(actualizarDatos, 2000); // Cada 2 segundos
 }
 </script>
 </body>
