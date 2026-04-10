@@ -1,123 +1,170 @@
 <?php
 // ============================================================
 // polling_biometrico.php
-// Puente entre el biométrico Hikvision DS-K1T321 y tu BD
-// La página de asistencia llama este PHP cada 10 segundos
-// Este PHP llama al biométrico por su IP local y guarda los registros
-//
-// IMPORTANTE: Este script debe ejecutarse desde la misma red
-// donde está el biométrico, O desde un servidor local.
-// Si el servidor está en Hostinger (internet) y el biométrico
-// está en la red local Starlink, este puente NO puede alcanzar
-// la IP 192.0.0.64 directamente.
-//
-// Solución: usar el script local_bridge.php en una PC de la red
+// Recibe marcaciones del Bridge local y las guarda en BD
 // ============================================================
-if (session_status()===PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['usuario'])) {
-    http_response_code(401);
-    echo json_encode(['ok'=>false,'msg'=>'No autorizado']);
-    exit;
-}
-
 require __DIR__ . "/layout/bootstrap.php";
 header('Content-Type: application/json; charset=utf-8');
 
+// Log dir
+$log_dir = __DIR__ . '/logs/';
+if (!is_dir($log_dir)) mkdir($log_dir, 0755, true);
+
+$raw     = file_get_contents('php://input');
 $conv_id = intval($_GET['conv_id'] ?? $_POST['conv_id'] ?? 0);
+$data    = json_decode($raw, true);
+
+// Log para debug
+$log = date('Y-m-d H:i:s') . " | conv_id=$conv_id | " . substr($raw, 0, 300) . "\n";
+file_put_contents($log_dir . 'polling_' . date('Y-m-d') . '.log', $log, FILE_APPEND);
+
 if (!$conv_id) {
-    echo json_encode(['ok'=>false,'msg'=>'conv_id requerido']);
+    echo json_encode(['ok' => false, 'msg' => 'Falta conv_id']);
     exit;
 }
 
-// ── Verificar convocatoria activa ────────────────────────────
-$stC = $pdo->prepare("SELECT id,titulo,estado FROM convocatorias WHERE id=? AND estado='activa'");
-$stC->execute([$conv_id]);
-$conv = $stC->fetch();
+$marcaciones = $data['marcaciones'] ?? [];
+if (empty($marcaciones)) {
+    echo json_encode(['ok' => true, 'msg' => 'Sin marcaciones', 'registrados' => 0, 'ya_existian' => 0]);
+    exit;
+}
+
+// ── Verificar que la convocatoria existe ─────────────────────
+$stConv = $pdo->prepare("SELECT id, titulo FROM convocatorias WHERE id = ?");
+$stConv->execute([$conv_id]);
+$conv = $stConv->fetch(PDO::FETCH_ASSOC);
 if (!$conv) {
-    echo json_encode(['ok'=>false,'msg'=>'Convocatoria no activa']);
+    echo json_encode(['ok' => false, 'msg' => "Convocatoria #$conv_id no encontrada"]);
     exit;
 }
 
-// ── Leer marcaciones enviadas por el bridge local ────────────
-// El bridge local (local_bridge.php corriendo en la PC de la red)
-// hace POST a este endpoint con los datos del biométrico
-$data = json_decode(file_get_contents('php://input'), true) ?? [];
+$registrados = 0;
+$ya_existian = 0;
+$errores     = [];
 
-if (!empty($data['marcaciones'])) {
-    $registrados  = 0;
-    $ya_existian  = 0;
-    $errores      = [];
+foreach ($marcaciones as $m) {
+    $employeeNo = trim($m['employeeNo'] ?? '');
+    $nombre_bio = trim($m['nombre'] ?? '');
+    $time       = $m['time'] ?? date('Y-m-d H:i:s');
 
-    $stSocio = $pdo->prepare("
-        SELECT id_socio, nombre_completo
-        FROM socios
-        WHERE identificacion = ? AND estado = 'activo'
-    ");
-    $stIns = $pdo->prepare("
-        INSERT INTO conv_asistencia (convocatoria_id, id_socio, hora_registro, metodo, registrado_por)
-        VALUES (?, ?, ?, 'biometrico', NULL)
-        ON DUPLICATE KEY UPDATE hora_registro = hora_registro
-    ");
+    if (empty($employeeNo)) continue;
 
-    foreach ($data['marcaciones'] as $m) {
-        $cedula = preg_replace('/\D/', '', trim($m['employeeNo'] ?? $m['cardNo'] ?? ''));
-        $hora   = $m['time'] ?? $m['dateTime'] ?? date('Y-m-d H:i:s');
+    // Limpiar ceros a la izquierda para comparar como cédula
+    $emp_limpio = ltrim($employeeNo, '0') ?: '0';
 
-        // Normalizar formato de fecha
+    $socio = null;
+
+    // ── Estrategia de búsqueda (en orden de prioridad) ───────
+
+    // 1. Buscar por identificacion exacta (cédula)
+    if (!$socio && is_numeric($emp_limpio)) {
+        $st = $pdo->prepare("SELECT id_socio, nombre_completo, identificacion FROM socios WHERE identificacion = ? AND estado = 'activo' LIMIT 1");
+        $st->execute([$emp_limpio]);
+        $socio = $st->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // 2. Buscar por el employeeNo tal como viene (con ceros)
+    if (!$socio) {
+        $st = $pdo->prepare("SELECT id_socio, nombre_completo, identificacion FROM socios WHERE identificacion = ? AND estado = 'activo' LIMIT 1");
+        $st->execute([$employeeNo]);
+        $socio = $st->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // 3. Buscar por campo biometrico_id si existe
+    if (!$socio) {
         try {
-            $dt = new DateTime($hora);
-            $hora_bd = $dt->format('Y-m-d H:i:s');
-        } catch(Exception $e) {
-            $hora_bd = date('Y-m-d H:i:s');
-        }
+            $st = $pdo->prepare("SELECT id_socio, nombre_completo, identificacion FROM socios WHERE biometrico_id = ? AND estado = 'activo' LIMIT 1");
+            $st->execute([$employeeNo]);
+            $socio = $st->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) { /* columna puede no existir */ }
+    }
 
-        if (strlen($cedula) < 6) continue;
+    // 4. Buscar por número de empleado (los primeros dígitos significativos)
+    if (!$socio && strlen($emp_limpio) >= 1) {
+        try {
+            $st = $pdo->prepare("SELECT id_socio, nombre_completo, identificacion FROM socios WHERE numero_socio = ? AND estado = 'activo' LIMIT 1");
+            $st->execute([$emp_limpio]);
+            $socio = $st->fetch(PDO::FETCH_ASSOC);
+        } catch (Exception $e) { /* columna puede no existir */ }
+    }
 
-        $stSocio->execute([$cedula]);
-        $socio = $stSocio->fetch();
+    // 5. Buscar por nombre del biométrico (si el biométrico devuelve nombre)
+    if (!$socio && !empty($nombre_bio) && strlen($nombre_bio) > 3) {
+        // Búsqueda flexible por nombre completo
+        $partes = explode(' ', strtoupper(trim($nombre_bio)));
+        $primer = $partes[0] ?? '';
+        $segundo = $partes[1] ?? '';
 
-        if (!$socio) {
-            $errores[] = "Cédula $cedula no encontrada en socios";
-            continue;
-        }
-
-        $stIns->execute([$conv_id, $socio['id_socio'], $hora_bd]);
-        if ($stIns->rowCount() > 0) {
-            $registrados++;
-        } else {
-            $ya_existian++;
+        if ($primer && $segundo) {
+            $st = $pdo->prepare("
+                SELECT id_socio, nombre_completo, identificacion
+                FROM socios
+                WHERE UPPER(nombre_completo) LIKE ? AND UPPER(nombre_completo) LIKE ?
+                AND estado = 'activo'
+                LIMIT 1
+            ");
+            $st->execute(["%$primer%", "%$segundo%"]);
+            $socio = $st->fetch(PDO::FETCH_ASSOC);
+        } elseif ($primer) {
+            $st = $pdo->prepare("SELECT id_socio, nombre_completo, identificacion FROM socios WHERE UPPER(nombre_completo) LIKE ? AND estado = 'activo' LIMIT 1");
+            $st->execute(["%$primer%"]);
+            $socio = $st->fetch(PDO::FETCH_ASSOC);
         }
     }
 
-    // Devolver estadísticas actualizadas
-    $stStats = $pdo->prepare("SELECT COUNT(*) FROM conv_asistencia WHERE convocatoria_id=?");
-    $stStats->execute([$conv_id]);
-    $presentes = (int)$stStats->fetchColumn();
-    $total     = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
-    $pct       = $total > 0 ? round(($presentes/$total)*100,1) : 0;
+    // 6. Último recurso: buscar por el número de empleado secuencial
+    //    Si employeeNo = "0000000000000001" → buscar socio con id_socio = 1
+    if (!$socio && is_numeric($emp_limpio)) {
+        $st = $pdo->prepare("SELECT id_socio, nombre_completo, identificacion FROM socios WHERE id_socio = ? AND estado = 'activo' LIMIT 1");
+        $st->execute([(int)$emp_limpio]);
+        $socio = $st->fetch(PDO::FETCH_ASSOC);
+    }
 
-    echo json_encode([
-        'ok'          => true,
-        'registrados' => $registrados,
-        'ya_existian' => $ya_existian,
-        'errores'     => $errores,
-        'presentes'   => $presentes,
-        'total'       => $total,
-        'porcentaje'  => $pct,
-    ]);
-    exit;
+    if (!$socio) {
+        $errores[] = "No encontrado: employeeNo=$employeeNo nombre='$nombre_bio'";
+        $log2 = date('Y-m-d H:i:s') . " | NO ENCONTRADO: emp=$employeeNo nombre=$nombre_bio\n";
+        file_put_contents($log_dir . 'polling_' . date('Y-m-d') . '.log', $log2, FILE_APPEND);
+        continue;
+    }
+
+    // ── Registrar asistencia ─────────────────────────────────
+    try {
+        $ins = $pdo->prepare("
+            INSERT INTO conv_asistencia (convocatoria_id, id_socio, hora_registro, metodo, registrado_por)
+            VALUES (?, ?, NOW(), 'biometrico', NULL)
+            ON DUPLICATE KEY UPDATE hora_registro = hora_registro
+        ");
+        $ins->execute([$conv_id, $socio['id_socio']]);
+
+        if ($ins->rowCount() > 0) {
+            $registrados++;
+            $log2 = date('Y-m-d H:i:s') . " | REGISTRADO: {$socio['nombre_completo']} ({$socio['identificacion']}) → Conv #{$conv_id}\n";
+        } else {
+            $ya_existian++;
+            $log2 = date('Y-m-d H:i:s') . " | YA EXISTE: {$socio['nombre_completo']} → Conv #{$conv_id}\n";
+        }
+        file_put_contents($log_dir . 'polling_' . date('Y-m-d') . '.log', $log2, FILE_APPEND);
+
+    } catch (PDOException $e) {
+        $errores[] = "BD error para {$socio['nombre_completo']}: " . $e->getMessage();
+    }
 }
 
-// Si no hay body, devolver estadísticas actuales
-$stStats = $pdo->prepare("SELECT COUNT(*) FROM conv_asistencia WHERE convocatoria_id=?");
-$stStats->execute([$conv_id]);
-$presentes = (int)$stStats->fetchColumn();
-$total     = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
-$pct       = $total > 0 ? round(($presentes/$total)*100,1) : 0;
+// Contar totales actuales
+$stC = $pdo->prepare("SELECT COUNT(*) FROM conv_asistencia WHERE convocatoria_id = ?");
+$stC->execute([$conv_id]);
+$presentes = (int)$stC->fetchColumn();
+
+$total = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
+$pct   = $total > 0 ? round(($presentes / $total) * 100, 1) : 0;
 
 echo json_encode([
-    'ok'        => true,
-    'presentes' => $presentes,
-    'total'     => $total,
-    'porcentaje'=> $pct,
+    'ok'          => true,
+    'registrados' => $registrados,
+    'ya_existian' => $ya_existian,
+    'presentes'   => $presentes,
+    'total'       => $total,
+    'porcentaje'  => $pct,
+    'errores'     => $errores,
+    'conv'        => $conv['titulo'],
 ]);
