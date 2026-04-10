@@ -235,9 +235,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <?php if ($convocatoria): ?>
-        <button class="btn-sec" onclick="document.getElementById('mResumen').classList.add('show')">
+        <a class="btn-sec"
+           href="resumen_publico.php?conv_id=<?= $convocatoria['id'] ?>"
+           target="_blank"
+           onclick="event.preventDefault(); document.getElementById('mResumen').classList.add('show');">
             <i class="fa-solid fa-chart-pie"></i> Resumen
-        </button>
+        </a>
         <a href="reporte_asistencia.php?id=<?= $convocatoria['id'] ?>" target="_blank" class="btn-sec">
             <i class="fa-solid fa-print"></i> Reporte
         </a>
@@ -486,7 +489,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
     <div class="mfoot">
         <button class="btn-sec" onclick="document.getElementById('mResumen').classList.remove('show')">Cerrar</button>
-        <button class="btn-prim" onclick="window.open('reporte_asistencia.php?id=<?= $convocatoria['id']??0 ?>','_blank')"><i class="fa-solid fa-print"></i> Imprimir</button>
+        <button class="btn-prim" onclick="window.open('resumen_publico.php?conv_id=<?= $convocatoria['id']??0 ?>','_blank')"><i class="fa-solid fa-chart-pie"></i> Abrir en nueva pestaña</button>
     </div>
 </div>
 </div>
