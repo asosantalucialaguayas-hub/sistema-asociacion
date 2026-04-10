@@ -21,7 +21,7 @@ function jSalir(array $d): void { echo json_encode($d); exit; }
 
 $raw   = file_get_contents('php://input');
 $data  = json_decode($raw, true) ?? [];
-$token = $_SERVER['HTTP_X_BIO_TOKEN'] ?? $data['token'] ?? $_GET['token'] ?? '';
+$token = $_SERVER['HTTP_X_BIO_TOKEN'] ?? $data['token'] ?? $_GET['token'] ?? $_POST['token'] ?? '';
 
 if ($token !== BIO_TOKEN) {
     jSalir(['ok'=>false,'msg'=>'Token inválido']);
