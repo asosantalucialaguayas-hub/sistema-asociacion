@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Bridge Biométrico Local</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.card {
+    background: #1e293b;
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 520px;
+    border: 1px solid #334155;
+}
+h1 { color: #38bdf8; font-size: 1.3rem; margin-bottom: 6px; }
+.sub { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+.fg { margin-bottom: 14px; }
+.fg label { display: block; font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 5px; }
+.fg input {
+    width: 100%; background: #0f172a; border: 1.5px solid #334155;
+    border-radius: 8px; padding: 9px 12px; color: #e2e8f0; font-size: 14px;
+}
+.fg input:focus { outline: none; border-color: #38bdf8; }
+.btn {
+    width: 100%; padding: 12px; border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: .2s;
+}
+.btn-start { background: #0ea5e9; color: #fff; }
+.btn-start:hover { background: #0284c7; }
+.btn-stop  { background: #ef4444; color: #fff; margin-top: 8px; }
+.btn-stop:hover  { background: #dc2626; }
+.status-box {
+    background: #0f172a; border-radius: 10px; padding: 16px;
+    margin-top: 20px; font-size: 13px; line-height: 1.8;
+    border: 1px solid #1e293b; min-height: 120px;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+.dot-ok   { background: #22c55e; animation: pulse 1.5s infinite; }
+.dot-off  { background: #ef4444; }
+.dot-warn { background: #f59e0b; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.log-item { padding: 4px 0; border-bottom: 1px solid #1e293b; }
+.log-ok   { color: #86efac; }
+.log-warn { color: #fcd34d; }
+.log-err  { color: #fca5a5; }
+.log-info { color: #93c5fd; }
+.kpi-row  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+.kpi { background: #0f172a; border-radius: 8px; padding: 12px; text-align: center; border: 1px solid #1e293b; }
+.kpi .n { font-size: 1.6rem; font-weight: 800; }
+.kpi .l { font-size: 11px; color: #64748b; }
+.n-ok   { color: #22c55e; }
+.n-warn { color: #f59e0b; }
+.n-info { color: #38bdf8; }
+</style>
+</head>
+<body>
+<div class="card">
+    <h1>Bridge Biométrico – Asociación</h1>
+    <p class="sub">Deja esta ventana abierta durante la reunión. Conecta el biométrico con tu sistema en tiempo real.</p>
+
+    <div class="fg">
+        <label>IP del Biométrico (en tu red local)</label>
+        <input type="text" id="bioIP" value="192.0.0.64" placeholder="192.0.0.64">
+    </div>
+    <div class="fg">
+        <label>URL de tu servidor</label>
+        <input type="text" id="serverURL" value="https://asosantalucialaguayas.com/asosantalu/polling_biometrico.php">
+    </div>
+    <div class="fg">
+        <label>ID de la Convocatoria activa</label>
+        <input type="number" id="convID" value="" placeholder="Ej: 5">
+    </div>
+    <div class="fg">
+        <label>Usuario biométrico (admin)</label>
+        <input type="text" id="bioUser" value="admin">
+    </div>
+    <div class="fg">
+        <label>Contraseña biométrico</label>
+        <input type="password" id="bioPwd" value="" placeholder="Contraseña del dispositivo">
+    </div>
+
+    <button class="btn btn-start" id="btnStart" onclick="iniciar()">Iniciar Bridge</button>
+    <button class="btn btn-stop"  id="btnStop"  onclick="detener()" style="display:none">Detener</button>
+
+    <div class="status-box" id="statusBox">
+        <span class="dot dot-off"></span> Esperando inicio...
+    </div>
+
+    <div class="kpi-row">
+        <div class="kpi"><div class="n n-ok"  id="kReg">0</div><div class="l">Registrados</div></div>
+        <div class="kpi"><div class="n n-warn" id="kYa">0</div><div class="l">Ya existían</div></div>
+        <div class="kpi"><div class="n n-info" id="kPres">0</div><div class="l">Presentes total</div></div>
+    </div>
+</div>
+
+<script>
+let intervalo = null;
+let ultimaHora = null; // Para pedir solo marcaciones nuevas
+let totalReg = 0, totalYa = 0;
+
+function log(msg, tipo='info') {
+    const box = document.getElementById('statusBox');
+    const div = document.createElement('div');
+    div.className = 'log-item log-' + tipo;
+    div.textContent = new Date().toLocaleTimeString() + ' — ' + msg;
+    box.prepend(div);
+    // Máximo 30 líneas
+    while (box.children.length > 30) box.removeChild(box.lastChild);
+}
+
+function iniciar() {
+    const ip      = document.getElementById('bioIP').value.trim();
+    const server  = document.getElementById('serverURL').value.trim();
+    const convId  = document.getElementById('convID').value.trim();
+    const user    = document.getElementById('bioUser').value.trim();
+    const pwd     = document.getElementById('bioPwd').value.trim();
+
+    if (!ip || !server || !convId) {
+        alert('Completa: IP del biométrico, URL del servidor e ID de convocatoria');
+        return;
+    }
+
+    document.getElementById('btnStart').style.display = 'none';
+    document.getElementById('btnStop').style.display  = 'block';
+    document.getElementById('statusBox').innerHTML = '<span class="dot dot-ok"></span> Bridge activo — consultando cada 10 segundos...';
+
+    // Hora de inicio (solo marcaciones desde ahora)
+    ultimaHora = new Date();
+
+    // Ejecutar inmediatamente y luego cada 10 segundos
+    consultar(ip, server, convId, user, pwd);
+    intervalo = setInterval(() => consultar(ip, server, convId, user, pwd), 10000);
+}
+
+function detener() {
+    if (intervalo) clearInterval(intervalo);
+    intervalo = null;
+    document.getElementById('btnStart').style.display = 'block';
+    document.getElementById('btnStop').style.display  = 'none';
+    log('Bridge detenido', 'warn');
+}
+
+async function consultar(ip, server, convId, user, pwd) {
+    // ── 1. Consultar al biométrico por su API REST ────────────
+    // Hikvision DS-K1T321 API: GET /ISAPI/AccessControl/AcsEvent?format=json
+    const desde = ultimaHora ? ultimaHora.toISOString().replace('T',' ').substring(0,19) : '';
+
+    // Usamos las credenciales del dispositivo con Digest Auth
+    // El fetch con credenciales va al biométrico en la red local
+    const bioURL = `http://${ip}/ISAPI/AccessControl/AcsEvent?format=json`;
+
+    let marcaciones = [];
+
+    try {
+        // Petición al biométrico con autenticación básica
+        const auth = btoa(user + ':' + pwd);
+        const body = JSON.stringify({
+            "AcsEventCond": {
+                "searchID": "1",
+                "searchResultPosition": 0,
+                "maxResults": 50,
+                "major": 0,
+                "minor": 0,
+                "startTime": desde || new Date(Date.now() - 86400000).toISOString().replace('T','T').substring(0,19) + 'Z',
+                "endTime":   new Date().toISOString().substring(0,19) + 'Z'
+            }
+        });
+
+        const resp = await fetch(bioURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Basic ' + auth
+            },
+            body: body,
+            signal: AbortSignal.timeout(8000)
+        });
+
+        if (!resp.ok) {
+            log(`Biométrico respondió ${resp.status} — verifica usuario/contraseña`, 'err');
+            return;
+        }
+
+        const data = await resp.json();
+        const eventos = data?.AcsEvent?.InfoList ?? [];
+
+        // Filtrar solo los posteriores a ultimaHora y que sean accesos válidos
+        marcaciones = eventos
+            .filter(e => e.employeeNoString || e.cardNo)
+            .map(e => ({
+                employeeNo: e.employeeNoString || e.cardNo || '',
+                time: e.time || e.dateTime || new Date().toISOString()
+            }));
+
+        if (marcaciones.length === 0) {
+            log('Sin marcaciones nuevas', 'info');
+        } else {
+            log(`${marcaciones.length} marcación(es) nueva(s) detectada(s)`, 'ok');
+        }
+
+        // Actualizar ultimaHora para no repetir
+        ultimaHora = new Date();
+
+    } catch (err) {
+        if (err.name === 'AbortError') {
+            log('Timeout — el biométrico no respondió a tiempo', 'warn');
+        } else {
+            log('No se pudo conectar al biométrico: ' + err.message, 'err');
+            log('Verifica que estés en la misma red WiFi que el biométrico', 'warn');
+        }
+        return;
+    }
+
+    if (marcaciones.length === 0) return;
+
+    // ── 2. Enviar al servidor para guardar en BD ──────────────
+    try {
+        const resp2 = await fetch(server + '?conv_id=' + convId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ marcaciones, conv_id: parseInt(convId) }),
+            credentials: 'include' // Incluye la sesión PHP
+        });
+
+        const result = await resp2.json();
+
+        if (result.ok) {
+            totalReg += result.registrados || 0;
+            totalYa  += result.ya_existian || 0;
+
+            document.getElementById('kReg').textContent  = totalReg;
+            document.getElementById('kYa').textContent   = totalYa;
+            document.getElementById('kPres').textContent = result.presentes || 0;
+
+            if (result.registrados > 0) {
+                log(`✓ ${result.registrados} socio(s) registrado(s) — Total presentes: ${result.presentes}/${result.total} (${result.porcentaje}%)`, 'ok');
+            }
+            if (result.ya_existian > 0) {
+                log(`${result.ya_existian} ya estaban registrados`, 'warn');
+            }
+            if (result.errores && result.errores.length > 0) {
+                result.errores.forEach(e => log('⚠ ' + e, 'err'));
+            }
+        } else {
+            log('Error del servidor: ' + result.msg, 'err');
+        }
+    } catch(err) {
+        log('No se pudo enviar al servidor: ' + err.message, 'err');
+    }
+}
+</script>
+</body>
+</html>
