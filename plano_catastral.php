@@ -866,264 +866,104 @@ function setLoading(show, txt = '', pct = null) {
 }
 
 /* ════════════════════════════════════════════
-   EXPORTAR PDF (jsPDF — captura canvas por canvas)
+   EXPORTAR PDF — html2canvas captura cada hoja
+   exactamente como se ve en pantalla
 ════════════════════════════════════════════ */
 async function exportarPDF() {
-  setLoading(true, 'Preparando hojas...', 5);
-  await new Promise(r => setTimeout(r, 300));
+  // Cargar html2canvas dinámicamente si no está
+  if (!window.html2canvas) {
+    setLoading(true, 'Cargando dependencias...', 3);
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
 
   const { jsPDF } = window.jspdf;
   const isLand = orientation === 'landscape';
-  const fmt    = isLand ? [297, 210] : [210, 297];
+  const pdfW   = isLand ? 297 : 210;
+  const pdfH   = isLand ? 210 : 297;
   const pdf    = new jsPDF({ orientation: isLand ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
-  const PW = fmt[0], PH = fmt[1];
-  const M  = 8;
 
-  const fecha  = hoy();
-  const sheets = document.querySelectorAll('.plano-sheet');
+  const sheets = Array.from(document.querySelectorAll('.plano-sheet'));
   const total  = sheets.length;
 
   for (let i = 0; i < total; i++) {
-    setLoading(true, `Exportando hoja ${i+1} de ${total}...`, Math.round(5 + ((i+1)/total)*90));
+    const pct = Math.round(8 + (i / total) * 88);
+    setLoading(true, `Capturando hoja ${i+1} de ${total}...`, pct);
+    await new Promise(r => setTimeout(r, 80));
+
+    const sheet = sheets[i];
+
+    // Quitar overflow de la tabla para capturar todos los vértices
+    const scrollEl = sheet.querySelector('.vtx-scroll');
+    let prevMaxH = '', prevOvY = '';
+    if (scrollEl) {
+      prevMaxH = scrollEl.style.maxHeight;
+      prevOvY  = scrollEl.style.overflowY;
+      scrollEl.style.maxHeight = 'none';
+      scrollEl.style.overflowY = 'visible';
+    }
+
+    // Forzar recálculo
+    sheet.style.height = 'auto';
+    await new Promise(r => setTimeout(r, 30));
+
+    let canvas;
+    try {
+      canvas = await html2canvas(sheet, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#fffef7',
+        logging: false,
+        windowWidth:  sheet.scrollWidth,
+        windowHeight: sheet.scrollHeight,
+      });
+    } catch(e) {
+      console.error('html2canvas error hoja ' + (i+1), e);
+      if (i > 0) pdf.addPage('a4', isLand ? 'landscape' : 'portrait');
+      pdf.setFontSize(10); pdf.setTextColor(180,50,50);
+      pdf.text('Error al capturar hoja ' + (i+1) + ': ' + e.message, 15, 30);
+      continue;
+    } finally {
+      // Restaurar
+      if (scrollEl) {
+        scrollEl.style.maxHeight = prevMaxH;
+        scrollEl.style.overflowY = prevOvY;
+      }
+      sheet.style.height = '';
+    }
+
+    const imgData  = canvas.toDataURL('image/jpeg', 0.93);
+    const canvasW  = canvas.width;
+    const canvasH  = canvas.height;
+    const ratio    = canvasW / canvasH;
+    const pdfRatio = pdfW / pdfH;
+
+    let imgW, imgH;
+    if (ratio > pdfRatio) {
+      imgW = pdfW; imgH = pdfW / ratio;
+    } else {
+      imgH = pdfH; imgW = pdfH * ratio;
+    }
+
+    const offsetX = (pdfW - imgW) / 2;
+    const offsetY = (pdfH - imgH) / 2;
 
     if (i > 0) pdf.addPage('a4', isLand ? 'landscape' : 'portrait');
-
-    await new Promise(r => setTimeout(r, 50));
-
-    // Datos del plano correspondiente (si es hoja de polígono)
-    const planoIdx = i < todosLosPlanos.length ? i : -1;
-    const p = planoIdx >= 0 ? todosLosPlanos[planoIdx] : null;
-
-    // ── Fondo ──
-    pdf.setFillColor(255, 254, 247);
-    pdf.rect(0, 0, PW, PH, 'F');
-
-    // ── CABECERA ──
-    const hH = 20;
-    pdf.setFillColor(15, 34, 64);
-    pdf.rect(M, M, PW-M*2, hH, 'F');
-
-    if (logoDataUrl) {
-      try { pdf.addImage(logoDataUrl, 'PNG', M+2, M+2, 16, 16); } catch(e) {}
-    }
-
-    pdf.setTextColor(255,255,255);
-    pdf.setFontSize(12); pdf.setFont('helvetica','bold');
-    pdf.text(CFG.nombreAsoc, M+22, M+8);
-    pdf.setFontSize(7.5); pdf.setFont('helvetica','normal');
-    pdf.setTextColor(147,197,253);
-    pdf.text(`PLANO DE UBICACIÓN — RUC: ${CFG.ruc} | Guayas, Ecuador | WGS84`, M+22, M+13);
-
-    const codigo = p ? p.arch.codigo : '—';
-    pdf.setTextColor(255,255,255); pdf.setFontSize(11); pdf.setFont('helvetica','bold');
-    pdf.text(codigo, PW-M-4, M+8, {align:'right'});
-    pdf.setFontSize(7); pdf.setFont('helvetica','normal'); pdf.setTextColor(147,197,253);
-    pdf.text(fecha.corta, PW-M-4, M+13, {align:'right'});
-    pdf.text('Sistema: WGS84 / UTM', PW-M-4, M+17, {align:'right'});
-
-    if (!p) {
-      // Hoja de vértices extra — imprimir tabla
-      await renderHojaVerticesPDF(pdf, i, PW, PH, M, hH, fecha, codigo);
-      continue;
-    }
-
-    // ── OWNER ROW ──
-    const owY = M + hH + 1;
-    const owH = 13;
-    pdf.setFillColor(241,245,249);
-    pdf.rect(M, owY, PW-M*2, owH, 'F');
-    pdf.setDrawColor(15,34,64); pdf.setLineWidth(0.3);
-    pdf.rect(M, owY, PW-M*2, owH);
-
-    const zona = [SOCIO.zona, SOCIO.comunidad].filter(Boolean).join(' / ') || '—';
-    const campos = [
-      {l:'PROPIETARIO', v: SOCIO.nombre},
-      {l:'CÉDULA / RUC', v: SOCIO.cedula},
-      {l:'ZONA / COMUNIDAD', v: zona},
-      {l:'CÓDIGO DE LOTE', v: p.arch.codigo},
-      {l:'ÁREA TOTAL', v: p.geo.area + ' ha'},
-      {l:'PERÍMETRO', v: p.geo.perim + ' km'},
-    ];
-    const cw = (PW-M*2) / campos.length;
-    campos.forEach((f, ci) => {
-      const cx = M + cw*ci;
-      if (ci > 0) { pdf.setDrawColor(200,210,220); pdf.setLineWidth(0.15); pdf.line(cx, owY, cx, owY+owH); }
-      pdf.setTextColor(100,116,139); pdf.setFontSize(5.5); pdf.setFont('helvetica','bold');
-      pdf.text(f.l, cx+2, owY+4.5);
-      pdf.setTextColor(15,34,64); pdf.setFontSize(8); pdf.setFont('helvetica','bold');
-      pdf.text(f.v || '—', cx+2, owY+10);
-    });
-
-    // ── CUERPO: MAPA + TABLA ──
-    const bodyY   = owY + owH + 1;
-    const tableW  = 68;
-    const drawW   = PW - M*2 - tableW - 2;
-    const bodyH   = PH - M - bodyY - 14;
-
-    // Canvas del mapa (combinar bgCanvas + polyCanvas)
-    const bgCanvas   = document.getElementById(`mapBgCanvas_${planoIdx}`);
-    const polyCanvas = document.getElementById(`polyCanvas_${planoIdx}`);
-    const mapArea    = document.getElementById(`mapArea_${planoIdx}`);
-
-    if (bgCanvas && mapArea) {
-      // Crear canvas temporal combinado
-      const combo = document.createElement('canvas');
-      combo.width  = bgCanvas.width;
-      combo.height = bgCanvas.height;
-      const cctx = combo.getContext('2d');
-      cctx.drawImage(bgCanvas, 0, 0);
-      if (polyCanvas) cctx.drawImage(polyCanvas, 0, 0);
-      try {
-        const img = combo.toDataURL('image/jpeg', 0.92);
-        pdf.addImage(img, 'JPEG', M, bodyY, drawW, bodyH);
-      } catch(e) {
-        // Fallback si CORS bloquea
-        pdf.setFillColor(220, 230, 220);
-        pdf.rect(M, bodyY, drawW, bodyH, 'F');
-        if (polyCanvas) {
-          try {
-            const polyImg = polyCanvas.toDataURL('image/png');
-            pdf.addImage(polyImg, 'PNG', M, bodyY, drawW, bodyH);
-          } catch(e2) {}
-        }
-      }
-    }
-
-    pdf.setDrawColor(15,34,64); pdf.setLineWidth(0.4);
-    pdf.rect(M, bodyY, drawW, bodyH);
-
-    // Norte
-    pdf.setFillColor(255,255,255);
-    pdf.circle(M+drawW-8, bodyY+8, 6, 'FD');
-    pdf.setDrawColor(15,34,64); pdf.setLineWidth(0.3);
-    pdf.setTextColor(15,34,64); pdf.setFontSize(8); pdf.setFont('helvetica','bold');
-    pdf.text('↑N', M+drawW-8, bodyY+9.5, {align:'center'});
-
-    // Escala
-    pdf.setTextColor(50,70,90); pdf.setFontSize(6.5);
-    pdf.text('ESC: '+CFG.escala, M+3, bodyY+bodyH-4);
-    pdf.setFillColor(15,34,64); pdf.rect(M+3, bodyY+bodyH-8, 10, 2.5, 'F');
-    pdf.setFillColor(255,255,255); pdf.rect(M+13, bodyY+bodyH-8, 10, 2.5, 'F');
-    pdf.setDrawColor(15,34,64); pdf.setLineWidth(0.3);
-    pdf.rect(M+3, bodyY+bodyH-8, 20, 2.5);
-    pdf.setTextColor(100,100,100); pdf.setFontSize(5.5);
-    pdf.text('© Esri WorldImagery', M+3, bodyY+bodyH-1);
-
-    // ── TABLA LATERAL ──
-    const tX = M + drawW + 2;
-    const tW = tableW;
-
-    pdf.setFillColor(15,34,64); pdf.rect(tX, bodyY, tW, 6.5, 'F');
-    pdf.setTextColor(255,255,255); pdf.setFontSize(6.5); pdf.setFont('helvetica','bold');
-    pdf.text('TABLA DE VÉRTICES', tX+tW/2, bodyY+4.5, {align:'center'});
-
-    const cws = [8, 30, 30];
-    const cxs = [tX, tX+8, tX+38];
-    pdf.setFillColor(29,78,216); pdf.rect(tX, bodyY+6.5, tW, 5, 'F');
-    pdf.setTextColor(255,255,255); pdf.setFontSize(6);
-    ['V#','LATITUD','LONGITUD'].forEach((h,ci) => pdf.text(h, cxs[ci]+cws[ci]/2, bodyY+10.2, {align:'center'}));
-
-    const maxR = Math.floor((bodyH - 50) / 4);
-    const vtxMuestra = p.coords.slice(0, maxR);
-    vtxMuestra.forEach((c, ri) => {
-      const ry = bodyY + 11.5 + ri*4;
-      if (ri%2===0) { pdf.setFillColor(248,250,252); pdf.rect(tX, ry-0.3, tW, 4, 'F'); }
-      pdf.setTextColor(15,34,64); pdf.setFontSize(5.5); pdf.setFont('courier','normal');
-      pdf.text(String(ri+1), cxs[0]+4, ry+2.5, {align:'center'});
-      pdf.text(c.lat.toFixed(6), cxs[1]+15, ry+2.5, {align:'center'});
-      pdf.text(c.lon.toFixed(6), cxs[2]+15, ry+2.5, {align:'center'});
-      pdf.setDrawColor(230,235,240); pdf.setLineWidth(0.08);
-      pdf.line(tX, ry+3.8, tX+tW, ry+3.8);
-    });
-    if (p.coords.length > maxR) {
-      const mY = bodyY + 11.5 + vtxMuestra.length*4 + 3;
-      pdf.setTextColor(150,150,150); pdf.setFontSize(5.5);
-      pdf.text(`... ${p.coords.length - maxR} más (ver hoja adjunta)`, tX+tW/2, mY, {align:'center'});
-    }
-
-    // Resumen box
-    const sY = bodyY + bodyH - 38;
-    pdf.setFillColor(15,34,64); pdf.rect(tX, sY, tW, 38, 'F');
-    pdf.setTextColor(147,197,253); pdf.setFontSize(6); pdf.setFont('helvetica','bold');
-    pdf.text('RESUMEN', tX+tW/2, sY+5, {align:'center'});
-    [
-      ['Área (ha)',    p.geo.area.toString()],
-      ['Perímetro km', p.geo.perim.toString()],
-      ['Lat. Centro',  p.geo.lat.toFixed(6)],
-      ['Lon. Centro',  p.geo.lon.toFixed(6)],
-      ['N° Vértices',  p.coords.length.toString()],
-    ].forEach(([lbl,val],ri) => {
-      const ry = sY + 10 + ri*5.5;
-      pdf.setTextColor(148,163,184); pdf.setFontSize(5); pdf.setFont('helvetica','normal');
-      pdf.text(lbl, tX+2, ry);
-      pdf.setTextColor(56,189,248); pdf.setFontSize(6.5); pdf.setFont('courier','bold');
-      pdf.text(val, tX+tW-2, ry+3, {align:'right'});
-    });
-
-    // Observaciones bajo tabla
-    pdf.setTextColor(70,90,110); pdf.setFontSize(5.5); pdf.setFont('helvetica','normal');
-    const obsLines = pdf.splitTextToSize(CFG.obs, tW-4);
-    pdf.text(obsLines.slice(0,3), tX+2, sY+39);
-
-    // ── FOOTER ──
-    const fY = PH - M - 12;
-    pdf.setFillColor(241,245,249); pdf.rect(M, fY, PW-M*2, 12, 'F');
-    pdf.setDrawColor(15,34,64); pdf.setLineWidth(0.3); pdf.rect(M, fY, PW-M*2, 12);
-    pdf.setTextColor(70,85,105); pdf.setFontSize(6.5); pdf.setFont('helvetica','normal');
-    pdf.text(`Elaborado: Sistema de Gestión — ${CFG.nombreAsoc}`, M+3, fY+4);
-    pdf.text(`Usuario: <?= htmlspecialchars($_SESSION['usuario']) ?> | Fecha: ${fecha.corta}`, M+3, fY+8.5);
-    pdf.setFont('courier','bold'); pdf.setTextColor(15,34,64); pdf.setFontSize(10);
-    pdf.text(codigo, PW-M-4, fY+5, {align:'right'});
-    pdf.setFont('helvetica','normal'); pdf.setTextColor(100,116,139); pdf.setFontSize(6);
-    pdf.text('Documento generado automáticamente', PW-M-4, fY+9, {align:'right'});
-
-    // Borde exterior
-    pdf.setDrawColor(15,34,64); pdf.setLineWidth(0.8);
-    pdf.rect(M, M, PW-M*2, PH-M*2);
+    pdf.addImage(imgData, 'JPEG', offsetX, offsetY, imgW, imgH);
   }
 
   setLoading(true, 'Guardando PDF...', 98);
   await new Promise(r => setTimeout(r, 100));
+
+  const fecha      = hoy();
   const nomArchivo = todosLosPlanos.length ? todosLosPlanos[0].arch.codigo : 'lote';
   pdf.save(`Plano_Catastral_${nomArchivo}_${fecha.corta.replace(/\//g,'-')}.pdf`);
   setLoading(false);
-}
-
-async function renderHojaVerticesPDF(pdf, pageIdx, PW, PH, M, hH, fecha, codigo) {
-  // Determinar qué set de vértices corresponde
-  // Las hojas extra comienzan después de todosLosPlanos.length
-  // Aquí simplificamos: si es página extra, buscar en p.coords
-  // La lógica de páginas extra se puede mejorar si se necesita
-  const p = todosLosPlanos.find(pl => pageIdx >= todosLosPlanos.length) || todosLosPlanos[0];
-  if (!p) return;
-
-  // Título tabla
-  const owY = M + hH + 1;
-  pdf.setFillColor(15,34,64); pdf.rect(M, owY, PW-M*2, 8, 'F');
-  pdf.setTextColor(255,255,255); pdf.setFontSize(9); pdf.setFont('helvetica','bold');
-  pdf.text(`TABLA COMPLETA DE VÉRTICES — ${p.arch.codigo}`, PW/2, owY+5.5, {align:'center'});
-
-  const bodyY = owY + 9;
-  const colW  = (PW-M*2-10) / 3;
-
-  for (let col = 0; col < 3; col++) {
-    const cX = M + col*(colW+5);
-    pdf.setFillColor(29,78,216); pdf.rect(cX, bodyY, colW, 5, 'F');
-    pdf.setTextColor(255,255,255); pdf.setFontSize(6); pdf.setFont('helvetica','bold');
-    ['V#','LATITUD','LONGITUD'].forEach((h, hi) => {
-      pdf.text(h, cX + [5,20,40][hi], bodyY+3.5);
-    });
-    const maxRows = Math.floor((PH-M-bodyY-20) / 4);
-    const startRow = col * maxRows;
-    p.coords.slice(startRow, startRow+maxRows).forEach((c, ri) => {
-      const ry = bodyY + 5 + ri*4;
-      if (ri%2===0) { pdf.setFillColor(248,250,252); pdf.rect(cX, ry, colW, 4, 'F'); }
-      pdf.setTextColor(15,34,64); pdf.setFontSize(5.5); pdf.setFont('courier','normal');
-      pdf.text(String(startRow+ri+1), cX+3, ry+2.8);
-      pdf.text(c.lat.toFixed(6), cX+12, ry+2.8);
-      pdf.text(c.lon.toFixed(6), cX+38, ry+2.8);
-    });
-  }
 }
 </script>
 </body>
