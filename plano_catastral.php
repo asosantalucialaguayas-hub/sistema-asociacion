@@ -96,11 +96,11 @@ body{font-family:'DM Sans',sans-serif;background:#1e293b;color:var(--gray900);mi
 .ph-logo{width:76px;min-height:68px;display:flex;align-items:center;justify-content:center;border-right:1.5px solid var(--gray200);background:var(--gray50);flex-shrink:0;padding:6px;overflow:hidden}
 .ph-logo img{max-width:100%;max-height:60px;object-fit:contain}
 .ph-logo i{font-size:30px;color:var(--gray400)}
-.ph-main{flex:1;padding:8px 14px;display:flex;flex-direction:column;justify-content:center}
-.ph-assoc{font-size:15px;font-weight:700;color:var(--navy);letter-spacing:.3px}
-.ph-ruc{font-size:9.5px;color:var(--gray600);margin-top:2px}
-.ph-sub{font-size:10px;font-weight:700;color:var(--navy);margin-top:4px;letter-spacing:.5px;text-transform:uppercase;border-top:1px solid var(--gray200);padding-top:4px}
-.ph-right{padding:8px 12px;text-align:right;font-family:'Space Mono',monospace;border-left:1.5px solid var(--gray200);display:flex;flex-direction:column;justify-content:center;flex-shrink:0;min-width:120px}
+.ph-main{flex:1;min-width:0;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.ph-assoc{font-size:13.5px;font-weight:700;color:var(--navy);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.ph-ruc{font-size:9px;color:var(--gray600);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph-sub{font-size:9.5px;font-weight:700;color:var(--navy);margin-top:5px;letter-spacing:.5px;text-transform:uppercase;border-top:1px solid var(--gray200);padding-top:4px;white-space:nowrap}
+.ph-right{padding:8px 10px;text-align:right;font-family:'Space Mono',monospace;border-left:1.5px solid var(--gray200);display:flex;flex-direction:column;justify-content:center;flex-shrink:0;min-width:110px;max-width:130px}
 .ph-docnum{font-size:14px;font-weight:700;color:var(--navy)}
 .ph-date{font-size:9px;color:var(--gray600);margin-top:2px}
 .ph-sys{font-size:9px;color:var(--gray400);margin-top:2px;line-height:1.5}
@@ -135,6 +135,7 @@ body{font-family:'DM Sans',sans-serif;background:#1e293b;color:var(--gray900);mi
 
 /* ── TABLE COL ── */
 .table-col{border-left:1.5px solid var(--gray200);padding:8px;display:flex;flex-direction:column;gap:0;overflow:hidden}
+.table-col .vtx-scroll{overflow-y:auto;flex:1;max-height:100%}
 .tc-title{font-size:8.5px;font-weight:700;color:var(--navy);letter-spacing:.5px;text-transform:uppercase;border-bottom:1.5px solid var(--navy);padding-bottom:3px;margin-bottom:6px}
 .vtx-table{width:100%;border-collapse:collapse;font-size:8.5px}
 .vtx-table th{background:var(--navy);color:#fff;padding:3px 4px;text-align:center;font-weight:700;font-size:8px;letter-spacing:.3px}
@@ -386,17 +387,15 @@ function renderTodas() {
     grp1.appendChild(sheet1);
     wrap.appendChild(grp1);
 
-    // ── Hoja 2+: Tabla completa de vértices (si hay muchos) ──
-    if (p.coords.length > 25) {
-      const vtxPages = crearHojasVertices(p, fecha, idx + 1);
-      vtxPages.forEach((vp, vi) => {
-        const grp2 = document.createElement('div');
-        grp2.className = 'page-group';
-        grp2.innerHTML = `<div class="page-label">Lote ${idx+1} — ${p.arch.codigo} — TABLA DE VÉRTICES (${vi+1}/${vtxPages.length})</div>`;
-        grp2.appendChild(vp);
-        wrap.appendChild(grp2);
-      });
-    }
+    // ── Hoja 2+: Tabla completa de vértices — SIEMPRE, para todos los lotes ──
+    const vtxPages = crearHojasVertices(p, fecha, idx + 1);
+    vtxPages.forEach((vp, vi) => {
+      const grp2 = document.createElement('div');
+      grp2.className = 'page-group';
+      grp2.innerHTML = `<div class="page-label">Lote ${idx+1} — ${p.arch.codigo} — TABLA DE VÉRTICES (${vi+1}/${vtxPages.length})</div>`;
+      grp2.appendChild(vp);
+      wrap.appendChild(grp2);
+    });
   });
 
   // Dibujar polígonos en todos los canvas
@@ -420,10 +419,8 @@ function crearHojaPlano(p, fecha, num) {
   sheet.id = `sheet_${num-1}`;
 
   const zona = [SOCIO.zona, SOCIO.comunidad].filter(Boolean).join(' / ') || '—';
-  // Tabla de vértices lateral (máx 22 filas para no desbordar)
-  const maxVtxLateral = 22;
-  const vtxMuestra = p.coords.slice(0, maxVtxLateral);
-  const hayMas = p.coords.length > maxVtxLateral;
+  // Mostrar TODOS los vértices — sin límite, sin "... más"
+  const vtxMuestra = p.coords;
 
   sheet.innerHTML = `
     <!-- HEADER -->
@@ -476,7 +473,8 @@ function crearHojaPlano(p, fecha, num) {
 
       <!-- TABLA LATERAL -->
       <div class="table-col">
-        <div class="tc-title">Tabla de Vértices</div>
+        <div class="tc-title">Tabla de Vértices (${p.coords.length})</div>
+        <div class="vtx-scroll">
         <table class="vtx-table">
           <thead><tr><th>V#</th><th>Latitud</th><th>Longitud</th></tr></thead>
           <tbody>
@@ -487,9 +485,9 @@ function crearHojaPlano(p, fecha, num) {
                 <td>${c.lon.toFixed(6)}</td>
               </tr>
             `).join('')}
-            ${hayMas ? `<tr><td colspan="3" style="color:#94a3b8;font-size:8px;padding:5px;text-align:center;">... y ${p.coords.length - maxVtxLateral} más<br><em>ver hoja de vértices</em></td></tr>` : ''}
           </tbody>
         </table>
+        </div>
 
         <div style="margin-top:auto">
           <div class="tc-title" style="margin-top:8px">Resumen</div>

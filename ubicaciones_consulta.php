@@ -565,7 +565,7 @@ function cargarSocios(pagina) {
                         </button>
                         <button class="btn-icon" style="background:#0891b2;" title="Generar plano catastral"
                             onclick="window.open('plano_catastral.php?id_socio=${s.id_socio}','_blank')">
-                            <i class="fa fa-map-location-dot"></i>
+                            <i class="fa-solid fa-globe"></i>
                         </button>
                         <button class="btn-icon violeta" title="Ver resumen de lotes y hectáreas"
                             onclick='abrirResumen(${s.id_socio},"${esc(s.identificacion)}","${esc(s.nombre_completo)}","${esc(s.zona||'')}","${esc(s.codigo_slc||'')}",${total})'>
