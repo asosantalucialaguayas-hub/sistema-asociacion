@@ -241,7 +241,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?= htmlspecialchars($flash['msg']) ?>
 </div>
 <?php endif; ?>
-
+<?php if (isset($err_total)): ?>
+<div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i> Error total: <?= htmlspecialchars($err_total) ?></div>
+<?php endif; ?>
 <?php if (isset($err_asist)): ?>
 <div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i> SQL asistencia: <?= htmlspecialchars($err_asist) ?></div>
 <?php endif; ?>
