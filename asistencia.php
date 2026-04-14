@@ -496,6 +496,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 
 <script>
 const CONV_ID = <?= json_encode($convocatoria['id'] ?? 0) ?>;
+const TIPO_ASISTENTES = <?= json_encode($convocatoria['tipo_asistentes'] ?? 'general') ?>;
+const ID_PERIODO = <?= json_encode($id_periodo) ?>;
 let timer;
 
 function buscarSocio(q) {
@@ -503,7 +505,7 @@ function buscarSocio(q) {
     const box = document.getElementById('resultadosBusqueda');
     if (q.length < 2) { box.innerHTML=''; return; }
     timer = setTimeout(()=>{
-        fetch(`ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}`)
+        fetch(`ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}&tipo_asistentes=${encodeURIComponent(TIPO_ASISTENTES)}&id_periodo=${ID_PERIODO}`)
             .then(r=>r.json())
             .then(data=>{
                 if (!Array.isArray(data)||!data.length) {
