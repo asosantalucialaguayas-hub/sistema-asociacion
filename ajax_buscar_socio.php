@@ -6,12 +6,12 @@ header('Content-Type: application/json; charset=utf-8');
 
 $conv_id         = intval($_GET['conv_id'] ?? 0);
 $tipo_asistentes = trim($_GET['tipo_asistentes'] ?? 'general');
-$q               = '%' . trim($_GET['q'] ?? '') . '%';
+$q_raw           = trim($_GET['q'] ?? '');
+$q               = '%' . $q_raw . '%';
 
 try {
     if ($tipo_asistentes === 'solo_directivos') {
 
-        // Buscar período activo de directiva
         $stP  = $pdo->query("SELECT id FROM directiva_periodos WHERE estado='activo' ORDER BY id DESC LIMIT 1");
         $pRow = $stP->fetch(PDO::FETCH_ASSOC);
         if (!$pRow) {
@@ -20,34 +20,38 @@ try {
         }
         $pid = (int)$pRow['id'];
 
-        // COLLATE utf8mb4_general_ci en el JOIN para evitar el error de collation
+        // Usar CONVERT para forzar collation uniforme en todo
         $st = $pdo->prepare("
             SELECT
-                COALESCE(s.id_socio, dm.socio_id)                             AS id,
-                COALESCE(s.identificacion, dm.cedula_manual)                   AS cedula,
-                COALESCE(s.nombre_completo, dm.nombre_manual)                  AS nombre_completo,
-                IF(a.id IS NOT NULL, 1, 0)                                     AS ya_registro,
-                IF(s.id_socio IS NOT NULL, 0, 1)                               AS sin_socio,
-                MIN(dm.orden_cargo)                                             AS orden_cargo
+                COALESCE(s.id_socio, dm.socio_id)                                          AS id,
+                COALESCE(s.identificacion, dm.cedula_manual)                                AS cedula,
+                COALESCE(s.nombre_completo, dm.nombre_manual)                               AS nombre_completo,
+                IF(a.id IS NOT NULL, 1, 0)                                                  AS ya_registro,
+                IF(s.id_socio IS NOT NULL, 0, 1)                                            AS sin_socio,
+                MIN(dm.orden_cargo)                                                          AS orden_cargo
             FROM directiva_miembros dm
             LEFT JOIN socios s
-                   ON s.identificacion COLLATE utf8mb4_general_ci = dm.cedula_manual COLLATE utf8mb4_general_ci
+                   ON CONVERT(s.identificacion USING utf8mb4) COLLATE utf8mb4_general_ci
+                    = CONVERT(dm.cedula_manual  USING utf8mb4) COLLATE utf8mb4_general_ci
                   AND s.estado = 'activo'
             LEFT JOIN conv_asistencia a
                    ON a.id_socio        = COALESCE(s.id_socio, dm.socio_id)
                   AND a.convocatoria_id = ?
             WHERE dm.periodo_id = ?
               AND (
-                    UPPER(COALESCE(s.nombre_completo, dm.nombre_manual)) LIKE UPPER(?)
-                 OR COALESCE(s.identificacion, dm.cedula_manual)          LIKE ?
+                    CONVERT(COALESCE(s.nombre_completo, dm.nombre_manual) USING utf8mb4)
+                        COLLATE utf8mb4_general_ci LIKE CONVERT(? USING utf8mb4) COLLATE utf8mb4_general_ci
+                 OR CONVERT(COALESCE(s.identificacion, dm.cedula_manual)  USING utf8mb4)
+                        COLLATE utf8mb4_general_ci LIKE CONVERT(? USING utf8mb4) COLLATE utf8mb4_general_ci
               )
-            GROUP BY COALESCE(s.identificacion COLLATE utf8mb4_general_ci, dm.cedula_manual)
+            GROUP BY CONVERT(COALESCE(s.identificacion, dm.cedula_manual) USING utf8mb4) COLLATE utf8mb4_general_ci
             ORDER BY sin_socio ASC, orden_cargo ASC, nombre_completo ASC
             LIMIT 15
         ");
         $st->execute([$conv_id, $pid, $q, $q]);
 
     } else {
+        // Búsqueda general — también con CONVERT para evitar collation mismatch
         $st = $pdo->prepare("
             SELECT
                 s.id_socio                         AS id,
@@ -59,7 +63,12 @@ try {
                    ON a.id_socio        = s.id_socio
                   AND a.convocatoria_id = ?
             WHERE s.estado = 'activo'
-              AND (s.nombre_completo LIKE ? OR s.identificacion LIKE ?)
+              AND (
+                    CONVERT(s.nombre_completo USING utf8mb4) COLLATE utf8mb4_general_ci
+                        LIKE CONVERT(? USING utf8mb4) COLLATE utf8mb4_general_ci
+                 OR CONVERT(s.identificacion  USING utf8mb4) COLLATE utf8mb4_general_ci
+                        LIKE CONVERT(? USING utf8mb4) COLLATE utf8mb4_general_ci
+              )
             ORDER BY s.nombre_completo
             LIMIT 10
         ");
