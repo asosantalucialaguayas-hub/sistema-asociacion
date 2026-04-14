@@ -87,7 +87,7 @@ if ($convocatoria) {
                     SELECT COUNT(DISTINCT COALESCE(s2.identificacion, dm.cedula_manual))
                     FROM directiva_miembros dm
                     LEFT JOIN socios s2
-                           ON s2.identificacion = dm.cedula_manual
+                           ON s2.identificacion COLLATE utf8mb4_general_ci = dm.cedula_manual COLLATE utf8mb4_general_ci
                           AND s2.estado = 'activo'
                     WHERE dm.periodo_id = ?
                 ");

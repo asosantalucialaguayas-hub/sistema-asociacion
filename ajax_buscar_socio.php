@@ -1,7 +1,4 @@
 <?php
-// ============================================================
-// ajax_buscar_socio.php
-// ============================================================
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['usuario'])) { echo json_encode([]); exit; }
 require __DIR__ . "/layout/bootstrap.php";
@@ -9,35 +6,32 @@ header('Content-Type: application/json; charset=utf-8');
 
 $conv_id         = intval($_GET['conv_id'] ?? 0);
 $tipo_asistentes = trim($_GET['tipo_asistentes'] ?? 'general');
-// IMPORTANTE: id_periodo del GET es el período COMERCIAL, NO el de directiva.
-// Por eso lo ignoramos y siempre buscamos el período activo de directiva.
-$q = '%' . trim($_GET['q'] ?? '') . '%';
+$q               = '%' . trim($_GET['q'] ?? '') . '%';
 
 try {
     if ($tipo_asistentes === 'solo_directivos') {
 
-        // Buscar el período ACTIVO de directiva directamente
+        // Buscar período activo de directiva
         $stP  = $pdo->query("SELECT id FROM directiva_periodos WHERE estado='activo' ORDER BY id DESC LIMIT 1");
         $pRow = $stP->fetch(PDO::FETCH_ASSOC);
-
         if (!$pRow) {
-            echo json_encode([['_error' => 'No hay período de directiva activo. Ve a Directiva y verifica.']]);
+            echo json_encode([['_error' => 'No hay período de directiva activo.']]);
             exit;
         }
         $pid = (int)$pRow['id'];
 
-        // Miembros únicos de ambas juntas, deduplicados por cédula
+        // COLLATE utf8mb4_general_ci en el JOIN para evitar el error de collation
         $st = $pdo->prepare("
             SELECT
-                COALESCE(s.id_socio, dm.socio_id)              AS id,
-                COALESCE(s.identificacion, dm.cedula_manual)    AS cedula,
-                COALESCE(s.nombre_completo, dm.nombre_manual)   AS nombre_completo,
-                IF(a.id IS NOT NULL, 1, 0)                      AS ya_registro,
-                IF(s.id_socio IS NOT NULL, 0, 1)                AS sin_socio,
-                MIN(dm.orden_cargo)                              AS orden_cargo
+                COALESCE(s.id_socio, dm.socio_id)                             AS id,
+                COALESCE(s.identificacion, dm.cedula_manual)                   AS cedula,
+                COALESCE(s.nombre_completo, dm.nombre_manual)                  AS nombre_completo,
+                IF(a.id IS NOT NULL, 1, 0)                                     AS ya_registro,
+                IF(s.id_socio IS NOT NULL, 0, 1)                               AS sin_socio,
+                MIN(dm.orden_cargo)                                             AS orden_cargo
             FROM directiva_miembros dm
             LEFT JOIN socios s
-                   ON s.identificacion = dm.cedula_manual
+                   ON s.identificacion COLLATE utf8mb4_general_ci = dm.cedula_manual COLLATE utf8mb4_general_ci
                   AND s.estado = 'activo'
             LEFT JOIN conv_asistencia a
                    ON a.id_socio        = COALESCE(s.id_socio, dm.socio_id)
@@ -47,7 +41,7 @@ try {
                     UPPER(COALESCE(s.nombre_completo, dm.nombre_manual)) LIKE UPPER(?)
                  OR COALESCE(s.identificacion, dm.cedula_manual)          LIKE ?
               )
-            GROUP BY COALESCE(s.identificacion, dm.cedula_manual)
+            GROUP BY COALESCE(s.identificacion COLLATE utf8mb4_general_ci, dm.cedula_manual)
             ORDER BY sin_socio ASC, orden_cargo ASC, nombre_completo ASC
             LIMIT 15
         ");
