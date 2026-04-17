@@ -1,9 +1,6 @@
 <?php
 // ============================================================
-// asistencia.php – Adaptado a la BD real
-// socios: id_socio, identificacion, nombre_completo, estado
-// convocatorias: id, titulo, fecha, hora, lugar, tipo, estado
-// periodos: periodo_comercializacion
+// asistencia.php
 // ============================================================
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['usuario'])) { header("Location: /auth/login.php"); exit; }
@@ -18,27 +15,23 @@ $id_periodo = intval($periodoSeleccionado['id_periodo'] ?? 0);
 $conv_id    = intval($_GET['conv_id'] ?? 0);
 $convocatoria = null;
 
-// ── Buscar convocatoria ──────────────────────────────────────
 try {
     if ($conv_id) {
         $st = $pdo->prepare("SELECT * FROM convocatorias WHERE id=?");
         $st->execute([$conv_id]);
         $convocatoria = $st->fetch(PDO::FETCH_ASSOC);
     } elseif ($id_periodo) {
-        // Activa primero
         $st = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado='activa' ORDER BY fecha DESC, hora DESC LIMIT 1");
         $st->execute([$id_periodo]);
         $convocatoria = $st->fetch(PDO::FETCH_ASSOC);
         if (!$convocatoria) {
-            // Cualquier otra que no sea cancelada
             $st2 = $pdo->prepare("SELECT * FROM convocatorias WHERE id_periodo=? AND estado NOT IN('cancelada','borrador') ORDER BY fecha DESC LIMIT 1");
             $st2->execute([$id_periodo]);
             $convocatoria = $st2->fetch(PDO::FETCH_ASSOC);
         }
     }
-} catch(PDOException $e) { $convocatoria = null; $err_conv = $e->getMessage(); }
+} catch(PDOException $e) { $convocatoria = null; }
 
-// ── Lista para selector ──────────────────────────────────────
 $lista_conv = [];
 if ($id_periodo) {
     try {
@@ -48,20 +41,19 @@ if ($id_periodo) {
     } catch(Exception $e) { $lista_conv=[]; }
 }
 
-// ── Datos asistencia ─────────────────────────────────────────
-$asistentes  = []; $total_socios = 0; $presentes = 0;
-$porcentaje  = 0;  $faltantes = 0;    $puntos = [];
-$solo_directivos = false;   // ← NUEVO
- 
+$asistentes   = []; $total_socios = 0; $presentes = 0;
+$porcentaje   = 0;  $faltantes = 0;   $puntos = [];
+$solo_directivos = false;
+
 if ($convocatoria) {
     $cid = $convocatoria['id'];
-    $solo_directivos = ($convocatoria['tipo_asistentes'] ?? 'general') === 'solo_directivos'; // ← NUEVO
- 
+    $solo_directivos = ($convocatoria['tipo_asistentes'] ?? 'general') === 'solo_directivos';
+
     try {
         $stP = $pdo->prepare("SELECT * FROM convocatoria_puntos WHERE convocatoria_id=? ORDER BY numero");
         $stP->execute([$cid]); $puntos = $stP->fetchAll(PDO::FETCH_ASSOC);
     } catch(Exception $e) { $puntos=[]; }
- 
+
     try {
         $stA = $pdo->prepare("
             SELECT a.id, a.metodo, a.hora_registro,
@@ -70,19 +62,17 @@ if ($convocatoria) {
             FROM conv_asistencia a
             JOIN socios s ON s.id_socio = a.id_socio
             WHERE a.convocatoria_id = ?
-            ORDER BY a.hora_registro DESC
+            ORDER BY s.nombre_completo ASC
         ");
-        $stA->execute([$cid]); $asistentes = $stA->fetchAll(PDO::FETCH_ASSOC);
-    } catch(Exception $e) { $asistentes=[]; $err_asist=$e->getMessage(); }
- 
-    // ── NUEVO: total según tipo de convocatoria ───────────────
+        $stA->execute([$cid]);
+        $asistentes = $stA->fetchAll(PDO::FETCH_ASSOC);
+    } catch(Exception $e) { $asistentes=[]; }
+
     try {
         if ($solo_directivos) {
-            // Período activo de directiva
             $stPer = $pdo->query("SELECT id FROM directiva_periodos WHERE estado='activo' LIMIT 1");
             $perRow = $stPer->fetch(PDO::FETCH_ASSOC);
             if ($perRow) {
-                // Contar personas únicas (por cédula) en directiva + vigilancia
                 $stT = $pdo->prepare("
                     SELECT COUNT(DISTINCT COALESCE(s2.identificacion, dm.cedula_manual))
                     FROM directiva_miembros dm
@@ -93,19 +83,16 @@ if ($convocatoria) {
                 ");
                 $stT->execute([$perRow['id']]);
                 $total_socios = (int)$stT->fetchColumn();
-            } else {
-                $total_socios = 0;
             }
         } else {
             $total_socios = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
         }
     } catch(Exception $e) { $total_socios=0; }
- 
+
     $presentes  = count($asistentes);
     $porcentaje = $total_socios>0 ? round(($presentes/$total_socios)*100,1) : 0;
     $faltantes  = max(0,$total_socios-$presentes);
- 
-    // Bloqueo acta 48h (sin cambios)
+
     if (($convocatoria['estado']??'')==='cerrada'
         && !empty($convocatoria['fecha_cierre_real'])
         && empty($convocatoria['acta_pdf_path'])) {
@@ -117,7 +104,6 @@ if ($convocatoria) {
     }
 }
 
-// ── Subida de acta ───────────────────────────────────────────
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 
 if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta' && $es_editor) {
@@ -137,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta'
                 if (move_uploaded_file($_FILES['acta_pdf']['tmp_name'],$dir.$nf)) {
                     $pdo->prepare("UPDATE convocatorias SET acta_pdf_path=?,acta_subida_en=NOW() WHERE id=?")->execute(['uploads/actas/'.$nf,$cid_p]);
                     $_SESSION['flash']=['tipo'=>'success','msg'=>'✅ Acta subida correctamente.'];
-                } else { $_SESSION['flash']=['tipo'=>'error','msg'=>'Error al guardar. Verifica permisos de /uploads/actas/']; }
+                } else { $_SESSION['flash']=['tipo'=>'error','msg'=>'Error al guardar.']; }
             }
         } else { $_SESSION['flash']=['tipo'=>'error','msg'=>'No se recibió archivo.']; }
     } catch(Exception $e) { $_SESSION['flash']=['tipo'=>'error','msg'=>$e->getMessage()]; }
@@ -191,12 +177,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .reg-card{background:#fff;border-radius:14px;padding:18px;border:1.5px solid var(--borde);box-shadow:var(--sombra);margin-bottom:20px;}
 .srch-wrap{position:relative;}
 .srch-wrap i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#94a3b8;}
-.srch-wrap input{width:100%;border:1.5px solid var(--borde);border-radius:10px;padding:10px 12px 10px 38px;font-size:.9rem;outline:none;font-family:inherit;transition:.2s;}
+.srch-wrap input{width:100%;border:1.5px solid var(--borde);border-radius:10px;padding:10px 12px 10px 38px;font-size:.9rem;outline:none;font-family:inherit;transition:.2s;box-sizing:border-box;}
 .srch-wrap input:focus{border-color:var(--azul2);box-shadow:0 0 0 3px rgba(37,99,235,.12);}
 .res-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1.5px solid var(--borde);border-radius:10px;margin-top:8px;cursor:pointer;transition:.2s;background:#fff;}
 .res-item:hover:not(.ya){background:#eff6ff;border-color:var(--azul2);}
 .res-item.ya{background:#f0fdf4;border-color:#bbf7d0;cursor:default;}
 .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;}
+/* ── TABLA ASISTENTES ── */
 .tbl-card{background:#fff;border-radius:14px;border:1.5px solid var(--borde);box-shadow:var(--sombra);overflow:hidden;margin-bottom:20px;}
 .tbl-card table{width:100%;border-collapse:collapse;}
 .tbl-card thead{background:var(--azul);color:#fff;}
@@ -209,10 +196,26 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .m-qr{background:#fef3c7;color:#92400e;}
 .btn-del{background:#fee2e2;color:#dc2626;border:1.5px solid #fecaca;border-radius:7px;padding:4px 8px;font-size:.73rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
 .btn-del:hover{background:#fecaca;}
+/* ── BUSCADOR TABLA ── */
+.tbl-toolbar{padding:12px 16px;border-bottom:1.5px solid var(--borde);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.tbl-search{position:relative;min-width:220px;}
+.tbl-search i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:.8rem;}
+.tbl-search input{border:1.5px solid var(--borde);border-radius:8px;padding:7px 10px 7px 30px;font-size:.82rem;outline:none;font-family:inherit;width:100%;box-sizing:border-box;transition:.2s;}
+.tbl-search input:focus{border-color:var(--azul2);}
+/* ── PAGINACIÓN ── */
+.pag-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1.5px solid var(--borde);background:#f9fafb;}
+.pag-btns{display:flex;gap:4px;align-items:center;}
+.pbtn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--borde);background:#fff;cursor:pointer;font-size:.78rem;font-weight:700;color:var(--azul);transition:.15s;min-width:32px;text-align:center;}
+.pbtn:hover:not(:disabled){background:#eff6ff;border-color:var(--azul2);}
+.pbtn.active{background:var(--azul);color:#fff;border-color:var(--azul);}
+.pbtn:disabled{opacity:.38;cursor:not-allowed;}
+.pag-info{font-size:.78rem;color:#64748b;font-weight:600;}
+/* ── ACTA ── */
 .acta-card{border-radius:14px;padding:18px;margin-bottom:20px;border:2px solid;}
 .acta-ok{background:#f0fdf4;border-color:#bbf7d0;}
 .acta-pend{background:#fffbeb;border-color:#fde68a;}
 .acta-block{background:#fef2f2;border-color:#fecaca;}
+/* ── MODAL ── */
 .moverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);z-index:10000;overflow-y:auto;padding:20px;align-items:center;justify-content:center;}
 .moverlay.show{display:flex;}
 .mbox{background:#fff;border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 60px rgba(0,0,0,.22);margin:auto;}
@@ -224,6 +227,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
 .donut-center .dp{font-size:1.9rem;font-weight:800;color:var(--azul);}
 .donut-center .ds{font-size:.68rem;color:#94a3b8;font-weight:700;text-transform:uppercase;}
+/* ── NO-RESULT ROW ── */
+.no-result-row td{text-align:center;padding:36px;color:#94a3b8;}
+.no-result-row i{font-size:2rem;display:block;margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -241,12 +247,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?= htmlspecialchars($flash['msg']) ?>
 </div>
 <?php endif; ?>
-<?php if (isset($err_total)): ?>
-<div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i> Error total: <?= htmlspecialchars($err_total) ?></div>
-<?php endif; ?>
-<?php if (isset($err_asist)): ?>
-<div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i> SQL asistencia: <?= htmlspecialchars($err_asist) ?></div>
-<?php endif; ?>
 
 <!-- Header -->
 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:22px;">
@@ -260,10 +260,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <?php if ($convocatoria): ?>
-        <a class="btn-sec"
-           href="resumen_publico.php?conv_id=<?= $convocatoria['id'] ?>"
-           target="_blank"
-           onclick="event.preventDefault(); document.getElementById('mResumen').classList.add('show');">
+        <a class="btn-sec" href="#" onclick="event.preventDefault();document.getElementById('mResumen').classList.add('show');">
             <i class="fa-solid fa-chart-pie"></i> Resumen
         </a>
         <a href="reporte_asistencia.php?id=<?= $convocatoria['id'] ?>" target="_blank" class="btn-sec">
@@ -281,7 +278,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
 </div>
 
-<!-- Selector convocatoria -->
+<!-- Selector -->
 <div class="conv-selector">
     <i class="fa-solid fa-calendar-check" style="color:var(--azul2);font-size:1.1rem;"></i>
     <label style="font-weight:700;font-size:.85rem;color:var(--azul);white-space:nowrap;">Convocatoria:</label>
@@ -299,7 +296,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 <?php if (!$convocatoria): ?>
 <div style="text-align:center;padding:60px 20px;color:#94a3b8;">
     <i class="fa-solid fa-calendar-xmark" style="font-size:3.5rem;display:block;margin-bottom:14px;"></i>
-    <p style="font-size:1rem;">No hay convocatorias en este período o ninguna está activa.</p>
+    <p style="font-size:1rem;">No hay convocatorias en este período.</p>
     <a href="convocatorias.php" class="btn-prim" style="margin-top:14px;display:inline-flex;">
         <i class="fa-solid fa-plus"></i> Crear convocatoria
     </a>
@@ -308,7 +305,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     $est = $convocatoria['estado'] ?? 'programada';
 ?>
 
-<!-- Barra info convocatoria -->
+<!-- Barra convocatoria -->
 <div class="conv-bar">
     <div style="flex:1;">
         <div style="margin-bottom:8px;">
@@ -325,9 +322,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
             <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y',strtotime($convocatoria['fecha'])) ?></span>
             <span><i class="fa-solid fa-clock"></i> <?= substr($convocatoria['hora'],0,5) ?></span>
             <span><i class="fa-solid fa-location-dot"></i> <?= htmlspecialchars($convocatoria['lugar']) ?></span>
-            <?php if (!empty($convocatoria['nombre_creador'])): ?>
-            <span><i class="fa-solid fa-user-pen"></i> <?= htmlspecialchars($convocatoria['nombre_creador']) ?></span>
-            <?php endif; ?>
         </div>
     </div>
     <?php if ($puntos): ?>
@@ -374,38 +368,28 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                 <div style="font-size:.8rem;color:#64748b;margin-top:3px;">Subida el <?= date('d/m/Y H:i',strtotime($convocatoria['acta_subida_en'])) ?></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <a href="<?= htmlspecialchars($convocatoria['acta_pdf_path']) ?>" target="_blank" class="btn-prim" style="background:linear-gradient(135deg,#166534,#16a34a);">
-                    <i class="fa-solid fa-file-pdf"></i> Ver Acta
-                </a>
-                <a href="descargar_conjunto.php?id=<?= $convocatoria['id'] ?>" class="btn-sec">
-                    <i class="fa-solid fa-file-zipper"></i> Descargar ZIP
-                </a>
+                <a href="<?= htmlspecialchars($convocatoria['acta_pdf_path']) ?>" target="_blank" class="btn-prim" style="background:linear-gradient(135deg,#166534,#16a34a);"><i class="fa-solid fa-file-pdf"></i> Ver Acta</a>
+                <a href="descargar_conjunto.php?id=<?= $convocatoria['id'] ?>" class="btn-sec"><i class="fa-solid fa-file-zipper"></i> ZIP</a>
             </div>
         </div>
     </div>
     <?php elseif (!empty($convocatoria['acta_bloqueada'])): ?>
     <div class="acta-card acta-block">
         <div style="font-weight:800;color:#991b1b;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-lock"></i> Plazo vencido (más de 48h)</div>
-        <div style="font-size:.83rem;color:#64748b;margin-top:6px;">Contacta al administrador del sistema.</div>
     </div>
     <?php else: ?>
     <div class="acta-card acta-pend">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
             <div>
                 <div style="font-weight:800;color:#92400e;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Acta pendiente</div>
-                <div style="font-size:.8rem;color:#64748b;margin-top:3px;">
-                    Tiempo restante: <b style="color:<?= ($horas_para_acta??99)<6?'#dc2626':'#92400e' ?>;"><?= $horas_para_acta ?>h</b>
-                    — El secretario debe subir el acta en PDF
-                </div>
+                <div style="font-size:.8rem;color:#64748b;margin-top:3px;">Tiempo restante: <b><?= $horas_para_acta ?>h</b></div>
             </div>
             <?php if ($es_editor): ?>
             <form method="POST" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <input type="hidden" name="accion" value="subir_acta">
                 <input type="hidden" name="conv_id" value="<?= $convocatoria['id'] ?>">
                 <input type="file" name="acta_pdf" accept=".pdf" required style="font-size:.8rem;border:1.5px solid #fde68a;border-radius:8px;padding:5px 8px;background:#fff;">
-                <button type="submit" class="btn-prim" style="background:linear-gradient(135deg,#92400e,#d97706);">
-                    <i class="fa-solid fa-upload"></i> Subir Acta PDF
-                </button>
+                <button type="submit" class="btn-prim" style="background:linear-gradient(135deg,#92400e,#d97706);"><i class="fa-solid fa-upload"></i> Subir Acta PDF</button>
             </form>
             <?php endif; ?>
         </div>
@@ -413,7 +397,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?php endif; ?>
 <?php endif; ?>
 
-<!-- Registro manual (solo si activa) -->
+<!-- Registro manual -->
 <?php if ($es_editor && $est==='activa'): ?>
 <div class="reg-card">
     <div style="font-weight:700;color:var(--azul);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
@@ -421,38 +405,58 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
     <div class="srch-wrap">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="inputBuscar" placeholder="Buscar socio por nombre o identificación..." oninput="buscarSocio(this.value)" autocomplete="off">
+        <input type="text" id="inputBuscar" placeholder="Buscar socio por nombre o cédula..." oninput="buscarSocio(this.value)" autocomplete="off">
     </div>
     <div id="resultadosBusqueda"></div>
 </div>
 <?php endif; ?>
 
-<!-- Tabla asistentes -->
+<!-- ══ TABLA ASISTENTES CON BUSCADOR + PAGINACIÓN ══ -->
 <div class="tbl-card">
-    <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid var(--borde);flex-wrap:wrap;gap:8px;">
-        <span style="font-weight:700;color:var(--azul);"><i class="fa-solid fa-clipboard-list"></i> Asistentes registrados</span>
-        <span style="font-size:.8rem;color:#64748b;"><?= $presentes ?> persona(s)</span>
+    <div class="tbl-toolbar">
+        <span style="font-weight:700;color:var(--azul);display:flex;align-items:center;gap:7px;">
+            <i class="fa-solid fa-clipboard-list"></i>
+            Asistentes registrados
+            <span id="badgeTotal" style="background:#e0f2fe;color:#0369a1;font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:20px;"><?= $presentes ?></span>
+        </span>
+        <div class="tbl-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="buscarEnTabla" placeholder="Filtrar asistentes..." oninput="filtrarTabla(this.value)">
+        </div>
     </div>
     <div style="overflow-x:auto;">
     <table>
         <thead>
             <tr>
-                <th>#</th><th>Socio</th><th>Identificación</th><th>Hora</th><th>Método</th>
+                <th>#</th>
+                <th style="cursor:pointer;" onclick="ordenarTabla('nombre')">
+                    Socio <i class="fa-solid fa-sort" id="iconNombre" style="opacity:.5;font-size:.7rem;"></i>
+                </th>
+                <th>Identificación</th>
+                <th style="cursor:pointer;" onclick="ordenarTabla('hora')">
+                    Hora <i class="fa-solid fa-sort" id="iconHora" style="opacity:.5;font-size:.7rem;"></i>
+                </th>
+                <th>Método</th>
                 <?php if ($es_editor && $est==='activa'): ?><th>Acc.</th><?php endif; ?>
             </tr>
         </thead>
         <tbody id="cuerpoTabla">
         <?php if (empty($asistentes)): ?>
-        <tr><td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">
-            <i class="fa-solid fa-inbox" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-            Aún no hay asistentes registrados
-        </td></tr>
+        <tr class="no-result-row">
+            <td colspan="6">
+                <i class="fa-solid fa-inbox"></i>
+                Aún no hay asistentes registrados
+            </td>
+        </tr>
         <?php else: foreach($asistentes as $i=>$a):
             $partes=explode(' ',$a['nombre_completo']);
             $ini=strtoupper(substr($partes[0],0,1).(isset($partes[1])?substr($partes[1],0,1):''));
         ?>
-        <tr id="fila-<?= $a['id'] ?>">
-            <td style="color:#94a3b8;font-weight:700;"><?= $i+1 ?></td>
+        <tr id="fila-<?= $a['id'] ?>"
+            data-nombre="<?= htmlspecialchars(strtolower($a['nombre_completo'])) ?>"
+            data-cedula="<?= htmlspecialchars($a['cedula']) ?>"
+            data-hora="<?= htmlspecialchars($a['hora_registro']) ?>">
+            <td style="color:#94a3b8;font-weight:700;" class="num-col"><?= $i+1 ?></td>
             <td>
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div class="av"><?= $ini ?></div>
@@ -469,16 +473,25 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                 </span>
             </td>
             <?php if ($es_editor && $est==='activa'): ?>
-            <td><button class="btn-del" onclick="eliminarAsist(<?= $a['id'] ?>,'<?= htmlspecialchars($a['nombre_completo'],ENT_QUOTES) ?>')"><i class="fa-solid fa-trash"></i></button></td>
+            <td>
+                <button class="btn-del" onclick="eliminarAsist(<?= $a['id'] ?>,'<?= htmlspecialchars($a['nombre_completo'],ENT_QUOTES) ?>')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
             <?php endif; ?>
         </tr>
         <?php endforeach; endif; ?>
         </tbody>
     </table>
     </div>
+    <!-- Paginación -->
+    <div class="pag-row" id="pagRow" style="<?= empty($asistentes)?'display:none':'' ?>">
+        <span class="pag-info" id="pagInfo"></span>
+        <div class="pag-btns" id="pagBtns"></div>
+    </div>
 </div>
 
-<?php endif; // fin convocatoria ?>
+<?php endif; ?>
 </section>
 </main>
 </div>
@@ -509,7 +522,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
             <div style="background:#fef2f2;border-radius:10px;padding:12px 6px;"><div style="font-size:1.5rem;font-weight:800;color:#dc2626;"><?= $faltantes ?></div><div style="font-size:.72rem;color:#64748b;">Ausentes</div></div>
         </div>
         <div style="background:<?= $porcentaje>=50?'#f0fdf4':'#fffbeb' ?>;border:1.5px solid <?= $porcentaje>=50?'#bbf7d0':'#fde68a' ?>;border-radius:10px;padding:11px 14px;font-weight:700;color:<?= $porcentaje>=50?'#166534':'#92400e' ?>;font-size:.88rem;">
-            <?= $porcentaje>=50 ? '✅ Quórum alcanzado — La sesión es válida.' : '⚠️ Quórum incompleto — Faltan '.$faltantes.' socio(s) para el 50%.' ?>
+            <?= $porcentaje>=50 ? '✅ Quórum alcanzado — La sesión es válida.' : '⚠️ Quórum incompleto — Faltan '.$faltantes.' socio(s).' ?>
         </div>
     </div>
     <div class="mfoot">
@@ -520,59 +533,208 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </div>
 
 <script>
-const CONV_ID = <?= json_encode($convocatoria['id'] ?? 0) ?>;
+const CONV_ID         = <?= json_encode($convocatoria['id'] ?? 0) ?>;
 const TIPO_ASISTENTES = <?= json_encode($convocatoria['tipo_asistentes'] ?? 'general') ?>;
-const ID_PERIODO = <?= json_encode($id_periodo) ?>;
-let timer;
+const ID_PERIODO      = <?= json_encode($id_periodo) ?>;
+const ES_EDITOR       = <?= json_encode($es_editor) ?>;
+const EST_CONV        = <?= json_encode($est ?? '') ?>;
 
+/* ══ BUSCAR SOCIO PARA REGISTRAR (fix error JSON) ══ */
+let timerBuscar;
 function buscarSocio(q) {
-    clearTimeout(timer);
+    clearTimeout(timerBuscar);
     const box = document.getElementById('resultadosBusqueda');
-    if (q.length < 2) { box.innerHTML=''; return; }
-    timer = setTimeout(()=>{
-        fetch(`ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}&tipo_asistentes=${encodeURIComponent(TIPO_ASISTENTES)}&id_periodo=${ID_PERIODO}`)
-            .then(r=>r.json())
-            .then(data=>{
-                if (!Array.isArray(data)||!data.length) {
-                    box.innerHTML='<p style="color:#94a3b8;font-size:.83rem;padding:8px 0;">Sin resultados</p>'; return;
-                }
-                if (data[0]?._error) {
-                    box.innerHTML=`<p style="color:#ef4444;font-size:.8rem;padding:8px 0;">Error SQL: ${data[0]._error}</p>`; return;
-                }
-                box.innerHTML = data.map(s=>`
-                    <div class="res-item ${s.ya_registro?'ya':''}" onclick="${!s.ya_registro?`registrarManual(${s.id},'${escH(s.nombre_completo)}')`:''}" >
-                        <div class="av">${s.iniciales}</div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700;font-size:.88rem;">${escH(s.nombre_completo)}</div>
-                            <div style="font-size:.75rem;color:#64748b;">${s.cedula}</div>
-                        </div>
-                        ${s.ya_registro
-                            ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;">✅ Ya registrado</span>'
-                            : '<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;cursor:pointer;">Registrar ›</span>'}
-                    </div>`).join('');
-            }).catch(e=>{ box.innerHTML=`<p style="color:#ef4444;font-size:.8rem;">Error: ${e.message}</p>`; });
+    if (!q || q.length < 2) { box.innerHTML = ''; return; }
+
+    timerBuscar = setTimeout(async () => {
+        try {
+            const url = `ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}&tipo_asistentes=${encodeURIComponent(TIPO_ASISTENTES)}&id_periodo=${ID_PERIODO}`;
+            const resp = await fetch(url);
+
+            // ── FIX: leer texto primero para detectar respuesta vacía o error PHP ──
+            const raw = await resp.text();
+            if (!raw || !raw.trim()) {
+                box.innerHTML = '<p style="color:#94a3b8;font-size:.83rem;padding:8px 0;">Sin resultados</p>';
+                return;
+            }
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch(parseErr) {
+                // Mostrar fragmento del error para ayudar a debuggear
+                console.error('JSON parse error. Respuesta recibida:', raw.substring(0, 300));
+                box.innerHTML = `<p style="color:#ef4444;font-size:.8rem;padding:8px 0;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    Error del servidor. Revisa el log PHP.
+                    <button onclick="verDetalleError()" style="margin-left:8px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:5px;padding:2px 8px;font-size:.75rem;cursor:pointer;">Ver detalle</button>
+                </p>`;
+                window._lastRawError = raw;
+                return;
+            }
+
+            if (!Array.isArray(data) || !data.length) {
+                box.innerHTML = '<p style="color:#94a3b8;font-size:.83rem;padding:8px 0;">Sin resultados</p>';
+                return;
+            }
+            if (data[0]?._error) {
+                box.innerHTML = `<p style="color:#ef4444;font-size:.8rem;padding:8px 0;"><i class="fa-solid fa-triangle-exclamation"></i> ${escH(data[0]._error)}</p>`;
+                return;
+            }
+
+            box.innerHTML = data.map(s => `
+                <div class="res-item ${s.ya_registro ? 'ya' : ''}"
+                     onclick="${!s.ya_registro ? `registrarManual(${s.id},'${escH(s.nombre_completo)}')` : ''}">
+                    <div class="av">${s.iniciales}</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;font-size:.88rem;">${escH(s.nombre_completo)}</div>
+                        <div style="font-size:.75rem;color:#64748b;">${s.cedula}</div>
+                    </div>
+                    ${s.ya_registro
+                        ? '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap;">✅ Ya registrado</span>'
+                        : '<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:700;cursor:pointer;white-space:nowrap;">Registrar ›</span>'}
+                </div>`).join('');
+
+        } catch(e) {
+            box.innerHTML = `<p style="color:#ef4444;font-size:.8rem;padding:8px 0;"><i class="fa-solid fa-triangle-exclamation"></i> Error de red: ${e.message}</p>`;
+        }
     }, 350);
 }
 
-function escH(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;');}
+function verDetalleError() {
+    if (window._lastRawError) alert('Respuesta del servidor:\n\n' + window._lastRawError.substring(0, 600));
+}
 
-function registrarManual(socio_id,nombre){
-    if(!confirm(`¿Registrar asistencia de:\n${nombre}?`)) return;
-    fetch('ajax_registrar_asistencia.php',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({convocatoria_id:CONV_ID,socio_id,metodo:'manual'})
-    }).then(r=>r.json()).then(d=>{
-        if(d.ok) location.reload();
-        else alert('Error: '+(d.msg||'No se pudo registrar'));
+function escH(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;'); }
+
+function registrarManual(socio_id, nombre) {
+    if (!confirm(`¿Registrar asistencia de:\n${nombre}?`)) return;
+    fetch('ajax_registrar_asistencia.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ convocatoria_id: CONV_ID, socio_id, metodo: 'manual' })
+    }).then(r => r.json()).then(d => {
+        if (d.ok) location.reload();
+        else alert('Error: ' + (d.msg || 'No se pudo registrar'));
+    }).catch(e => alert('Error de red: ' + e.message));
+}
+
+function eliminarAsist(id, nombre) {
+    if (!confirm(`¿Eliminar asistencia de:\n${nombre}?`)) return;
+    fetch('ajax_eliminar_asistencia.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+    }).then(r => r.json()).then(d => {
+        if (d.ok) location.reload();
+        else alert(d.msg);
     });
 }
 
-function eliminarAsist(id,nombre){
-    if(!confirm(`¿Eliminar asistencia de:\n${nombre}?`)) return;
-    fetch('ajax_eliminar_asistencia.php',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({id})
-    }).then(r=>r.json()).then(d=>{if(d.ok)location.reload();else alert(d.msg);});
+/* ══ TABLA: FILTRAR + ORDENAR + PAGINACIÓN ══ */
+const POR_PAG  = 15;
+let pagActual  = 1;
+let ordenCol   = 'nombre';
+let ordenAsc   = true;
+let filtroQ    = '';
+
+// Recoger todas las filas originales una vez
+const todasFilas = Array.from(document.querySelectorAll('#cuerpoTabla tr[data-nombre]'));
+let filasFiltradas = [...todasFilas];
+
+function filtrarTabla(q) {
+    filtroQ   = q.toLowerCase().trim();
+    pagActual = 1;
+    aplicarFiltroOrden();
+}
+
+function ordenarTabla(col) {
+    if (ordenCol === col) { ordenAsc = !ordenAsc; }
+    else { ordenCol = col; ordenAsc = true; }
+    document.getElementById('iconNombre').className = 'fa-solid fa-sort';
+    document.getElementById('iconHora').className   = 'fa-solid fa-sort';
+    document.getElementById('iconNombre').style.opacity = '.5';
+    document.getElementById('iconHora').style.opacity   = '.5';
+    const icon = col === 'nombre' ? document.getElementById('iconNombre') : document.getElementById('iconHora');
+    icon.className = `fa-solid fa-sort-${ordenAsc ? 'up' : 'down'}`;
+    icon.style.opacity = '1';
+    pagActual = 1;
+    aplicarFiltroOrden();
+}
+
+function aplicarFiltroOrden() {
+    // Filtrar
+    filasFiltradas = todasFilas.filter(tr => {
+        if (!filtroQ) return true;
+        return tr.dataset.nombre.includes(filtroQ) || tr.dataset.cedula.includes(filtroQ);
+    });
+    // Ordenar
+    filasFiltradas.sort((a, b) => {
+        let va = a.dataset[ordenCol === 'nombre' ? 'nombre' : 'hora'];
+        let vb = b.dataset[ordenCol === 'nombre' ? 'nombre' : 'hora'];
+        return ordenAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+    renderPagina();
+}
+
+function renderPagina() {
+    const tbody  = document.getElementById('cuerpoTabla');
+    const total  = filasFiltradas.length;
+    const totalPags = Math.max(1, Math.ceil(total / POR_PAG));
+    if (pagActual > totalPags) pagActual = totalPags;
+    const inicio = (pagActual - 1) * POR_PAG;
+    const fin    = Math.min(inicio + POR_PAG, total);
+
+    // Ocultar todas
+    todasFilas.forEach(tr => tr.style.display = 'none');
+    // Mostrar las de esta página
+    filasFiltradas.slice(inicio, fin).forEach((tr, i) => {
+        tr.style.display = '';
+        tr.querySelector('.num-col').textContent = inicio + i + 1;
+    });
+
+    // Sin resultados
+    const noRow = document.getElementById('noResRow');
+    if (noRow) noRow.remove();
+    if (!total) {
+        const nr = document.createElement('tr');
+        nr.id = 'noResRow';
+        nr.className = 'no-result-row';
+        nr.innerHTML = `<td colspan="6"><i class="fa-solid fa-magnifying-glass"></i> Sin resultados para "<b>${escH(filtroQ)}</b>"</td>`;
+        tbody.appendChild(nr);
+    }
+
+    // Info
+    document.getElementById('pagInfo').textContent =
+        total ? `Mostrando ${inicio+1}–${fin} de ${total}` : '0 resultados';
+
+    // Botones
+    const btns = document.getElementById('pagBtns');
+    if (totalPags <= 1) { btns.innerHTML = ''; return; }
+    let h = `<button class="pbtn" onclick="irPag(1)" ${pagActual===1?'disabled':''}>«</button>`;
+    h    += `<button class="pbtn" onclick="irPag(${pagActual-1})" ${pagActual===1?'disabled':''}>‹</button>`;
+    const desde = Math.max(1, pagActual - 2);
+    const hasta = Math.min(totalPags, pagActual + 2);
+    for (let p = desde; p <= hasta; p++) {
+        h += `<button class="pbtn ${p===pagActual?'active':''}" onclick="irPag(${p})">${p}</button>`;
+    }
+    h += `<button class="pbtn" onclick="irPag(${pagActual+1})" ${pagActual===totalPags?'disabled':''}>›</button>`;
+    h += `<button class="pbtn" onclick="irPag(${totalPags})" ${pagActual===totalPags?'disabled':''}>»</button>`;
+    btns.innerHTML = h;
+
+    document.getElementById('pagRow').style.display = total > 0 ? 'flex' : 'none';
+}
+
+function irPag(p) { pagActual = p; renderPagina(); }
+
+// Inicializar tabla
+if (todasFilas.length) {
+    ordenar_icono_inicial();
+    aplicarFiltroOrden();
+}
+function ordenar_icono_inicial() {
+    const icon = document.getElementById('iconNombre');
+    if (icon) { icon.className = 'fa-solid fa-sort-up'; icon.style.opacity = '1'; }
 }
 </script>
 </body>
