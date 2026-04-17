@@ -108,7 +108,7 @@ $puede = fn($clave) => in_array($clave, $permitidos);
         <?php endif; ?>
 
         <?php if ($puede('directiva')): ?>
-        <a href="#"><i class="fa fa-user-tie"></i> Directiva</a>
+        <a href="directiva.php"><i class="fa fa-user-tie"></i> Directiva</a>
         <?php endif; ?>
 
         <?php if ($puede('comisiones')): ?>

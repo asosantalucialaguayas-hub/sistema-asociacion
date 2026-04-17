@@ -1,83 +1,98 @@
 <?php
-// ============================================================
-// ajax_registrar_asistencia.php – Adaptado BD real
-// ============================================================
-ob_start(); // ← captura cualquier output accidental de bootstrap
-if (session_status()===PHP_SESSION_NONE) session_start();
+ob_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 require __DIR__ . "/layout/bootstrap.php";
-ob_clean(); // ← descarta cualquier HTML que haya soltado bootstrap
-
+ob_clean();
 header('Content-Type: application/json; charset=utf-8');
 
-// Función helper para salir siempre con JSON limpio
-function jsonOut(array $data): void {
-    ob_clean();
-    echo json_encode($data);
-    exit;
-}
+function jsonOut(array $data): void { ob_clean(); echo json_encode($data); exit; }
 
 define('BIO_TOKEN', getenv('BIO_TOKEN') ?: 'CAMBIAR_TOKEN_SECRETO_AQUI');
 
 $data     = json_decode(file_get_contents('php://input'), true) ?: [];
 $conv_id  = intval($data['convocatoria_id'] ?? 0);
-$socio_id = intval($data['socio_id'] ?? 0);
-$metodo   = in_array($data['metodo']??'',['manual','biometrico','qr']) ? $data['metodo'] : 'manual';
+$socio_id = intval($data['socio_id']        ?? 0);
+$metodo   = in_array($data['metodo'] ?? '', ['manual','biometrico','qr']) ? $data['metodo'] : 'manual';
 $token    = $data['token'] ?? '';
 
-$autenticado = isset($_SESSION['usuario']) || ($metodo==='biometrico' && $token===BIO_TOKEN);
-if (!$autenticado) jsonOut(['ok'=>false,'msg'=>'No autorizado']);
+$autenticado = isset($_SESSION['usuario']) || ($metodo === 'biometrico' && $token === BIO_TOKEN);
+if (!$autenticado)           jsonOut(['ok'=>false,'msg'=>'No autorizado']);
 if (!$conv_id || !$socio_id) jsonOut(['ok'=>false,'msg'=>'Datos incompletos']);
 
-// Verificar que la convocatoria esté activa
+// Verificar convocatoria
 try {
-    $stC = $pdo->prepare("SELECT estado FROM convocatorias WHERE id=?");
+    $stC = $pdo->prepare("SELECT estado, tipo_asistentes FROM convocatorias WHERE id=?");
     $stC->execute([$conv_id]);
-    $conv = $stC->fetch();
-} catch(PDOException $e) {
-    jsonOut(['ok'=>false,'msg'=>'Error DB (conv): '.$e->getMessage()]);
-}
+    $conv = $stC->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) { jsonOut(['ok'=>false,'msg'=>'Error DB conv: '.$e->getMessage()]); }
 
-if (!$conv || $conv['estado']!=='activa') {
-    jsonOut(['ok'=>false,'msg'=>'La convocatoria no está activa']);
-}
+if (!$conv || $conv['estado'] !== 'activa') jsonOut(['ok'=>false,'msg'=>'La convocatoria no está activa']);
 
-// Verificar socio usando id_socio
+$solo_directivos = ($conv['tipo_asistentes'] ?? 'general') === 'solo_directivos';
+
+// Verificar socio
 try {
     $stS = $pdo->prepare("SELECT id_socio, nombre_completo, identificacion FROM socios WHERE id_socio=? AND estado='activo'");
     $stS->execute([$socio_id]);
-    $socio = $stS->fetch();
-} catch(PDOException $e) {
-    jsonOut(['ok'=>false,'msg'=>'Error DB (socio): '.$e->getMessage()]);
-}
+    $socio = $stS->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) { jsonOut(['ok'=>false,'msg'=>'Error DB socio: '.$e->getMessage()]); }
 
 if (!$socio) jsonOut(['ok'=>false,'msg'=>'Socio no encontrado o inactivo']);
 
+// Insertar asistencia
 try {
     $ins = $pdo->prepare("
         INSERT INTO conv_asistencia (convocatoria_id, id_socio, hora_registro, metodo, registrado_por)
         VALUES (?, ?, NOW(), ?, ?)
-        ON DUPLICATE KEY UPDATE hora_registro=hora_registro
+        ON DUPLICATE KEY UPDATE hora_registro = hora_registro
     ");
-    $reg_por = $metodo==='biometrico' ? null : intval($_SESSION['id_usuario'] ?? 0);
+    $reg_por = $metodo === 'biometrico' ? null : intval($_SESSION['id_usuario'] ?? 0);
     $ins->execute([$conv_id, $socio_id, $metodo, $reg_por]);
 
     if ($ins->rowCount() > 0) {
-        $total = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
-        $stPr  = $pdo->prepare("SELECT COUNT(*) FROM conv_asistencia WHERE convocatoria_id=?");
+
+        // Total según tipo — con COLLATE para evitar error de collation
+        if ($solo_directivos) {
+            try {
+                $stP = $pdo->query("SELECT id FROM directiva_periodos WHERE estado='activo' ORDER BY id DESC LIMIT 1");
+                $pRow = $stP->fetch(PDO::FETCH_ASSOC);
+                if ($pRow) {
+                    $stT = $pdo->prepare("
+                        SELECT COUNT(DISTINCT COALESCE(
+                            s.identificacion COLLATE utf8mb4_general_ci,
+                            dm.cedula_manual
+                        ))
+                        FROM directiva_miembros dm
+                        LEFT JOIN socios s
+                               ON s.identificacion COLLATE utf8mb4_general_ci = dm.cedula_manual COLLATE utf8mb4_general_ci
+                              AND s.estado = 'activo'
+                        WHERE dm.periodo_id = ?
+                    ");
+                    $stT->execute([$pRow['id']]);
+                    $total = (int)$stT->fetchColumn();
+                } else {
+                    $total = 0;
+                }
+            } catch (Exception $e) {
+                // Fallback: contar miembros sin JOIN
+                $stT2 = $pdo->prepare("SELECT COUNT(DISTINCT cedula_manual) FROM directiva_miembros WHERE periodo_id = (SELECT id FROM directiva_periodos WHERE estado='activo' LIMIT 1)");
+                $stT2->execute();
+                $total = (int)$stT2->fetchColumn();
+            }
+        } else {
+            $total = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
+        }
+
+        $stPr = $pdo->prepare("SELECT COUNT(*) FROM conv_asistencia WHERE convocatoria_id=?");
         $stPr->execute([$conv_id]);
         $presentes = (int)$stPr->fetchColumn();
-        $pct = $total > 0 ? round(($presentes/$total)*100, 1) : 0;
-        jsonOut([
-            'ok'         => true,
-            'msg'        => 'Registrado',
-            'socio'      => $socio['nombre_completo'],
-            'presentes'  => $presentes,
-            'total'      => $total,
-            'porcentaje' => $pct,
-        ]);
+        $pct = $total > 0 ? round(($presentes / $total) * 100, 1) : 0;
+
+        jsonOut(['ok'=>true,'msg'=>'Registrado','socio'=>$socio['nombre_completo'],
+                 'presentes'=>$presentes,'total'=>$total,'porcentaje'=>$pct]);
     } else {
         jsonOut(['ok'=>false,'msg'=>$socio['nombre_completo'].' ya fue registrado anteriormente']);
     }
-} catch(PDOException $e) {
+} catch (PDOException $e) {
     jsonOut(['ok'=>false,'msg'=>'Error DB: '.$e->getMessage()]);
 }

@@ -51,17 +51,18 @@ if ($id_periodo) {
 // ── Datos asistencia ─────────────────────────────────────────
 $asistentes  = []; $total_socios = 0; $presentes = 0;
 $porcentaje  = 0;  $faltantes = 0;    $puntos = [];
-
+$solo_directivos = false;   // ← NUEVO
+ 
 if ($convocatoria) {
     $cid = $convocatoria['id'];
-
+    $solo_directivos = ($convocatoria['tipo_asistentes'] ?? 'general') === 'solo_directivos'; // ← NUEVO
+ 
     try {
         $stP = $pdo->prepare("SELECT * FROM convocatoria_puntos WHERE convocatoria_id=? ORDER BY numero");
         $stP->execute([$cid]); $puntos = $stP->fetchAll(PDO::FETCH_ASSOC);
     } catch(Exception $e) { $puntos=[]; }
-
+ 
     try {
-        // Usa identificacion (no cedula) y nombre_completo
         $stA = $pdo->prepare("
             SELECT a.id, a.metodo, a.hora_registro,
                    s.identificacion AS cedula,
@@ -73,16 +74,38 @@ if ($convocatoria) {
         ");
         $stA->execute([$cid]); $asistentes = $stA->fetchAll(PDO::FETCH_ASSOC);
     } catch(Exception $e) { $asistentes=[]; $err_asist=$e->getMessage(); }
-
+ 
+    // ── NUEVO: total según tipo de convocatoria ───────────────
     try {
-        $total_socios = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
+        if ($solo_directivos) {
+            // Período activo de directiva
+            $stPer = $pdo->query("SELECT id FROM directiva_periodos WHERE estado='activo' LIMIT 1");
+            $perRow = $stPer->fetch(PDO::FETCH_ASSOC);
+            if ($perRow) {
+                // Contar personas únicas (por cédula) en directiva + vigilancia
+                $stT = $pdo->prepare("
+                    SELECT COUNT(DISTINCT COALESCE(s2.identificacion, dm.cedula_manual))
+                    FROM directiva_miembros dm
+                    LEFT JOIN socios s2
+                           ON s2.identificacion COLLATE utf8mb4_general_ci = dm.cedula_manual COLLATE utf8mb4_general_ci
+                          AND s2.estado = 'activo'
+                    WHERE dm.periodo_id = ?
+                ");
+                $stT->execute([$perRow['id']]);
+                $total_socios = (int)$stT->fetchColumn();
+            } else {
+                $total_socios = 0;
+            }
+        } else {
+            $total_socios = (int)$pdo->query("SELECT COUNT(*) FROM socios WHERE estado='activo'")->fetchColumn();
+        }
     } catch(Exception $e) { $total_socios=0; }
-
+ 
     $presentes  = count($asistentes);
     $porcentaje = $total_socios>0 ? round(($presentes/$total_socios)*100,1) : 0;
     $faltantes  = max(0,$total_socios-$presentes);
-
-    // Bloqueo acta 48h
+ 
+    // Bloqueo acta 48h (sin cambios)
     if (($convocatoria['estado']??'')==='cerrada'
         && !empty($convocatoria['fecha_cierre_real'])
         && empty($convocatoria['acta_pdf_path'])) {
@@ -218,7 +241,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?= htmlspecialchars($flash['msg']) ?>
 </div>
 <?php endif; ?>
-
+<?php if (isset($err_total)): ?>
+<div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i> Error total: <?= htmlspecialchars($err_total) ?></div>
+<?php endif; ?>
 <?php if (isset($err_asist)): ?>
 <div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i> SQL asistencia: <?= htmlspecialchars($err_asist) ?></div>
 <?php endif; ?>
@@ -496,6 +521,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 
 <script>
 const CONV_ID = <?= json_encode($convocatoria['id'] ?? 0) ?>;
+const TIPO_ASISTENTES = <?= json_encode($convocatoria['tipo_asistentes'] ?? 'general') ?>;
+const ID_PERIODO = <?= json_encode($id_periodo) ?>;
 let timer;
 
 function buscarSocio(q) {
@@ -503,7 +530,7 @@ function buscarSocio(q) {
     const box = document.getElementById('resultadosBusqueda');
     if (q.length < 2) { box.innerHTML=''; return; }
     timer = setTimeout(()=>{
-        fetch(`ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}`)
+        fetch(`ajax_buscar_socio.php?q=${encodeURIComponent(q)}&conv_id=${CONV_ID}&tipo_asistentes=${encodeURIComponent(TIPO_ASISTENTES)}&id_periodo=${ID_PERIODO}`)
             .then(r=>r.json())
             .then(data=>{
                 if (!Array.isArray(data)||!data.length) {
