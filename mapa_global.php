@@ -629,11 +629,27 @@ function extraerAtributosKML(kmlStr,descExtra){
 function detectarTipo(n){n=n.toLowerCase();if(n.includes('area')||n.includes('área')||n.includes('hectarea'))return 'area';if(n==='lat'||n.includes('latitud'))return 'latitud';if(n==='lon'||n==='lng'||n.includes('longitud'))return 'longitud';if(n.includes('perimetro')||n.includes('perímetro'))return 'perimetro';return 'texto';}
 function calcularGeoKML(kmlStr){
   const info={area:null,latitud:null,longitud:null,perimetro:null};
-  try{const doc=new DOMParser().parseFromString(kmlStr,'text/xml');const coordEls=doc.querySelectorAll('coordinates');if(!coordEls.length)return info;let allCoords=[];
-  coordEls.forEach(el=>{(el.textContent||'').trim().split(/\s+/).forEach(c=>{const p=c.split(',');if(p.length>=2){const lon=parseFloat(p[0]),lat=parseFloat(p[1]);if(!isNaN(lon)&&!isNaN(lat))allCoords.push([lat,lon]);}});});
-  if(!allCoords.length)return info;
-  info.latitud=allCoords.reduce((s,c)=>s+c[0],0)/allCoords.length;info.longitud=allCoords.reduce((s,c)=>s+c[1],0)/allCoords.length;
-  if(allCoords.length>3){info.area=calcArea(allCoords);info.perimetro=calcPerim(allCoords);}
+  try{
+    const doc=new DOMParser().parseFromString(kmlStr,'text/xml');
+
+    // Solo el outerBoundaryIs para el área — ignorar innerBoundaryIs
+    let outerCoords=[];
+    let allCoords=[];
+
+    doc.querySelectorAll('Polygon').forEach(poly=>{
+      const outerEl=poly.querySelector('outerBoundaryIs coordinates')||
+                    poly.querySelector('outerBoundaryIs LinearRing coordinates');
+      if(!outerEl)return;
+      (outerEl.textContent||'').trim().split(/\s+/).forEach(c=>{
+        const p=c.split(',');
+        if(p.length>=2){const lon=parseFloat(p[0]),lat=parseFloat(p[1]);if(!isNaN(lon)&&!isNaN(lat)){outerCoords.push([lat,lon]);allCoords.push([lat,lon]);}}
+      });
+    });
+
+    if(!allCoords.length)return info;
+    info.latitud=allCoords.reduce((s,c)=>s+c[0],0)/allCoords.length;
+    info.longitud=allCoords.reduce((s,c)=>s+c[1],0)/allCoords.length;
+    if(outerCoords.length>3){info.area=calcArea(outerCoords);info.perimetro=calcPerim(outerCoords);}
   }catch(e){}return info;
 }
 function calcArea(coords){

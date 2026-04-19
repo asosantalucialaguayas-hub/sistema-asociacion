@@ -1205,13 +1205,25 @@ function calcularGeoKML(kmlStr) {
   const info={area:null,latitud:null,longitud:null,perimetro:null};
   try{
     const doc=new DOMParser().parseFromString(kmlStr,'text/xml');
-    const coordEls=doc.querySelectorAll('coordinates');if(!coordEls.length)return info;
-    let all=[];
-    coordEls.forEach(el=>{(el.textContent||'').trim().split(/\s+/).forEach(c=>{const p=c.split(',');if(p.length>=2){const lon=parseFloat(p[0]),lat=parseFloat(p[1]);if(!isNaN(lon)&&!isNaN(lat))all.push([lat,lon]);}});});
-    if(!all.length)return info;
-    info.latitud=all.reduce((s,c)=>s+c[0],0)/all.length;
-    info.longitud=all.reduce((s,c)=>s+c[1],0)/all.length;
-    if(all.length>3){info.area=calcArea(all);info.perimetro=calcPerim(all);}
+
+    // Solo el outerBoundaryIs para el área — ignorar innerBoundaryIs
+    let outerCoords=[];
+    let allCoords=[];
+
+    doc.querySelectorAll('Polygon').forEach(poly=>{
+      const outerEl=poly.querySelector('outerBoundaryIs coordinates')||
+                    poly.querySelector('outerBoundaryIs LinearRing coordinates');
+      if(!outerEl)return;
+      (outerEl.textContent||'').trim().split(/\s+/).forEach(c=>{
+        const p=c.split(',');
+        if(p.length>=2){const lon=parseFloat(p[0]),lat=parseFloat(p[1]);if(!isNaN(lon)&&!isNaN(lat)){outerCoords.push([lat,lon]);allCoords.push([lat,lon]);}}
+      });
+    });
+
+    if(!allCoords.length)return info;
+    info.latitud=allCoords.reduce((s,c)=>s+c[0],0)/allCoords.length;
+    info.longitud=allCoords.reduce((s,c)=>s+c[1],0)/allCoords.length;
+    if(outerCoords.length>3){info.area=calcArea(outerCoords);info.perimetro=calcPerim(outerCoords);}
   }catch(e){}
   return info;
 }
