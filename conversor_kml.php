@@ -964,7 +964,8 @@ function agregarCapaKML(kmlStr, nombre, nombreArchivo) {
       });
     }
   })).addTo(mapa);
-  capas[id] = { layer, nombre:nombreArchivo||nombre, displayName:nombre, formato:'KML', color, activa:true, atributos, geoInfo, kmlOriginal:kmlStr };
+  const atrsConCalcs = rellenarCalcs(atributos, geoInfo);
+  capas[id] = { layer, nombre:nombreArchivo||nombre, displayName:nombre, formato:'KML', color, activa:true, atributos:atrsConCalcs, geoInfo, kmlOriginal:kmlStr };
   seleccionarCapa(id); renderCapas(); actualizarStats(); ocultarEmpty(); centrarTodo();
   toast(`✅ KML cargado: ${nombre}`, '#10b981');
 }
@@ -1192,10 +1193,12 @@ function ocultarEmpty(){document.getElementById('emptyMap').classList.add('hidde
    EXTRACCIÓN KML / GEO
 ═══════════════════════════════════════════════════ */
 function extraerAtributosKML(kmlStr) {
+  const CAMPOS_CALC=['area','área','area_ha','hectarea','hectárea','ha','latitud','lat','longitud','lon','lng','perimetro','perímetro','perimetro_km'];
+  const esCalc=k=>CAMPOS_CALC.some(c=>k.toLowerCase().includes(c));
   const atrs=[]; const doc=new DOMParser().parseFromString(kmlStr,'text/xml');
-  doc.querySelectorAll('SimpleData').forEach(sd=>{const k=sd.getAttribute('name')||'';const v=(sd.textContent||'').trim();if(k)atrs.push({k,v,tipo:'texto'});});
-  if(!atrs.length){doc.querySelectorAll('ExtendedData > Data').forEach(d=>{const k=d.getAttribute('name')||'';const vEl=d.querySelector('value');const v=vEl?(vEl.textContent||'').trim():'';if(k)atrs.push({k,v,tipo:'texto'});});}
-  if(!atrs.length){const descEl=doc.querySelector('description');if(descEl){const dd=new DOMParser().parseFromString(descEl.textContent||'','text/html');dd.querySelectorAll('tr').forEach(row=>{const tds=row.querySelectorAll('td');if(tds.length>=2){const k=(tds[0].textContent||'').trim();const v=(tds[1].textContent||'').trim();if(k)atrs.push({k,v,tipo:'texto'});}});}}
+  doc.querySelectorAll('SimpleData').forEach(sd=>{const k=sd.getAttribute('name')||'';const v=(sd.textContent||'').trim();if(k&&!esCalc(k))atrs.push({k,v,tipo:'texto'});});
+  if(!atrs.length){doc.querySelectorAll('ExtendedData > Data').forEach(d=>{const k=d.getAttribute('name')||'';const vEl=d.querySelector('value');const v=vEl?(vEl.textContent||'').trim():'';if(k&&!esCalc(k))atrs.push({k,v,tipo:'texto'});});}
+  if(!atrs.length){const descEl=doc.querySelector('description');if(descEl){const dd=new DOMParser().parseFromString(descEl.textContent||'','text/html');dd.querySelectorAll('tr').forEach(row=>{const tds=row.querySelectorAll('td');if(tds.length>=2){const k=(tds[0].textContent||'').trim();const v=(tds[1].textContent||'').trim();if(k&&!esCalc(k))atrs.push({k,v,tipo:'texto'});}});}}
   return atrs;
 }
 function calcularGeoKML(kmlStr) {
