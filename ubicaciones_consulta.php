@@ -622,7 +622,7 @@ async function abrirResumen(idSocio, cedula, nombre, zona, codigoSlc, totalArchi
                         const k = (a.k||'').toLowerCase();
                         return k.includes('area') || k.includes('área') || k.includes('hectarea') || k.includes('ha') || a.tipo === 'area';
                     });
-                    if (areaAttr) hectareas = parseFloat(areaAttr.v);
+                    if (areaAttr) hectareas = parseFloat((areaAttr.v||'').replace(',','.'));
                 }
             } catch(e) {}
         }
@@ -638,7 +638,7 @@ async function abrirResumen(idSocio, cedula, nombre, zona, codigoSlc, totalArchi
                             const k = (a.k||'').toLowerCase();
                             return k.includes('area') || k.includes('área') || k.includes('ha') || a.tipo === 'area';
                         });
-                        if (areaAttr) hectareas = parseFloat(areaAttr.v);
+                        if (areaAttr) hectareas = parseFloat((areaAttr.v||'').replace(',','.'));
                     }
                     if (hectareas === null) {
                         hectareas = calcularAreaDesdeKml(kmlStr);
