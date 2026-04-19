@@ -3,12 +3,11 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['usuario'])) { die('No autorizado'); }
 require "config/conexion.php";
 
-$stmt = $pdo->query(""
+$stmt = $pdo->query("
     SELECT id_ubicacion, ruta_archivo, tipo_archivo, atributos, codigo_archivo
     FROM socio_ubicaciones
     WHERE atributos IS NOT NULL AND atributos != '' AND atributos != '[]'
-""
-);
+");
 $archivos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $actualizados = 0;
@@ -19,7 +18,6 @@ foreach ($archivos as $a) {
     $atrs = json_decode($a['atributos'], true);
     if (!is_array($atrs)) continue;
 
-    // Verificar si tiene campo de área
     $tieneArea = false;
     foreach ($atrs as $atr) {
         $t = $atr['tipo'] ?? '';
@@ -30,13 +28,14 @@ foreach ($archivos as $a) {
     }
     if (!$tieneArea) continue;
 
-    // Leer KML físico
     $ruta = __DIR__ . '/' . $a['ruta_archivo'];
-    if (!file_exists($ruta)) { $errores++; continue; }
+    if (!file_exists($ruta)) {
+        $log[] = "❌ No existe: " . $a['codigo_archivo'];
+        $errores++; continue;
+    }
 
     $contenido = file_get_contents($ruta);
 
-    // Descomprimir KMZ si aplica
     if (strtolower($a['tipo_archivo']) === 'kmz') {
         $zk = new ZipArchive();
         if ($zk->open($ruta) === true) {
@@ -50,11 +49,12 @@ foreach ($archivos as $a) {
         }
     }
 
-    // Calcular área real desde geometría usando fórmula Shoelace
     $area = calcularAreaKML($contenido);
-    if ($area === null) continue;
+    if ($area === null) {
+        $log[] = "⚠ Sin geometría: " . $a['codigo_archivo'];
+        continue;
+    }
 
-    // Actualizar atributos con el área nueva
     $atrsActualizados = array_map(function($atr) use ($area) {
         $t = $atr['tipo'] ?? '';
         $k = strtolower($atr['k'] ?? '');
@@ -75,9 +75,8 @@ function calcularAreaKML(string $kml): ?float {
     try {
         $doc = new DOMDocument();
         @$doc->loadXML($kml);
-        $coords = null;
 
-        // Buscar solo outerBoundaryIs
+        $puntos = [];
         $polys = $doc->getElementsByTagName('Polygon');
         if ($polys->length > 0) {
             foreach ($polys as $poly) {
@@ -85,30 +84,27 @@ function calcularAreaKML(string $kml): ?float {
                 if ($outerEls->length > 0) {
                     $coordEls = $outerEls->item(0)->getElementsByTagName('coordinates');
                     if ($coordEls->length > 0) {
-                        $coords = trim($coordEls->item(0)->textContent);
+                        $raw = trim($coordEls->item(0)->textContent);
+                        foreach (preg_split('/\s+/', $raw) as $c) {
+                            $p = explode(',', trim($c));
+                            if (count($p) >= 2) {
+                                $lon = floatval($p[0]);
+                                $lat = floatval($p[1]);
+                                if ($lon != 0 || $lat != 0) $puntos[] = [$lat, $lon];
+                            }
+                        }
                         break;
                     }
                 }
             }
         }
 
-        if (!$coords) return null;
-
-        $puntos = [];
-        foreach (preg_split('/\s+/', $coords) as $c) {
-            $p = explode(',', trim($c));
-            if (count($p) >= 2) {
-                $lon = floatval($p[0]); $lat = floatval($p[1]);
-                if (!is_nan($lon) && !is_nan($lat)) $puntos[] = [$lat, $lon];
-            }
-        }
         if (count($puntos) < 3) return null;
 
-        // Fórmula Shoelace con proyección equirrectangular
         $R = 6371000;
         $lat0 = $puntos[0][0] * M_PI / 180;
         $cosLat = cos($lat0);
-        $area = 0;
+        $area = 0.0;
         $n = count($puntos);
         for ($i = 0; $i < $n; $i++) {
             $j = ($i + 1) % $n;
@@ -118,17 +114,18 @@ function calcularAreaKML(string $kml): ?float {
             $y2 = $puntos[$j][0] * M_PI / 180 * $R;
             $area += $x1 * $y2 - $x2 * $y1;
         }
-        return round(abs($area) / 2 / 10000, 6);
+        return round(abs($area) / 2.0 / 10000, 6);
     } catch (Exception $e) {
         return null;
     }
 }
 
-echo "<pre>";
+echo "<pre style='font-family:monospace;font-size:13px;padding:20px;'>";
 echo "=== RECÁLCULO DE ÁREAS ===\n\n";
-echo "Archivos procesados: " . count($archivos) . "\n";
+echo "Archivos revisados: " . count($archivos) . "\n";
 echo "Actualizados: $actualizados\n";
-echo "Errores: $errores\n\n";
+echo "Errores/sin geom: $errores\n\n";
 echo implode("\n", $log);
-echo "\n\n=== LISTO ===";
+echo "\n\n=== LISTO — ya puedes borrar este archivo ===";
 echo "</pre>";
+?>
