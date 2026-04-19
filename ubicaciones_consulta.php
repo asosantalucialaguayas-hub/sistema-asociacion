@@ -1187,7 +1187,7 @@ function cerrarModal(id){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BLOQUE 3 — RESUMEN GLOBAL (JavaScript)
+   BLOQUE 3 — RESUMEN GLOBAL OPTIMIZADO
 ══════════════════════════════════════════════════════════════ */
 let rgDatos   = [];
 let rgFiltro  = '';
@@ -1204,175 +1204,37 @@ function cerrarResumenGlobal() {
 
 async function cargarResumenGlobal() {
     document.getElementById('rgContenidoSocios').innerHTML =
-        '<div class="rg-loading"><i class="fa fa-spinner fa-spin" style="font-size:24px;color:#4f46e5;display:block;margin-bottom:8px;"></i>Obteniendo socios...</div>';
+        '<div class="rg-loading"><i class="fa fa-spinner fa-spin" style="font-size:24px;color:#4f46e5;display:block;margin-bottom:8px;"></i>Cargando datos...</div>';
     document.getElementById('rgContenidoLibres').innerHTML =
-        '<div class="rg-loading"><i class="fa fa-spinner fa-spin" style="font-size:24px;color:#10b981;display:block;margin-bottom:8px;"></i>Calculando...</div>';
-
-    let todosSociosRg = [];
+        '<div class="rg-loading"><i class="fa fa-spinner fa-spin" style="font-size:24px;color:#10b981;display:block;margin-bottom:8px;"></i>Calculando códigos...</div>';
     try {
-        const r = await fetch('ubicaciones_api.php?accion=buscar_socios&pagina=1&porPagina=9999&con_kml=con');
-        const j = await r.json();
-        if (j.success) todosSociosRg = j.datos;
-    } catch(e) { mostrarToastUbic('❌ Error al cargar socios','error'); return; }
-
-    rgDatos = [];
-    let procesados = 0;
-
-    for (const s of todosSociosRg) {
-        let archivos = [];
-        try {
-            const r2 = await fetch(`ubicaciones_api.php?accion=listar&id_socio=${s.id_socio}`);
-            const j2 = await r2.json();
-            if (j2.success) archivos = j2.datos;
-        } catch(e) {}
-
-        const lotes = [];
-        let totalHaSocio = 0;
-
-        for (const arch of archivos) {
-            let hectareas = null;
-
-            if (arch.atributos) {
-                try {
-                    const atrs = typeof arch.atributos === 'string' ? JSON.parse(arch.atributos) : arch.atributos;
-                    if (Array.isArray(atrs)) {
-                        const a = atrs.find(x => {
-                            const k = (x.k||'').toLowerCase();
-                            return k.includes('area')||k.includes('área')||k.includes('hectarea')||x.tipo==='area';
-                        });
-                        if (a) hectareas = parseFloat(a.v);
-                    }
-                } catch(e) {}
-            }
-
-            if (hectareas === null) {
-                try {
-                    const r3 = await fetch(`ubicaciones_api.php?accion=leer_kml&id_ubicacion=${arch.id_ubicacion}`);
-                    const j3 = await r3.json();
-                    if (j3.success) {
-                        if (j3.atributos && j3.atributos.length) {
-                            const a = j3.atributos.find(x => {
-                                const k=(x.k||'').toLowerCase();
-                                return k.includes('area')||k.includes('área')||k.includes('hectarea')||x.tipo==='area';
-                            });
-                            if (a) hectareas = parseFloat(a.v);
-                        }
-                        if (hectareas === null) hectareas = rgExtraerHaKml(atob(j3.kml));
-                    }
-                } catch(e) {}
-            }
-
-            if (hectareas !== null && !isNaN(hectareas)) totalHaSocio += hectareas;
-            lotes.push({ codigo: arch.codigo_archivo || arch.nombre_archivo, hectareas });
+        const r = await fetch('ubicaciones_resumen_global.php');
+        const txt = await r.text();
+        let data;
+        try { data = JSON.parse(txt); }
+        catch(e) {
+            document.getElementById('rgContenidoSocios').innerHTML =
+                `<div class="rg-loading" style="color:#ef4444;">❌ Error del servidor:<br><small style="font-family:monospace;">${txt.substring(0,300)}</small></div>`;
+            return;
         }
-
-        rgDatos.push({
-            id_socio:       s.id_socio,
-            identificacion: s.identificacion,
-            nombre:         s.nombre_completo || s.identificacion,
-            zona:           s.zona || '',
-            comunidad:      s.comunidad_grupo || '',
-            adendum:        parseInt(s.adendum||0),
-            lotes,
-            totalHa:        totalHaSocio,
-            totalArchivos:  archivos.length,
-            codigoBase:     s.codigo_slc || '',
-        });
-
-        procesados++;
+        if (!data.success) {
+            document.getElementById('rgContenidoSocios').innerHTML =
+                `<div class="rg-loading" style="color:#ef4444;">❌ ${data.message}</div>`;
+            return;
+        }
+        rgDatos = data.socios || [];
+        document.getElementById('rgStTotal').textContent  = data.stats.total_socios;
+        document.getElementById('rgStConKml').textContent = data.stats.socios_con_kml;
+        document.getElementById('rgStSinKml').textContent = data.stats.socios_sin_kml;
+        document.getElementById('rgStHa').textContent     = data.stats.total_ha > 0 ? data.stats.total_ha.toFixed(2) + ' ha' : '—';
+        document.getElementById('rgStLibres').textContent = data.stats.codigos_libres;
+        rgCargado = true;
+        renderResumenGlobalSocios();
+        renderResumenGlobalLibresDesdeData(data.codigos_libres, data.socios);
+    } catch(e) {
         document.getElementById('rgContenidoSocios').innerHTML =
-            `<div class="rg-loading"><i class="fa fa-spinner fa-spin" style="font-size:20px;color:#4f46e5;display:block;margin-bottom:8px;"></i>Cargando ${procesados}/${todosSociosRg.length} socios...</div>`;
+            `<div class="rg-loading" style="color:#ef4444;">❌ Error de red: ${e.message}</div>`;
     }
-
-    rgCargado = true;
-    rgActualizarStats();
-    renderResumenGlobalSocios();
-    renderResumenGlobalLibres();
-}
-
-function rgExtraerHaKml(kmlStr) {
-    try {
-        const doc = new DOMParser().parseFromString(kmlStr, 'text/xml');
-        const desc = doc.querySelector('description');
-        if (desc) {
-            const dd = new DOMParser().parseFromString(desc.textContent||'','text/html');
-            for (const row of dd.querySelectorAll('tr')) {
-                const tds = row.querySelectorAll('td');
-                if (tds.length>=2) {
-                    const k=(tds[0].textContent||'').toLowerCase();
-                    if (k.includes('area')||k.includes('área')||k.includes('hectarea')||k==='ha') {
-                        const v=parseFloat((tds[1].textContent||'').replace(',','.'));
-                        if (!isNaN(v)) return v;
-                    }
-                }
-            }
-        }
-        for (const sd of doc.querySelectorAll('SimpleData')) {
-            const n=(sd.getAttribute('name')||'').toLowerCase();
-            if (n.includes('area')||n.includes('área')||n.includes('hectarea')) {
-                const v=parseFloat((sd.textContent||'').replace(',','.'));
-                if (!isNaN(v)) return v;
-            }
-        }
-        for (const d of doc.querySelectorAll('ExtendedData > Data')) {
-            const n=(d.getAttribute('name')||'').toLowerCase();
-            if (n.includes('area')||n.includes('área')||n.includes('hectarea')) {
-                const el=d.querySelector('value');
-                if (el) { const v=parseFloat((el.textContent||'').replace(',','.'));if(!isNaN(v))return v; }
-            }
-        }
-        const coords=[];
-        doc.querySelectorAll('coordinates').forEach(el=>{
-            (el.textContent||'').trim().split(/\s+/).forEach(c=>{
-                const p=c.split(',');
-                if(p.length>=2){const lon=parseFloat(p[0]),lat=parseFloat(p[1]);if(!isNaN(lon)&&!isNaN(lat))coords.push([lat,lon]);}
-            });
-        });
-        if (coords.length>3) {
-            let area=0;const n2=coords.length,R=6371000;
-            for(let i=0;i<n2-1;i++){
-                const lat1=coords[i][0]*Math.PI/180,lat2=coords[i+1][0]*Math.PI/180;
-                const dlon=(coords[i+1][1]-coords[i][1])*Math.PI/180;
-                area+=dlon*(2+Math.sin(lat1)+Math.sin(lat2));
-            }
-            return parseFloat((Math.abs(area)*R*R/2/10000).toFixed(3));
-        }
-    } catch(e) {}
-    return null;
-}
-
-function rgActualizarStats() {
-    const totalSocios = rgDatos.length;
-    const conKml      = rgDatos.filter(s=>s.totalArchivos>0).length;
-    const sinKml      = totalSocios - conKml;
-    const totalHa     = rgDatos.reduce((s,x)=>s+x.totalHa,0);
-    const libres      = rgCalcularLibres();
-
-    document.getElementById('rgStTotal').textContent  = totalSocios;
-    document.getElementById('rgStConKml').textContent = conKml;
-    document.getElementById('rgStSinKml').textContent = sinKml;
-    document.getElementById('rgStHa').textContent     = totalHa > 0 ? totalHa.toFixed(2)+' ha' : '—';
-    document.getElementById('rgStLibres').textContent = libres.length;
-}
-
-function rgCalcularLibres() {
-    const usados = new Set();
-    let maxNum = 0;
-    rgDatos.forEach(s => {
-        s.lotes.forEach(l => {
-            const m = (l.codigo||'').match(/^SLC-(\d+)/i);
-            if (m) {
-                const n = parseInt(m[1]);
-                usados.add(n);
-                if (n > maxNum) maxNum = n;
-            }
-        });
-    });
-    const libres = [];
-    for (let i = 1; i <= maxNum + 10; i++) {
-        if (!usados.has(i)) libres.push(`SLC-${String(i).padStart(3,'0')}`);
-    }
-    return libres;
 }
 
 function renderResumenGlobalSocios() {
@@ -1382,25 +1244,25 @@ function renderResumenGlobalSocios() {
         datos = rgDatos.filter(s =>
             s.nombre.toLowerCase().includes(q) ||
             s.identificacion.toLowerCase().includes(q) ||
-            s.lotes.some(l=>(l.codigo||'').toLowerCase().includes(q))
+            s.lotes.some(l => (l.codigo||'').toLowerCase().includes(q))
         );
     }
-
     if (!datos.length) {
         document.getElementById('rgContenidoSocios').innerHTML =
-            '<div class="rg-loading" style="color:#9ca3af;">Sin resultados para "'+escHtmlRg(rgFiltro)+'"</div>';
+            `<div class="rg-loading" style="color:#9ca3af;">Sin resultados para "${escHtmlRg(rgFiltro)}"</div>`;
         return;
     }
-
     let filas = '';
     datos.forEach((s, idx) => {
-        const haStr = s.totalHa > 0 ? `<span class="rg-ha">${s.totalHa.toFixed(3)} ha</span>` : `<span class="rg-ha-nd">Sin datos</span>`;
+        const haStr = s.totalHa > 0
+            ? `<span class="rg-ha">${parseFloat(s.totalHa).toFixed(3)} ha</span>`
+            : `<span class="rg-ha-nd">Sin datos</span>`;
         const codigosHtml = s.lotes.length
-            ? s.lotes.map(l=>`<span class="rg-cod">${escHtmlRg(l.codigo)}</span>`).join('')
+            ? s.lotes.map(l => `<span class="rg-cod">${escHtmlRg(l.codigo)}</span>`).join('')
             : `<span class="rg-no-arch">Sin archivos</span>`;
-        const adBadge = s.adendum===2
+        const adBadge = s.adendum === 2
             ? '<span style="background:#fef9c3;color:#854d0e;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;">Ad.2</span>'
-            : s.adendum===1
+            : s.adendum === 1
                 ? '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;">Ad.1</span>'
                 : '<span style="background:#f3f4f6;color:#9ca3af;padding:2px 8px;border-radius:999px;font-size:10px;">—</span>';
         filas += `<tr>
@@ -1409,89 +1271,66 @@ function renderResumenGlobalSocios() {
             <td><strong>${escHtmlRg(s.nombre)}</strong><br><small style="color:#9ca3af;">${escHtmlRg(s.zona)}</small></td>
             <td style="text-align:center;">${adBadge}</td>
             <td style="text-align:center;">${haStr}</td>
-            <td style="text-align:center;font-weight:700;color:#4f46e5;">${s.totalArchivos}</td>
+            <td style="text-align:center;font-weight:700;color:#4f46e5;">${s.lotes.length}</td>
             <td><div class="rg-cod-list">${codigosHtml}</div></td>
         </tr>`;
     });
-
-    const totalHaFiltrado = datos.reduce((s,x)=>s+x.totalHa,0);
-
+    const totalHaFiltrado = datos.reduce((s, x) => s + (x.totalHa || 0), 0);
+    const totalLotes      = datos.reduce((s, x) => s + x.lotes.length, 0);
     document.getElementById('rgContenidoSocios').innerHTML = `
         <table class="rg-table">
-            <thead>
-                <tr>
-                    <th style="width:36px;">#</th>
-                    <th>Cédula</th>
-                    <th>Nombre</th>
-                    <th style="text-align:center;">Adendum</th>
-                    <th style="text-align:center;">Hectáreas</th>
-                    <th style="text-align:center;">Lotes</th>
-                    <th>Códigos</th>
-                </tr>
-            </thead>
+            <thead><tr>
+                <th style="width:36px;">#</th><th>Cédula</th><th>Nombre</th>
+                <th style="text-align:center;">Adendum</th><th style="text-align:center;">Hectáreas</th>
+                <th style="text-align:center;">Lotes</th><th>Códigos</th>
+            </tr></thead>
             <tbody>${filas}</tbody>
-            <tfoot>
-                <tr style="background:#f1f5f9;font-weight:700;">
-                    <td colspan="4" style="padding:10px;text-align:right;font-size:12px;">TOTAL ${datos.length} socios:</td>
-                    <td style="text-align:center;font-family:monospace;color:#1f3a5f;padding:10px;">
-                        ${totalHaFiltrado>0 ? totalHaFiltrado.toFixed(3)+' ha' : '—'}
-                    </td>
-                    <td style="text-align:center;padding:10px;">${datos.reduce((s,x)=>s+x.totalArchivos,0)}</td>
-                    <td></td>
-                </tr>
-            </tfoot>
+            <tfoot><tr style="background:#f1f5f9;font-weight:700;">
+                <td colspan="4" style="padding:10px;text-align:right;font-size:12px;">TOTAL ${datos.length} socios:</td>
+                <td style="text-align:center;font-family:monospace;color:#1f3a5f;padding:10px;">${totalHaFiltrado > 0 ? totalHaFiltrado.toFixed(3)+' ha' : '—'}</td>
+                <td style="text-align:center;padding:10px;">${totalLotes}</td>
+                <td></td>
+            </tr></tfoot>
         </table>`;
 }
 
-function renderResumenGlobalLibres() {
-    const libres = rgCalcularLibres();
+function renderResumenGlobalLibresDesdeData(libres, socios) {
     const q = rgFiltro.toLowerCase();
-
     const ocupados = [];
-    rgDatos.forEach(s => s.lotes.forEach(l => {
-        const m = (l.codigo||'').match(/^SLC-\d+/i);
-        if (m) ocupados.push({ codigo: l.codigo, socio: s.nombre, cedula: s.identificacion });
-    }));
-    ocupados.sort((a,b)=>a.codigo.localeCompare(b.codigo));
-
-    const maxOcupado = ocupados.reduce((max, o) => {
-        const m = (o.codigo||'').match(/SLC-(\d+)/i);
-        return m ? Math.max(max, parseInt(m[1])) : max;
-    }, 0);
-
-    const libresHTML = libres
+    (socios || rgDatos).forEach(s => {
+        s.lotes.forEach(l => {
+            if (/^SLC-\d+/i.test(l.codigo))
+                ocupados.push({ codigo: l.codigo, socio: s.nombre, cedula: s.identificacion });
+        });
+    });
+    ocupados.sort((a, b) => a.codigo.localeCompare(b.codigo));
+    const libresHTML = (libres || [])
         .filter(c => !q || c.toLowerCase().includes(q))
         .map(c => `<div class="libre-chip" title="Código disponible"><i class="fa fa-check" style="color:#10b981;margin-right:4px;font-size:10px;"></i>${c}</div>`)
         .join('');
-
+    const ocupadosFiltrados = ocupados.filter(o =>
+        !q || o.codigo.toLowerCase().includes(q) || o.socio.toLowerCase().includes(q) || o.cedula.toLowerCase().includes(q)
+    );
     document.getElementById('rgContenidoLibres').innerHTML = `
         <div style="padding:16px 20px 8px;">
             <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:4px;">
                 <i class="fa fa-circle-check" style="color:#10b981;"></i>
-                Códigos disponibles (${libres.length} libres entre SLC-001 y SLC-${String(maxOcupado+10).padStart(3,'0')})
+                Códigos disponibles dentro del rango usado (${(libres||[]).length} libres)
             </div>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Los códigos en verde no tienen ningún lote asignado.</div>
-            <div class="libre-grid">${libresHTML || '<div style="color:#9ca3af;font-size:13px;">Sin resultados</div>'}</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Son los números saltados entre SLC-001 y el código más alto registrado.</div>
+            <div class="libre-grid">${libresHTML || '<div style="color:#9ca3af;padding:12px;font-size:13px;">No hay códigos libres en el rango actual</div>'}</div>
         </div>
         <div style="padding:0 20px 16px;">
             <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;padding-top:10px;border-top:1px solid #e5e7eb;">
-                <i class="fa fa-circle-xmark" style="color:#ef4444;"></i>
-                Códigos ocupados (${ocupados.length})
+                <i class="fa fa-circle-xmark" style="color:#ef4444;"></i> Códigos en uso (${ocupadosFiltrados.length})
             </div>
             <table class="rg-table">
-                <thead><tr>
-                    <th>Código</th>
-                    <th>Socio</th>
-                    <th>Cédula</th>
-                </tr></thead>
-                <tbody>
-                    ${ocupados.filter(o=>!q||o.codigo.toLowerCase().includes(q)||o.socio.toLowerCase().includes(q)||o.cedula.toLowerCase().includes(q))
-                        .map(o=>`<tr>
-                            <td><span class="ocupado-chip">${escHtmlRg(o.codigo)}</span></td>
-                            <td>${escHtmlRg(o.socio)}</td>
-                            <td style="font-family:monospace;font-size:11px;">${escHtmlRg(o.cedula)}</td>
-                        </tr>`).join('')}
-                </tbody>
+                <thead><tr><th>Código</th><th>Socio</th><th>Cédula</th></tr></thead>
+                <tbody>${ocupadosFiltrados.map(o => `<tr>
+                    <td><span class="ocupado-chip">${escHtmlRg(o.codigo)}</span></td>
+                    <td>${escHtmlRg(o.socio)}</td>
+                    <td style="font-family:monospace;font-size:11px;">${escHtmlRg(o.cedula)}</td>
+                </tr>`).join('')}</tbody>
             </table>
         </div>`;
 }
@@ -1499,12 +1338,22 @@ function renderResumenGlobalLibres() {
 function filtrarResumenGlobal() {
     rgFiltro = document.getElementById('rgBuscar').value || '';
     renderResumenGlobalSocios();
-    renderResumenGlobalLibres();
+    const libresActuales = [];
+    const usados = new Set();
+    let maxNum = 0;
+    rgDatos.forEach(s => s.lotes.forEach(l => {
+        const m = (l.codigo||'').match(/^SLC-(\d+)/i);
+        if (m) { const n = parseInt(m[1]); usados.add(n); if (n > maxNum) maxNum = n; }
+    }));
+    for (let i = 1; i <= maxNum; i++) {
+        if (!usados.has(i)) libresActuales.push('SLC-' + String(i).padStart(3,'0'));
+    }
+    renderResumenGlobalLibresDesdeData(libresActuales, rgDatos);
 }
 
 function cambiarRgTab(tabId, btn) {
-    document.querySelectorAll('.rg-tc').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.rg-tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.rg-tc').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.rg-tab').forEach(b => b.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     if (btn) btn.classList.add('active');
 }
@@ -1514,38 +1363,22 @@ function escHtmlRg(s) {
 }
 
 function exportarResumenGlobalExcel() {
-    const datos = rgFiltro
-        ? rgDatos.filter(s=>s.nombre.toLowerCase().includes(rgFiltro.toLowerCase())||s.identificacion.toLowerCase().includes(rgFiltro.toLowerCase()))
-        : rgDatos;
-
-    if (!datos.length) { mostrarToastUbic('No hay datos para exportar','error'); return; }
-
+    const q = rgFiltro.toLowerCase();
+    const datos = q ? rgDatos.filter(s => s.nombre.toLowerCase().includes(q) || s.identificacion.toLowerCase().includes(q)) : rgDatos;
+    if (!datos.length) { mostrarToastUbic('No hay datos para exportar', 'error'); return; }
     const lotes = [];
     datos.forEach(s => {
-        s.lotes.forEach(l => {
-            lotes.push({
-                cedula:    s.identificacion,
-                nombre:    s.nombre,
-                zona:      s.zona,
-                comunidad: s.comunidad,
-                adendum:   s.adendum===2?'Adendum 2':s.adendum===1?'Adendum 1':'—',
-                codigo:    l.codigo,
-                hectareas: l.hectareas,
-                totalHa:   s.totalHa,
-            });
-        });
-        if (!s.lotes.length) {
-            lotes.push({ cedula:s.identificacion,nombre:s.nombre,zona:s.zona,comunidad:s.comunidad,adendum:s.adendum===2?'Adendum 2':s.adendum===1?'Adendum 1':'—',codigo:'',hectareas:null,totalHa:0 });
+        if (s.lotes.length) {
+            s.lotes.forEach(l => { lotes.push({ cedula:s.identificacion, nombre:s.nombre, zona:s.zona, comunidad:s.comunidad, adendum:s.adendum===2?'Adendum 2':s.adendum===1?'Adendum 1':'—', codigo:l.codigo, hectareas:l.hectareas }); });
+        } else {
+            lotes.push({ cedula:s.identificacion, nombre:s.nombre, zona:s.zona, comunidad:s.comunidad, adendum:s.adendum===2?'Adendum 2':s.adendum===1?'Adendum 1':'—', codigo:'', hectareas:null });
         }
     });
-
-    const totalHaGlobal = datos.reduce((s,x)=>s+x.totalHa,0);
-    const payload = { lotes, totalHaGlobal, tipo: 'global' };
-
+    const totalHaGlobal = datos.reduce((s, x) => s + (x.totalHa||0), 0);
     const form = document.createElement('form');
     form.method='POST'; form.action='ubicaciones_api.php'; form.target='_blank';
     const i1=document.createElement('input'); i1.type='hidden'; i1.name='accion'; i1.value='exportar_resumen_global_excel';
-    const i2=document.createElement('input'); i2.type='hidden'; i2.name='payload'; i2.value=JSON.stringify(payload);
+    const i2=document.createElement('input'); i2.type='hidden'; i2.name='payload'; i2.value=JSON.stringify({ lotes, totalHaGlobal });
     form.appendChild(i1); form.appendChild(i2);
     document.body.appendChild(form); form.submit(); document.body.removeChild(form);
 }
