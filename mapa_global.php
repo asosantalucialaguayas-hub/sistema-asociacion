@@ -490,26 +490,85 @@ function inicializarMapa(){
    CARGA MASIVA
 ═══════════════════════════════════════ */
 async function cargarTodasLasCapas(){
-  setLoading(true,'Obteniendo socios...',10);
+  setLoading(true,'Cargando datos del servidor...',10);
   let datos=[];
   try{
-    const r=await fetch('ubicaciones_api.php?accion=buscar_socios&pagina=1&porPagina=9999&con_kml=con');
-    const j=await r.json();
-    if(j.success) datos=j.datos;
+    const r=await fetch('mapa_global_datos.php');
+    const txt=await r.text();
+    let json;
+    try{json=JSON.parse(txt);}
+    catch(e){toast('❌ Error del servidor','#ef4444');setLoading(false);return;}
+    if(!json.success||!json.datos.length){
+      setLoading(false);
+      document.getElementById('listaCapas').innerHTML='<div style="text-align:center;padding:30px;color:#334155;font-size:12px;">No hay KML cargados.</div>';
+      return;
+    }
+    datos=json.datos;
   }catch(e){toast('❌ Error de conexión','#ef4444');setLoading(false);return;}
-  if(!datos.length){setLoading(false);document.getElementById('listaCapas').innerHTML='<div style="text-align:center;padding:30px;color:#334155;font-size:12px;">No hay KML cargados.</div>';return;}
-  let total=0;const sc=[];
-  for(let i=0;i<datos.length;i++){
-    try{const r2=await fetch(`ubicaciones_api.php?accion=listar&id_socio=${datos[i].id_socio}`);const j2=await r2.json();if(j2.success&&j2.datos.length){sc.push({socio:datos[i],archivos:j2.datos});total+=j2.datos.length;}}catch(e){}
-    setLoading(true,`Socio ${i+1}/${datos.length}...`,20+Math.round(((i+1)/datos.length)*52));
-  }
-  todosSocios=sc;setLoading(true,`Renderizando ${total} capas...`,74);
+
+  // Agrupar por socio para el panel lateral
+  const sociosMap={};
+  datos.forEach(d=>{
+    if(!sociosMap[d.id_socio]){
+      sociosMap[d.id_socio]={
+        socio:{id_socio:d.id_socio,nombre_completo:d.nombre_socio,identificacion:d.identificacion},
+        archivos:[]
+      };
+    }
+    sociosMap[d.id_socio].archivos.push({
+      id_ubicacion:d.id_ubicacion,nombre_archivo:d.nombre_archivo,
+      tipo_archivo:d.tipo_archivo,codigo_archivo:d.codigo_archivo,
+      descripcion:d.descripcion,subido_por:d.subido_por,fecha_subida:d.fecha_subida,
+    });
+  });
+  todosSocios=Object.values(sociosMap);
+
+  const total=datos.length;
   let ci=0,loaded=0;
-  for(const g of sc){
-    for(const arch of g.archivos){
-      const col=COLORES[ci%COLORES.length];ci++;
-      await cargarKmlEnMapa(arch,g.socio,col);
-      loaded++;setLoading(true,`${loaded}/${total}: ${arch.codigo_archivo||arch.nombre_archivo}`,74+Math.round((loaded/total)*22));
+  setLoading(true,`Renderizando ${total} capas en el mapa...`,30);
+
+  for(const d of datos){
+    const col=COLORES[ci%COLORES.length];ci++;
+    const color=(d.color_capa&&d.color_capa!=='#38bdf8')?d.color_capa:col;
+    const socio={id_socio:d.id_socio,nombre_completo:d.nombre_socio,identificacion:d.identificacion};
+    const arch={
+      id_ubicacion:d.id_ubicacion,nombre_archivo:d.nombre_archivo,
+      tipo_archivo:d.tipo_archivo,codigo_archivo:d.codigo_archivo,
+      descripcion:d.descripcion,subido_por:d.subido_por,fecha_subida:d.fecha_subida,
+    };
+    try{
+      const kmlStr=atob(d.kml);
+      let atributos=[];
+      if(d.atributos&&d.atributos.length){atributos=d.atributos;}
+      else{atributos=extraerAtributosKML(kmlStr,d.descripcion);}
+      const geoInfo=calcularGeoKML(kmlStr);
+      atributos=rellenarCalcs(atributos,geoInfo);
+      const layer=omnivore.kml.parse(kmlStr,null,L.geoJson(null,{
+        style:{color,weight:2.5,fillOpacity:0.22,fillColor:color},
+        pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:7,fillColor:color,color:'#fff',weight:2,fillOpacity:.9}),
+        onEachFeature:(feature,lyr)=>{
+          lyr.on('click',function(e){
+            L.DomEvent.stopPropagation(e);
+            if(editState.activo&&editState.modoEdit==='vertices')return;
+            if(editState.activo&&editState.modoEdit==='eliminar'){manejarClickEliminar(d.id_ubicacion,lyr);return;}
+            if(!editState.activo)abrirPopup(feature,lyr,arch,socio,color,atributos);
+          });
+        }
+      })).addTo(mapa);
+      capas[d.id_ubicacion]={
+        layer,nombre:d.nombre_archivo,
+        codigo:d.codigo_archivo||d.nombre_archivo,
+        socio:d.nombre_socio,id_socio:d.id_socio,
+        color,activa:true,arch,atributos,
+        descripcion:d.descripcion||'',
+        geoInfo,kmlOriginal:kmlStr,
+        tituloAviso:d.titulo_aviso||'',
+      };
+    }catch(e){console.warn('Error KML:',d.codigo_archivo,e);}
+    loaded++;
+    if(loaded%10===0||loaded===total){
+      setLoading(true,`${loaded}/${total} capas renderizadas...`,30+Math.round((loaded/total)*65));
+      await new Promise(r=>setTimeout(r,0));
     }
   }
   document.getElementById('badgeCapas').textContent=total;
