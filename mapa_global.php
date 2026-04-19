@@ -636,7 +636,23 @@ function calcularGeoKML(kmlStr){
   if(allCoords.length>3){info.area=calcArea(allCoords);info.perimetro=calcPerim(allCoords);}
   }catch(e){}return info;
 }
-function calcArea(coords){let area=0;const n=coords.length,R=6371000;for(let i=0;i<n-1;i++){const lat1=coords[i][0]*Math.PI/180,lat2=coords[i+1][0]*Math.PI/180;const dlon=(coords[i+1][1]-coords[i][1])*Math.PI/180;area+=dlon*(2+Math.sin(lat1)+Math.sin(lat2));}return parseFloat((Math.abs(area)*R*R/2/10000).toFixed(4));}
+function calcArea(coords){
+  if(coords.length<3)return 0;
+  const R=6371000;
+  const lat0=coords[0][0]*Math.PI/180;
+  const cosLat=Math.cos(lat0);
+  let area=0;
+  const n=coords.length;
+  for(let i=0;i<n;i++){
+    const j=(i+1)%n;
+    const x1=coords[i][1]*Math.PI/180*R*cosLat;
+    const y1=coords[i][0]*Math.PI/180*R;
+    const x2=coords[j][1]*Math.PI/180*R*cosLat;
+    const y2=coords[j][0]*Math.PI/180*R;
+    area+=x1*y2-x2*y1;
+  }
+  return parseFloat((Math.abs(area)/2/10000).toFixed(6));
+}
 function calcPerim(coords){let p=0;for(let i=0;i<coords.length-1;i++)p+=haversine(coords[i],coords[i+1]);return parseFloat((p/1000).toFixed(4));}
 function haversine([lat1,lon1],[lat2,lon2]){const R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function rellenarCalcs(atrs,geo){return atrs.map(a=>{const t=a.tipo||'texto';if(t==='area'&&geo.area!==null)return{...a,v:String(geo.area)};if(t==='latitud'&&geo.latitud!==null)return{...a,v:String(parseFloat(geo.latitud.toFixed(6)))};if(t==='longitud'&&geo.longitud!==null)return{...a,v:String(parseFloat(geo.longitud.toFixed(6)))};if(t==='perimetro'&&geo.perimetro!==null)return{...a,v:String(geo.perimetro)};return a;});}
