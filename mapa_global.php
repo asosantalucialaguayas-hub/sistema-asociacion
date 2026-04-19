@@ -542,6 +542,11 @@ async function cargarTodasLasCapas(){
       if(d.atributos&&d.atributos.length){atributos=d.atributos;}
       else{atributos=extraerAtributosKML(kmlStr,d.descripcion);}
       const geoInfo=calcularGeoKML(kmlStr);
+      atributos=atributos.map(a=>{
+        const t=a.tipo||detectarTipo(a.k);
+        if(t==='area'||t==='latitud'||t==='longitud'||t==='perimetro')return{...a,tipo:t};
+        return a;
+      });
       atributos=rellenarCalcs(atributos,geoInfo);
       const layer=omnivore.kml.parse(kmlStr,null,L.geoJson(null,{
         style:{color,weight:2.5,fillOpacity:0.22,fillColor:color},
