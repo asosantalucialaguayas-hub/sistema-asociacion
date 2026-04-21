@@ -462,17 +462,18 @@ function cargarProductores(pagina) {
                     <td style="text-align:center;"><span class="estado ${estadoClass}">${row.estado_lpa||'-'}</span></td>
                     <td style="text-align:right;font-weight:600;color:#374151;">${cupoActual.toFixed(2)}</td>
                     <td style="white-space:nowrap;">
-                        <input type="number"
-                            class="cupo-input ${claseInput}"
+                        <input
+                            type="number"
+                            class="cupo-input ${esPendiente ? 'modificado' : (cupoActual === 0 ? 'sin-cupo' : '')}"
                             id="cupo-${idLpa}"
                             value="${valorInput}"
-                            step="0.01" min="0"
+                            step="0.01"
+                            min="0"
                             data-id-lpa="${idLpa}"
                             data-cupo-original="${cupoActual}"
-                            data-bloqueado="${bloqueado?'1':'0'}"
-                            ${bloqueado ? 'disabled readonly tabindex="-1"' : ''}
-                            oninput="if(this.dataset.bloqueado==='1')return; marcarCambio(${idLpa},this)"
-                            onchange="if(this.dataset.bloqueado==='1')return; marcarCambio(${idLpa},this)"
+                            disabled
+                            readonly
+                            style="pointer-events:none; background:#f1f5f9; color:#94a3b8; border-color:#cbd5e1; cursor:not-allowed;"
                         >
                         <span id="badge-${idLpa}" class="badge-bloqueado"
                             style="display:${bloqueado?'inline-flex':'none'};margin-left:4px;">
