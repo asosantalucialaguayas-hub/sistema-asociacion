@@ -558,9 +558,12 @@ function cargarProductores(pagina) {
                             step="0.01" min="0"
                             data-id-lpa="${idLpa}"
                             data-cupo-original="${cupoActual}"
-                            ${bloqueado ? 'disabled' : ''}
-                            onchange="marcarCambio(${idLpa}, this)"
-                            oninput="marcarCambio(${idLpa}, this)"
+                            data-bloqueado="${bloqueado ? '1' : '0'}"
+                            ${bloqueado ? 'disabled readonly tabindex="-1"' : ''}
+                            onchange="if(this.dataset.bloqueado==='1') return false; marcarCambio(${idLpa}, this)"
+                            oninput="if(this.dataset.bloqueado==='1'){ this.value=this.dataset.cupoOriginal; return false; } marcarCambio(${idLpa}, this)"
+                            onkeydown="if(this.dataset.bloqueado==='1') return false;"
+                            onpaste="if(this.dataset.bloqueado==='1') return false;"
                         >
                         <span id="badge-${idLpa}" class="badge-bloqueado"
                               style="display:${bloqueado ? 'inline-flex' : 'none'};margin-left:4px;">
@@ -923,6 +926,9 @@ function aplicarCandadoEnFila(id_lpa, bloqueado) {
 
     if (bloqueado) {
         input.disabled = true;
+        input.readOnly = true;
+        input.setAttribute('tabindex', '-1');
+        input.dataset.bloqueado = '1';
         input.classList.add('bloqueado');
         input.classList.remove('modificado','sin-cupo');
         btn.className = 'btn-candado cerrado';
@@ -936,6 +942,9 @@ function aplicarCandadoEnFila(id_lpa, bloqueado) {
         if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.style.opacity = '.4'; btnGuardar.style.cursor = 'not-allowed'; }
     } else {
         input.disabled = false;
+        input.readOnly = false;
+        input.removeAttribute('tabindex');
+        input.dataset.bloqueado = '0';
         input.classList.remove('bloqueado');
         btn.className = 'btn-candado abierto';
         btn.title     = 'Cupo activo — clic para bloquear';
