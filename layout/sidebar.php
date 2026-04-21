@@ -42,8 +42,8 @@ $puede = fn($clave) => in_array($clave, $permitidos);
         <?php if ($puede('socios') || $puede('solicitud_ingreso') || $puede('acuerdo_productor') || $puede('consulta_socios') || $puede('pago_inscripcion')): ?>
         <div class="menu-item has-submenu">
             <a href="#" class="menu-link" onclick="toggleSubmenu(event)">
-                <i class="fa fa-users"></i>
-                <span>Socios</span>
+                <i class="fa-solid fa-address-card"></i>
+                <span>Inscripciones</span>
                 <span class="arrow">▸</span>
             </a>
             <ul class="submenu">
