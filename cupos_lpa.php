@@ -35,25 +35,13 @@ require "config/conexion.php";
 /* ── Panel periodo activo ── */
 .periodo-banner {
     background: linear-gradient(135deg, #1f3a5f, #2563eb);
-    color: #fff;
-    padding: 16px 22px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
+    color: #fff; padding: 16px 22px; border-radius: 10px;
+    margin-bottom: 20px; display: flex; align-items: center;
+    justify-content: space-between; flex-wrap: wrap; gap: 10px;
 }
 .periodo-banner h3 { margin:0; font-size:15px; opacity:.8; font-weight:500; }
 .periodo-banner p  { margin:4px 0 0; font-size:20px; font-weight:700; }
-.periodo-badge {
-    background: rgba(255,255,255,.2);
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-}
+.periodo-badge { background:rgba(255,255,255,.2); padding:6px 16px; border-radius:20px; font-size:13px; font-weight:600; }
 
 /* ── Stats cards ── */
 .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
@@ -77,24 +65,25 @@ require "config/conexion.php";
 .data-table td { padding:10px; border-bottom:1px solid #e5e7eb; vertical-align:middle; }
 .data-table tbody tr:hover { background:#f9fafb; }
 
-/* Cupo input en tabla */
+/* Cupo input */
 .cupo-input {
-    width: 110px;
-    padding: 7px 9px;
-    border-radius:6px;
-    border:1.5px solid #d1d5db;
-    font-size:13px;
-    font-weight:600;
-    text-align:right;
-    transition: border-color .2s;
+    width:110px; padding:7px 9px; border-radius:6px;
+    border:1.5px solid #d1d5db; font-size:13px; font-weight:600;
+    text-align:right; transition:border-color .2s;
 }
-.cupo-input:focus { outline:none; border-color:#2563eb; background:#eff6ff; }
+.cupo-input:focus    { outline:none; border-color:#2563eb; background:#eff6ff; }
 .cupo-input.modificado { border-color:#10b981; background:#f0fdf4; }
 .cupo-input.sin-cupo   { border-color:#f59e0b; background:#fffbeb; }
+.cupo-input.bloqueado  {
+    background:#f3f4f6 !important; border-color:#d1d5db !important;
+    color:#9ca3af !important; cursor:not-allowed !important; pointer-events:none;
+}
 
-/* Fila con cupo asignado - fondo verde suave */
-.fila-con-cupo { background:#f0fdf4 !important; }
+/* Fila con cupo asignado */
+.fila-con-cupo       { background:#f0fdf4 !important; }
 .fila-con-cupo:hover { background:#dcfce7 !important; }
+.fila-bloqueada      { background:#fefce8 !important; }
+.fila-bloqueada:hover{ background:#fef9c3 !important; }
 
 /* Estado LPA */
 .estado { padding:4px 10px; border-radius:4px; font-size:11px; font-weight:700; color:#fff; display:inline-block; }
@@ -106,22 +95,31 @@ require "config/conexion.php";
 .badge-ad1 { background:#dbeafe; color:#1d4ed8; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:700; }
 .badge-ad2 { background:#fef9c3; color:#854d0e; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:700; }
 
-/* Indicador cambio */
-.cambio-pill {
-    display:inline-flex; align-items:center; gap:4px;
-    background:#f3f4f6; border-radius:999px; padding:2px 8px;
-    font-size:11px; color:#6b7280;
+/* ── CANDADO ── */
+.btn-candado {
+    width:32px; height:32px; border-radius:6px; border:none;
+    cursor:pointer; display:inline-flex; align-items:center;
+    justify-content:center; font-size:13px; transition:all .2s;
 }
-.cambio-pill.activo { background:#d1fae5; color:#065f46; }
+.btn-candado.abierto       { background:#e5e7eb; color:#6b7280; }
+.btn-candado.cerrado       { background:#fef3c7; color:#d97706; }
+.btn-candado.abierto:hover { background:#fef3c7; color:#d97706; }
+.btn-candado.cerrado:hover { background:#d1fae5; color:#059669; }
 
-/* Botones icono */
+.badge-bloqueado {
+    background:#fef3c7; color:#92400e; border:1px solid #f59e0b;
+    padding:2px 7px; border-radius:999px; font-size:10px; font-weight:700;
+    display:inline-flex; align-items:center; gap:3px; white-space:nowrap;
+}
+
+/* ── Botones icono ── */
 .btn-icon { width:32px; height:32px; border-radius:6px; border:none; cursor:pointer; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:13px; }
-.btn-icon.azul   { background:#3b82f6; }
-.btn-icon.verde  { background:#10b981; }
-.btn-icon.naranja{ background:#f59e0b; }
-.btn-icon.azul:hover   { background:#2563eb; }
-.btn-icon.verde:hover  { background:#059669; }
-.btn-icon.naranja:hover{ background:#d97706; }
+.btn-icon.azul    { background:#3b82f6; }
+.btn-icon.verde   { background:#10b981; }
+.btn-icon.naranja { background:#f59e0b; }
+.btn-icon.azul:hover    { background:#2563eb; }
+.btn-icon.verde:hover   { background:#059669; }
+.btn-icon.naranja:hover { background:#d97706; }
 
 /* Paginación */
 .paginacion { display:flex; align-items:center; gap:6px; margin-top:16px; justify-content:center; flex-wrap:wrap; }
@@ -131,7 +129,7 @@ require "config/conexion.php";
 .paginacion button:disabled{ opacity:.4; cursor:not-allowed; }
 .info-paginacion { text-align:center; margin-top:6px; font-size:13px; color:#6b7280; }
 
-/* Modal */
+/* Modales */
 .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.55); z-index:999999; align-items:center; justify-content:center; }
 .modal-overlay.active { display:flex; }
 .modal-box { background:#fff; border-radius:12px; box-shadow:0 25px 60px rgba(0,0,0,.25); padding:28px; position:relative; max-width:680px; width:95%; max-height:90vh; overflow:auto; }
@@ -141,12 +139,12 @@ require "config/conexion.php";
 .form-group input, .form-group select { width:100%; padding:9px 11px; border-radius:8px; border:1px solid #d1d5db; font-size:14px; box-sizing:border-box; }
 .form-actions { margin-top:18px; display:flex; gap:10px; justify-content:flex-end; }
 
-/* Info socio en modal */
+/* Info socio */
 .info-socio-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:14px; margin-bottom:16px; }
 .info-socio-box p { margin:4px 0; font-size:13px; }
 .info-socio-box strong { color:#1d4ed8; }
 
-/* Barra de progreso cupo */
+/* Barra progreso cupo */
 .cupo-progress-wrap { margin-top:10px; }
 .cupo-bar { height:10px; border-radius:6px; background:#e5e7eb; overflow:hidden; margin-top:4px; }
 .cupo-bar-fill { height:100%; border-radius:6px; background:#10b981; transition:width .4s; }
@@ -154,23 +152,57 @@ require "config/conexion.php";
 .cupo-bar-fill.danger { background:#ef4444; }
 .cupo-labels { display:flex; justify-content:space-between; font-size:11px; color:#6b7280; margin-top:2px; }
 
-/* Toast flotante */
+/* Toast */
 #toast {
     position:fixed; bottom:24px; right:24px; background:#1f3a5f; color:#fff;
     padding:12px 22px; border-radius:10px; font-size:14px; font-weight:600;
     box-shadow:0 8px 24px rgba(0,0,0,.25); z-index:9999999;
     transform:translateY(80px); opacity:0; transition:all .3s;
 }
-#toast.show { transform:translateY(0); opacity:1; }
+#toast.show    { transform:translateY(0); opacity:1; }
 #toast.success { background:#10b981; }
 #toast.error   { background:#ef4444; }
 
-/* Cupos pendientes indicador */
+/* Pendientes badge */
 .pendientes-badge {
     background:#fef3c7; border:1px solid #f59e0b; color:#92400e;
     padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600;
     display:flex; align-items:center; gap:6px;
 }
+
+/* ── Modal PIN ── */
+.pin-icono {
+    width:60px; height:60px; border-radius:50%; background:#fef3c7;
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto 16px; font-size:28px;
+}
+.pin-input {
+    width:100%; padding:14px; font-size:26px; text-align:center;
+    letter-spacing:10px; border:2px solid #d1d5db; border-radius:10px;
+    font-weight:700; color:#1f3a5f; transition:border-color .2s; box-sizing:border-box;
+}
+.pin-input:focus { outline:none; border-color:#2563eb; }
+.pin-input.error { border-color:#ef4444; animation:shake .35s; }
+@keyframes shake {
+    0%,100%{transform:translateX(0)}
+    25%{transform:translateX(-8px)}
+    75%{transform:translateX(8px)}
+}
+.pin-error-msg { color:#ef4444; font-size:12px; font-weight:600; min-height:18px; margin-top:8px; }
+
+/* Teclado numérico PIN */
+.pin-teclado {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:16px 0;
+}
+.pin-key {
+    padding:12px; border-radius:8px; border:1px solid #e5e7eb;
+    background:#f9fafb; font-size:16px; font-weight:700; color:#1f3a5f;
+    cursor:pointer; transition:background .15s; text-align:center;
+}
+.pin-key:hover   { background:#e0e7ff; border-color:#6366f1; }
+.pin-key.borrar  { background:#fee2e2; color:#ef4444; border-color:#fca5a5; }
+.pin-key.borrar:hover { background:#fca5a5; }
+.pin-key.vacio   { visibility:hidden; }
 </style>
 </head>
 <body>
@@ -234,6 +266,11 @@ require "config/conexion.php";
         <option value="activo">Activos</option>
         <option value="cerrado">Cerrados</option>
     </select>
+    <select id="filtroCandado" onchange="cargarProductores(1)">
+        <option value="">Todos</option>
+        <option value="0">Solo desbloqueados</option>
+        <option value="1">Solo bloqueados</option>
+    </select>
     <button class="btn-primary" onclick="cargarProductores(1)"><i class="fa fa-search"></i> Buscar</button>
     <button class="btn-secondary" onclick="limpiarFiltros()"><i class="fa fa-rotate-left"></i> Limpiar</button>
 </div>
@@ -272,12 +309,71 @@ require "config/conexion.php";
 </main>
 </div>
 
-<!-- MODAL: Cupo global -->
+<!-- ══════════════════════════════════════════════
+     MODAL: PIN de seguridad (candado)
+════════════════════════════════════════════════ -->
+<div id="modalPin" class="modal-overlay">
+<div class="modal-box" style="max-width:360px;text-align:center;">
+    <button class="close-btn" onclick="cerrarModalPin()">×</button>
+
+    <div class="pin-icono" id="pinIcono">🔒</div>
+    <h2 style="margin:0 0 6px;color:#1f3a5f;font-size:18px;" id="pinModalTitulo">Verificar identidad</h2>
+    <p style="color:#6b7280;font-size:13px;margin:0 0 16px;" id="pinModalSubtitulo">
+        Ingresa el PIN de seguridad para continuar
+    </p>
+
+    <!-- Display PIN -->
+    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:12px;" id="pinPuntos">
+        <span id="p1" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+        <span id="p2" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+        <span id="p3" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+        <span id="p4" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+        <span id="p5" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+        <span id="p6" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+        <span id="p7" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+        <span id="p8" style="width:14px;height:14px;border-radius:50%;background:#d1d5db;display:inline-block;transition:background .15s;"></span>
+    </div>
+
+    <!-- Input oculto real -->
+    <input type="password" id="pinInput" maxlength="8"
+           style="position:absolute;opacity:0;pointer-events:none;"
+           oninput="actualizarPuntos()" onkeydown="if(event.key==='Enter') confirmarPin()">
+
+    <p class="pin-error-msg" id="pinError"></p>
+
+    <!-- Teclado numérico -->
+    <div class="pin-teclado">
+        <button class="pin-key" onclick="teclaPin('1')">1</button>
+        <button class="pin-key" onclick="teclaPin('2')">2</button>
+        <button class="pin-key" onclick="teclaPin('3')">3</button>
+        <button class="pin-key" onclick="teclaPin('4')">4</button>
+        <button class="pin-key" onclick="teclaPin('5')">5</button>
+        <button class="pin-key" onclick="teclaPin('6')">6</button>
+        <button class="pin-key" onclick="teclaPin('7')">7</button>
+        <button class="pin-key" onclick="teclaPin('8')">8</button>
+        <button class="pin-key" onclick="teclaPin('9')">9</button>
+        <button class="pin-key vacio"></button>
+        <button class="pin-key" onclick="teclaPin('0')">0</button>
+        <button class="pin-key borrar" onclick="borrarPin()"><i class="fa fa-delete-left"></i></button>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+        <button class="btn-secondary" style="flex:1" onclick="cerrarModalPin()">Cancelar</button>
+        <button class="btn-primary"   style="flex:1" onclick="confirmarPin()" id="btnConfirmarPin">
+            <i class="fa fa-lock"></i> Confirmar
+        </button>
+    </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODAL: Cupo global
+════════════════════════════════════════════════ -->
 <div id="modalCupoGlobal" class="modal-overlay">
 <div class="modal-box" style="max-width:480px;">
 <button class="close-btn" onclick="cerrarModal('modalCupoGlobal')">×</button>
 <h2 style="margin-top:0;color:#1f3a5f;"><i class="fa fa-wand-magic-sparkles"></i> Aplicar Cupo a Todos</h2>
-<p style="color:#6b7280;font-size:13px;">Establece el mismo cupo para todos los productores visibles (según filtros activos). Puedes ajustar individualmente después.</p>
+<p style="color:#6b7280;font-size:13px;">Establece el mismo cupo para todos los productores visibles. Puedes ajustar individualmente después.</p>
 <div class="form-group">
     <label>Cupo en kilogramos (kg) *</label>
     <input type="number" id="cupoGlobalValor" placeholder="Ej: 1500.00" step="0.01" min="0.01">
@@ -296,7 +392,9 @@ require "config/conexion.php";
 </div>
 </div>
 
-<!-- MODAL: Detalle cupo individual -->
+<!-- ══════════════════════════════════════════════
+     MODAL: Detalle cupo individual
+════════════════════════════════════════════════ -->
 <div id="modalDetalleCupo" class="modal-overlay">
 <div class="modal-box" style="max-width:560px;">
 <button class="close-btn" onclick="cerrarModal('modalDetalleCupo')">×</button>
@@ -329,20 +427,25 @@ require "config/conexion.php";
 <div id="toast"></div>
 
 <script>
-// ─── Estado global ───────────────────────────────────────────────────────────
-let paginaActual   = 1;
-let buscarTimer    = null;
-let cambiosPendientes = {};   // { id_lpa: nuevoCupo }
-let productoraActual  = null; // Para modal detalle
-let listaTodos        = [];   // Cache para cupo global
+// ═══════════════════════════════════════════════
+// Estado global
+// ═══════════════════════════════════════════════
+let paginaActual      = 1;
+let buscarTimer       = null;
+let cambiosPendientes = {};
+let productoraActual  = null;
 
-// ─── Inicialización ──────────────────────────────────────────────────────────
-window.onload = function() {
+// ═══════════════════════════════════════════════
+// Inicialización
+// ═══════════════════════════════════════════════
+window.onload = function () {
     cargarPeriodoActivo();
     cargarProductores(1);
 };
 
-// ─── Periodo activo ──────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Periodo activo
+// ═══════════════════════════════════════════════
 function cargarPeriodoActivo() {
     fetch('cupos_periodo.php?accion=periodo_activo')
         .then(r => r.json())
@@ -357,21 +460,22 @@ function cargarPeriodoActivo() {
                 document.getElementById('periodoEstado').textContent = '—';
             }
         })
-        .catch(() => {
-            document.getElementById('periodoNombre').textContent = 'Error al cargar periodo';
-        });
+        .catch(() => { document.getElementById('periodoNombre').textContent = 'Error al cargar periodo'; });
 }
 
-// ─── Cargar productores ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Cargar productores
+// ═══════════════════════════════════════════════
 function cargarProductores(pagina) {
     pagina       = pagina || paginaActual;
     paginaActual = pagina;
 
-    const q       = (document.getElementById('inputBuscar').value || '').trim();
-    const adendum = document.getElementById('filtroAdendum').value;
-    const estado  = document.getElementById('filtroEstado').value;
+    const q        = (document.getElementById('inputBuscar').value || '').trim();
+    const adendum  = document.getElementById('filtroAdendum').value;
+    const estado   = document.getElementById('filtroEstado').value;
+    const candado  = document.getElementById('filtroCandado').value;
 
-    const params = new URLSearchParams({ pagina, q, adendum, estado, accion: 'lista' });
+    const params = new URLSearchParams({ pagina, q, adendum, estado, candado, accion: 'lista' });
     const tbody  = document.getElementById('cuerpoTabla');
     tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:25px;color:#6b7280;"><i class="fa fa-spinner fa-spin"></i> Cargando...</td></tr>';
 
@@ -382,24 +486,23 @@ function cargarProductores(pagina) {
             try { resp = JSON.parse(txt); } catch(e) { console.error(txt); return; }
 
             tbody.innerHTML = '';
-
             if (!resp.success) {
                 tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:25px;color:#ef4444;">❌ ${resp.message || 'Error'}</td></tr>`;
                 return;
             }
 
-            const lista      = resp.datos || [];
-            const paginaR    = resp.pagina       || 1;
-            const totalPag   = resp.totalPaginas || 1;
-            const total      = resp.total        || 0;
-            const porPagina  = resp.porPagina    || 15;
-            const stats      = resp.stats        || {};
+            const lista     = resp.datos       || [];
+            const paginaR   = resp.pagina      || 1;
+            const totalPag  = resp.totalPaginas|| 1;
+            const total     = resp.total       || 0;
+            const porPagina = resp.porPagina   || 15;
+            const stats     = resp.stats       || {};
 
-            // Actualizar stats
-            document.getElementById('statTotal').textContent    = stats.total      || 0;
-            document.getElementById('statConCupo').textContent  = stats.con_cupo   || 0;
-            document.getElementById('statSinCupo').textContent  = stats.sin_cupo   || 0;
-            document.getElementById('statKgTotal').textContent  = parseFloat(stats.kg_total || 0).toLocaleString('es-EC', {minimumFractionDigits:2});
+            document.getElementById('statTotal').textContent    = stats.total    || 0;
+            document.getElementById('statConCupo').textContent  = stats.con_cupo || 0;
+            document.getElementById('statSinCupo').textContent  = stats.sin_cupo || 0;
+            document.getElementById('statKgTotal').textContent  =
+                parseFloat(stats.kg_total || 0).toLocaleString('es-EC', {minimumFractionDigits:2});
 
             if (!lista.length) {
                 tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:#6b7280;">No se encontraron registros.</td></tr>';
@@ -410,26 +513,34 @@ function cargarProductores(pagina) {
 
             const inicio = (paginaR - 1) * porPagina;
             lista.forEach((row, idx) => {
-                const idLpa     = row.id_lpa;
-                const cupoActual= parseFloat(row.volumen_produccion_estimado) || 0;
-                const consumido = parseFloat(row.cupo_consumido)              || 0;
-                const disponible= cupoActual - consumido;
-                const pct       = cupoActual > 0 ? ((consumido / cupoActual) * 100).toFixed(1) : 0;
+                const idLpa      = row.id_lpa;
+                const cupoActual = parseFloat(row.volumen_produccion_estimado) || 0;
+                const consumido  = parseFloat(row.cupo_consumido)              || 0;
+                const pct        = cupoActual > 0 ? ((consumido / cupoActual) * 100).toFixed(1) : 0;
+                const bloqueado  = parseInt(row.cupo_bloqueado) === 1;
 
-                // Si hay un cambio pendiente en caché, mostrar ese valor
-                const valorInput = cambiosPendientes.hasOwnProperty(idLpa)
-                    ? cambiosPendientes[idLpa]
-                    : cupoActual;
-
+                const valorInput  = cambiosPendientes.hasOwnProperty(idLpa) ? cambiosPendientes[idLpa] : cupoActual;
                 const esPendiente = cambiosPendientes.hasOwnProperty(idLpa);
                 const estadoClass = (row.estado_lpa || '').toLowerCase();
-                const tieneCupo = cupoActual > 0;
+                const tieneCupo   = cupoActual > 0;
+
                 const ad = row.adendum == 2
                     ? '<span class="badge-ad2">Adendum 2</span>'
                     : '<span class="badge-ad1">Adendum 1</span>';
 
+                // Clase de fila
+                let claseFilas = '';
+                if (bloqueado)        claseFilas = 'fila-bloqueada';
+                else if (tieneCupo)   claseFilas = 'fila-con-cupo';
+
+                // Clase del input
+                let claseInput = '';
+                if (bloqueado)        claseInput = 'bloqueado';
+                else if (esPendiente) claseInput = 'modificado';
+                else if (!tieneCupo)  claseInput = 'sin-cupo';
+
                 tbody.innerHTML += `
-                <tr id="fila-${idLpa}" class="${tieneCupo ? 'fila-con-cupo' : ''}">
+                <tr id="fila-${idLpa}" class="${claseFilas}">
                     <td>${inicio + idx + 1}</td>
                     <td>${row.identificacion || '-'}</td>
                     <td><strong>${row.nombre_completo || '-'}</strong></td>
@@ -438,31 +549,42 @@ function cargarProductores(pagina) {
                     <td style="text-align:center;">${ad}</td>
                     <td style="text-align:center;"><span class="estado ${estadoClass}">${row.estado_lpa || '-'}</span></td>
                     <td style="text-align:right;font-weight:600;color:#374151;">${cupoActual.toFixed(2)}</td>
-                    <td>
+                    <td style="white-space:nowrap;">
                         <input
                             type="number"
-                            class="cupo-input ${esPendiente ? 'modificado' : (cupoActual === 0 ? 'sin-cupo' : '')}"
+                            class="cupo-input ${claseInput}"
                             id="cupo-${idLpa}"
                             value="${valorInput}"
-                            step="0.01"
-                            min="0"
+                            step="0.01" min="0"
                             data-id-lpa="${idLpa}"
                             data-cupo-original="${cupoActual}"
+                            ${bloqueado ? 'disabled' : ''}
                             onchange="marcarCambio(${idLpa}, this)"
                             oninput="marcarCambio(${idLpa}, this)"
                         >
+                        <span id="badge-${idLpa}" class="badge-bloqueado"
+                              style="display:${bloqueado ? 'inline-flex' : 'none'};margin-left:4px;">
+                            <i class="fa fa-lock"></i> Bloqueado
+                        </span>
                     </td>
                     <td style="text-align:right;color:${pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#10b981'};font-weight:600;">
                         ${consumido.toFixed(2)}
                         <small style="color:#9ca3af;font-weight:400;">(${pct}%)</small>
                     </td>
                     <td style="text-align:center;white-space:nowrap;">
-                        <button class="btn-icon azul" title="Ver detalle / imprimir"
+                        <button
+                            id="candado-${idLpa}"
+                            class="btn-candado ${bloqueado ? 'cerrado' : 'abierto'}"
+                            title="${bloqueado ? 'Cupo bloqueado — clic para desbloquear' : 'Cupo activo — clic para bloquear'}"
+                            onclick="abrirModalPin(${idLpa}, ${bloqueado})">
+                            <i class="fa fa-${bloqueado ? 'lock' : 'lock-open'}"></i>
+                        </button>
+                        <button class="btn-icon azul" title="Ver detalle"
                             onclick='abrirDetalle(${idLpa},${row.id_socio},"${escapa(row.identificacion)}","${escapa(row.nombre_completo)}",${cupoActual},${consumido})'>
                             <i class="fa fa-eye"></i>
                         </button>
                         <button class="btn-icon verde" title="Guardar este cupo"
-                            onclick="guardarCupoUno(${idLpa})">
+                            onclick="guardarCupoUno(${idLpa})" ${bloqueado ? 'disabled style="opacity:.4;cursor:not-allowed;"' : ''}>
                             <i class="fa fa-save"></i>
                         </button>
                         <button class="btn-icon naranja" title="Imprimir Acuerdo Productor"
@@ -482,23 +604,30 @@ function cargarProductores(pagina) {
         });
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function escapa(s) { return (s || '').replace(/"/g, '&quot;').replace(/'/g, "\\'"); }
+// ═══════════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════════
+function escapa(s) { return (s || '').replace(/"/g,'&quot;').replace(/'/g,"\\'"); }
+
 function buscarConDelay() {
     clearTimeout(buscarTimer);
     buscarTimer = setTimeout(() => cargarProductores(1), 500);
 }
+
 function limpiarFiltros() {
     document.getElementById('inputBuscar').value   = '';
     document.getElementById('filtroAdendum').value = '';
     document.getElementById('filtroEstado').value  = '';
+    document.getElementById('filtroCandado').value = '';
     cargarProductores(1);
 }
 
-// ─── Marcar cambio pendiente ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Cambios pendientes
+// ═══════════════════════════════════════════════
 function marcarCambio(idLpa, inputEl) {
-    const nuevo   = parseFloat(inputEl.value) || 0;
-    const original= parseFloat(inputEl.dataset.cupoOriginal) || 0;
+    const nuevo    = parseFloat(inputEl.value) || 0;
+    const original = parseFloat(inputEl.dataset.cupoOriginal) || 0;
     if (nuevo !== original) {
         cambiosPendientes[idLpa] = nuevo;
         inputEl.classList.add('modificado');
@@ -512,7 +641,7 @@ function marcarCambio(idLpa, inputEl) {
 }
 
 function actualizarBadgePendientes() {
-    const n = Object.keys(cambiosPendientes).length;
+    const n     = Object.keys(cambiosPendientes).length;
     const badge = document.getElementById('badgePendientes');
     const texto = document.getElementById('textoPendientes');
     if (n > 0) {
@@ -523,11 +652,13 @@ function actualizarBadgePendientes() {
     }
 }
 
-// ─── Guardar cupo individual (botón de fila) ─────────────────────────────────
+// ═══════════════════════════════════════════════
+// Guardar cupo individual
+// ═══════════════════════════════════════════════
 function guardarCupoUno(idLpa) {
-    const input  = document.getElementById(`cupo-${idLpa}`);
-    if (!input) return;
-    const nuevo  = parseFloat(input.value);
+    const input = document.getElementById(`cupo-${idLpa}`);
+    if (!input || input.disabled) return;
+    const nuevo = parseFloat(input.value);
     if (isNaN(nuevo) || nuevo < 0) { mostrarToast('Cupo inválido', 'error'); return; }
 
     fetch('cupos_guardar.php', {
@@ -540,10 +671,9 @@ function guardarCupoUno(idLpa) {
         if (j.success) {
             delete cambiosPendientes[idLpa];
             input.dataset.cupoOriginal = nuevo;
-            input.classList.remove('modificado', 'sin-cupo');
+            input.classList.remove('modificado','sin-cupo');
             if (nuevo === 0) input.classList.add('sin-cupo');
             actualizarBadgePendientes();
-            // Actualizar celda "Cupo Actual"
             const fila = document.getElementById(`fila-${idLpa}`);
             if (fila) fila.cells[7].textContent = nuevo.toFixed(2);
             mostrarToast('✅ Cupo guardado correctamente', 'success');
@@ -555,7 +685,9 @@ function guardarCupoUno(idLpa) {
     .catch(() => mostrarToast('Error de red', 'error'));
 }
 
-// ─── Guardar TODOS los cambios ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Guardar TODOS los cambios
+// ═══════════════════════════════════════════════
 function guardarTodosCambios() {
     const ids = Object.keys(cambiosPendientes);
     if (!ids.length) { mostrarToast('No hay cambios pendientes', ''); return; }
@@ -581,7 +713,9 @@ function guardarTodosCambios() {
     .catch(() => mostrarToast('Error de red', 'error'));
 }
 
-// ─── Cupo global ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Cupo global
+// ═══════════════════════════════════════════════
 function abrirModalCupoGlobal() {
     document.getElementById('cupoGlobalValor').value = '';
     document.getElementById('modalCupoGlobal').classList.add('active');
@@ -592,9 +726,7 @@ function aplicarCupoGlobal() {
     const filtro = document.getElementById('cupoGlobalFiltro').value;
     if (!val || val <= 0) { mostrarToast('Ingrese un cupo válido', 'error'); return; }
 
-    // Aplicar a todos los inputs visibles (o solo los con valor 0)
-    const inputs = document.querySelectorAll('.cupo-input');
-    inputs.forEach(inp => {
+    document.querySelectorAll('.cupo-input:not(:disabled)').forEach(inp => {
         const idLpa  = parseInt(inp.dataset.idLpa);
         const actual = parseFloat(inp.dataset.cupoOriginal) || 0;
         if (filtro === 'sin_cupo' && actual > 0) return;
@@ -606,7 +738,9 @@ function aplicarCupoGlobal() {
     mostrarToast(`Cupo ${val} kg aplicado en tabla. Pulsa "Aplicar Cupos" para guardar.`, 'success');
 }
 
-// ─── Modal detalle individual ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Modal detalle individual
+// ═══════════════════════════════════════════════
 function abrirDetalle(idLpa, idSocio, cedula, nombre, cupoActual, consumido) {
     productoraActual = { idLpa, idSocio, cedula, nombre, cupoActual, consumido };
 
@@ -623,16 +757,15 @@ function abrirDetalle(idLpa, idSocio, cedula, nombre, cupoActual, consumido) {
 
     document.getElementById('cupoIndividualValor').value = cupoActual;
 
-    // Barra de progreso
     const wrap = document.getElementById('progressWrap');
     wrap.style.display = cupoActual > 0 ? 'block' : 'none';
     if (cupoActual > 0) {
         const fill = document.getElementById('cupoBarFill');
-        fill.style.width    = Math.min(pctNum, 100) + '%';
-        fill.className      = 'cupo-bar-fill' + (pctNum >= 90 ? ' danger' : pctNum >= 70 ? ' warn' : '');
-        document.getElementById('pctLabel').textContent      = pct + '%';
+        fill.style.width = Math.min(pctNum, 100) + '%';
+        fill.className   = 'cupo-bar-fill' + (pctNum >= 90 ? ' danger' : pctNum >= 70 ? ' warn' : '');
+        document.getElementById('pctLabel').textContent       = pct + '%';
         document.getElementById('consumidoLabel').textContent = consumido.toFixed(2) + ' kg';
-        document.getElementById('totalLabel').textContent    = cupoActual.toFixed(2) + ' kg';
+        document.getElementById('totalLabel').textContent     = cupoActual.toFixed(2) + ' kg';
     }
 
     document.getElementById('modalDetalleCupo').classList.add('active');
@@ -643,9 +776,8 @@ function guardarCupoIndividual() {
     const nuevo = parseFloat(document.getElementById('cupoIndividualValor').value);
     if (isNaN(nuevo) || nuevo < 0) { mostrarToast('Cupo inválido', 'error'); return; }
 
-    // Sincronizar al input de la tabla
     const inputTabla = document.getElementById(`cupo-${productoraActual.idLpa}`);
-    if (inputTabla) {
+    if (inputTabla && !inputTabla.disabled) {
         inputTabla.value = nuevo;
         marcarCambio(productoraActual.idLpa, inputTabla);
     }
@@ -659,18 +791,17 @@ function imprimirAcuerdoProdutor() {
     imprimirAcuerdo(productoraActual.idLpa, productoraActual.idSocio);
 }
 
-// ─── Imprimir Acuerdo Productor ───────────────────────────────────────────────
 function imprimirAcuerdo(idLpa, idSocio) {
-    const url = `cupos_acuerdo_pdf.php?id_lpa=${idLpa}&id_socio=${idSocio}`;
-    window.open(url, '_blank');
+    window.open(`cupos_acuerdo_pdf.php?id_lpa=${idLpa}&id_socio=${idSocio}`, '_blank');
 }
 
-// ─── Exportar ─────────────────────────────────────────────────────────────────
 function exportarExcel() {
     window.open('cupos_exportar.php', '_blank');
 }
 
-// ─── Estadísticas rápidas (sin recargar tabla) ───────────────────────────────
+// ═══════════════════════════════════════════════
+// Estadísticas rápidas
+// ═══════════════════════════════════════════════
 function cargarEstadisticas() {
     fetch('cupos_periodo.php?accion=stats')
         .then(r => r.json())
@@ -680,16 +811,149 @@ function cargarEstadisticas() {
                 document.getElementById('statTotal').textContent    = s.total    || 0;
                 document.getElementById('statConCupo').textContent  = s.con_cupo || 0;
                 document.getElementById('statSinCupo').textContent  = s.sin_cupo || 0;
-                document.getElementById('statKgTotal').textContent  = parseFloat(s.kg_total || 0).toLocaleString('es-EC', {minimumFractionDigits:2});
+                document.getElementById('statKgTotal').textContent  =
+                    parseFloat(s.kg_total || 0).toLocaleString('es-EC', {minimumFractionDigits:2});
             }
-        })
-        .catch(() => {});
+        }).catch(() => {});
 }
 
-// ─── Paginación ───────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// SISTEMA DE CANDADO CON PIN
+// ═══════════════════════════════════════════════
+let _pinAccion  = null;  // { id_lpa, accion }
+let _pinValor   = '';    // valor acumulado del teclado
+
+function abrirModalPin(id_lpa, esBloqueado) {
+    const nuevaAccion = esBloqueado ? 'desbloquear' : 'bloquear';
+    _pinAccion = { id_lpa, accion: nuevaAccion };
+    _pinValor  = '';
+
+    document.getElementById('pinIcono').textContent          = esBloqueado ? '🔓' : '🔒';
+    document.getElementById('pinModalTitulo').textContent    = esBloqueado ? 'Desbloquear cupo' : 'Bloquear cupo';
+    document.getElementById('pinModalSubtitulo').textContent = esBloqueado
+        ? 'El cupo quedará disponible para edición.'
+        : 'El cupo quedará bloqueado y no podrá modificarse.';
+
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinError').textContent = '';
+    document.getElementById('pinInput').classList.remove('error');
+    actualizarPuntos();
+    document.getElementById('modalPin').classList.add('active');
+    setTimeout(() => document.getElementById('pinInput').focus(), 100);
+}
+
+function cerrarModalPin() {
+    document.getElementById('modalPin').classList.remove('active');
+    _pinAccion = null;
+    _pinValor  = '';
+}
+
+function teclaPin(num) {
+    if (_pinValor.length >= 8) return;
+    _pinValor += num;
+    document.getElementById('pinInput').value = _pinValor;
+    actualizarPuntos();
+    document.getElementById('pinError').textContent = '';
+}
+
+function borrarPin() {
+    _pinValor = _pinValor.slice(0, -1);
+    document.getElementById('pinInput').value = _pinValor;
+    actualizarPuntos();
+}
+
+function actualizarPuntos() {
+    const val = document.getElementById('pinInput').value;
+    _pinValor = val;
+    for (let i = 1; i <= 8; i++) {
+        const punto = document.getElementById(`p${i}`);
+        if (punto) punto.style.background = i <= val.length ? '#1f3a5f' : '#d1d5db';
+    }
+}
+
+function confirmarPin() {
+    const pin = _pinValor.trim();
+    if (!pin) { mostrarToast('Ingresa el PIN', 'error'); return; }
+    if (!_pinAccion) return;
+
+    const btn = document.getElementById('btnConfirmarPin');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Verificando...';
+
+    fetch('cupos_bloquear.php', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ id_lpa: _pinAccion.id_lpa, pin, accion: _pinAccion.accion })
+    })
+    .then(r => r.json())
+    .then(j => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-lock"></i> Confirmar';
+
+        if (j.success) {
+            cerrarModalPin();
+            aplicarCandadoEnFila(_pinAccion ? _pinAccion.id_lpa : null, j.bloqueado);
+            mostrarToast(j.message, 'success');
+        } else {
+            // Shake y limpiar
+            const inp = document.getElementById('pinInput');
+            inp.classList.add('error');
+            _pinValor = '';
+            inp.value = '';
+            actualizarPuntos();
+            document.getElementById('pinError').textContent = '❌ ' + j.message;
+            setTimeout(() => inp.classList.remove('error'), 400);
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-lock"></i> Confirmar';
+        mostrarToast('Error de conexión', 'error');
+    });
+}
+
+function aplicarCandadoEnFila(id_lpa, bloqueado) {
+    if (!id_lpa) return;
+    const input = document.getElementById(`cupo-${id_lpa}`);
+    const btn   = document.getElementById(`candado-${id_lpa}`);
+    const badge = document.getElementById(`badge-${id_lpa}`);
+    const fila  = document.getElementById(`fila-${id_lpa}`);
+
+    if (!input || !btn) return;
+
+    if (bloqueado) {
+        input.disabled = true;
+        input.classList.add('bloqueado');
+        input.classList.remove('modificado','sin-cupo');
+        btn.className = 'btn-candado cerrado';
+        btn.title     = 'Cupo bloqueado — clic para desbloquear';
+        btn.innerHTML = '<i class="fa fa-lock"></i>';
+        btn.onclick   = () => abrirModalPin(id_lpa, true);
+        if (badge) badge.style.display = 'inline-flex';
+        if (fila)  { fila.classList.remove('fila-con-cupo'); fila.classList.add('fila-bloqueada'); }
+        // Deshabilitar botón guardar de esa fila
+        const btnGuardar = fila ? fila.querySelector('.btn-icon.verde') : null;
+        if (btnGuardar) { btnGuardar.disabled = true; btnGuardar.style.opacity = '.4'; btnGuardar.style.cursor = 'not-allowed'; }
+    } else {
+        input.disabled = false;
+        input.classList.remove('bloqueado');
+        btn.className = 'btn-candado abierto';
+        btn.title     = 'Cupo activo — clic para bloquear';
+        btn.innerHTML = '<i class="fa fa-lock-open"></i>';
+        btn.onclick   = () => abrirModalPin(id_lpa, false);
+        if (badge) badge.style.display = 'none';
+        if (fila)  { fila.classList.remove('fila-bloqueada'); fila.classList.add('fila-con-cupo'); }
+        const btnGuardar = fila ? fila.querySelector('.btn-icon.verde') : null;
+        if (btnGuardar) { btnGuardar.disabled = false; btnGuardar.style.opacity = '1'; btnGuardar.style.cursor = 'pointer'; }
+    }
+}
+
+// ═══════════════════════════════════════════════
+// Paginación
+// ═══════════════════════════════════════════════
 function renderPaginacion(pagina, totalPaginas, total, porPagina) {
-    const div  = document.getElementById('paginacion');
-    const info = document.getElementById('infoPaginacion');
+    const div   = document.getElementById('paginacion');
+    const info  = document.getElementById('infoPaginacion');
     const desde = (pagina - 1) * porPagina + 1;
     const hasta = Math.min(pagina * porPagina, total);
     info.textContent = `Mostrando ${desde}–${hasta} de ${total} registros`;
@@ -698,8 +962,7 @@ function renderPaginacion(pagina, totalPaginas, total, porPagina) {
 
     let html = `<button onclick="cargarProductores(1)" ${pagina===1?'disabled':''}>«</button>`;
     html    += `<button onclick="cargarProductores(${pagina-1})" ${pagina===1?'disabled':''}>‹</button>`;
-    const rango = 2;
-    for (let p = Math.max(1, pagina-rango); p <= Math.min(totalPaginas, pagina+rango); p++) {
+    for (let p = Math.max(1, pagina-2); p <= Math.min(totalPaginas, pagina+2); p++) {
         html += `<button onclick="cargarProductores(${p})" class="${p===pagina?'active':''}">${p}</button>`;
     }
     html += `<button onclick="cargarProductores(${pagina+1})" ${pagina===totalPaginas?'disabled':''}>›</button>`;
@@ -707,7 +970,9 @@ function renderPaginacion(pagina, totalPaginas, total, porPagina) {
     div.innerHTML = html;
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Toast
+// ═══════════════════════════════════════════════
 function mostrarToast(msg, tipo) {
     const t = document.getElementById('toast');
     t.textContent = msg;
@@ -715,7 +980,9 @@ function mostrarToast(msg, tipo) {
     setTimeout(() => { t.className = ''; }, 3200);
 }
 
-// ─── Cerrar modal ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════
+// Cerrar modal genérico
+// ═══════════════════════════════════════════════
 function cerrarModal(id) {
     document.getElementById(id).classList.remove('active');
 }
