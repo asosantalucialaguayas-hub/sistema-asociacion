@@ -12,19 +12,19 @@ try {
     // Trae por socio: su cédula, nombre, área_cacao_ha del LPA más reciente
     $sql = "
         SELECT 
-            s.id_socio,
-            s.identificacion,
-            CONCAT(s.nombres, ' ', s.apellidos) AS nombre_completo,
-            s.zona,
-            l.area_cacao_ha
-        FROM socios s
-        LEFT JOIN (
-            SELECT DISTINCT ON (id_socio) id_socio, area_cacao_ha
-            FROM lpa
-            ORDER BY id_socio, id_lpa DESC
-        ) l ON l.id_socio = s.id_socio
-        WHERE s.estado = 'activo'
-        ORDER BY s.apellidos, s.nombres
+    s.id_socio,
+    s.identificacion,
+    CONCAT(s.nombres, ' ', s.apellidos) AS nombre_completo,
+    s.zona,
+    l.area_cacao_ha
+FROM socios s
+LEFT JOIN (
+    SELECT DISTINCT ON (id_socio) id_socio, area_cacao_ha
+    FROM lpa
+    ORDER BY id_socio, id_lpa DESC
+) l ON l.id_socio = s.id_socio
+WHERE s.estado = 'activo'
+ORDER BY s.apellidos, s.nombres
     ";
     $result = pg_query($conn, $sql);
     $socios = [];
