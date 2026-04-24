@@ -175,6 +175,31 @@ $puede = fn($clave) => in_array($clave, $permitidos);
                 <span>Auditoría</span>
                 <span class="arrow">▸</span>
             </a>
+        <?php endif; ?>
+
+        <?php if ($puede('documentacion') || $puede('actas') || $puede('convocatorias') || $puede('documentos_socios')): ?>
+        <div class="menu-item has-submenu">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(event)">
+                <i class="fa-solid fa-file"></i>
+                <span>Documentacion</span>
+                <span class="arrow">▸</span>
+            </a>
+            <ul class="submenu">
+                <?php if ($puede('actas')): ?>
+                <li><a href="lpa_consulta.php"><i class="fa-solid fa-clipboard"></i> Actas</a></li>
+                <?php endif; ?>
+                <?php if ($puede('convocatorias')): ?>
+                <li>
+                    <a href="convocatorias.php">
+                        <i class="fa-solid fa-calendar-days"></i> Convocatorias
+                    </a>
+                </li>
+                <?php endif; ?>
+                <?php if ($puede('documentos_socios')): ?>
+                <li><a href="documentos_socios.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>
+                <?php endif; ?>
+            </ul>
+        </div>
             <ul class="submenu">
                 <?php if ($puede('gestion_usuarios')): ?>
                 <li><a href="gestion_usuarios.php"><i class="fa fa-user-gear"></i> Gestión de Usuarios</a></li>
