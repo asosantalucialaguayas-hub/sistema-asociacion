@@ -180,8 +180,8 @@ $puede = fn($clave) => in_array($clave, $permitidos);
         <?php if ($puede('documentacion') || $puede('actas') || $puede('convocatorias') || $puede('documentos_socios')): ?>
         <div class="menu-item has-submenu">
             <a href="#" class="menu-link" onclick="toggleSubmenu(event)">
-                <i class="fa-solid fa-file"></i>
-                <span>Documentacion</span>
+                <i class="C:\Users\Personal\Desktop\sistema-asociacion"></i>
+                <span>Fairtrade</span>
                 <span class="arrow">▸</span>
             </a>
             <ul class="submenu">
