@@ -1,11 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
-if (!isset($_SESSION['usuario'])) {
-    header("Location: /auth/login.php");
-    exit;
-}
+if (!isset($_SESSION['usuario'])) { header("Location: /auth/login.php"); exit; }
 require "config/conexion.php";
-
 $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
 ?>
 <!DOCTYPE html>
@@ -19,159 +15,114 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <?php include 'layout/modals.php'; ?>
 <style>
-/* ── Layout ─────────────────────────────────────────────── */
-.app { display:flex; height:100vh; overflow:hidden; }
-.sidebar, nav.sidebar, aside.sidebar { position:sticky; top:0; height:100vh; overflow-y:auto; flex-shrink:0; }
-.content { flex:1; overflow-y:auto; height:100vh; }
-
-/* ── Botones ────────────────────────────────────────────── */
-.btn-primary   { background:#1f3a5f; color:#fff; padding:10px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.btn-secondary { background:#5f7c99; color:#fff; padding:10px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.btn-danger    { background:#ef4444; color:#fff; padding:10px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.btn-success   { background:#10b981; color:#fff; padding:10px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.btn-warning   { background:#f59e0b; color:#fff; padding:10px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
-.btn-primary:hover   { background:#162e4a; }
-.btn-secondary:hover { background:#4a6580; }
-.btn-danger:hover    { background:#dc2626; }
-.btn-success:hover   { background:#059669; }
-.btn-warning:hover   { background:#d97706; }
-
-/* ── Toolbar ────────────────────────────────────────────── */
-.toolbar { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; background:#f9fafb; padding:14px; border-radius:8px; border:1px solid #e5e7eb; }
-.toolbar input  { padding:9px 12px; border-radius:8px; border:1px solid #d1d5db; font-size:14px; min-width:300px; flex:1; }
-.toolbar input:focus { outline:none; border-color:#1f3a5f; }
-
-/* ── Tabla ──────────────────────────────────────────────── */
-.table-container { width:100%; overflow-x:auto; }
-.data-table { width:100%; border-collapse:collapse; font-size:13px; }
-.data-table thead th { background:#1f3a5f; color:#fff; padding:12px 10px; text-align:left; white-space:nowrap; position:sticky; top:0; z-index:10; }
-.data-table td { padding:10px; border-bottom:1px solid #e5e7eb; vertical-align:middle; }
-.data-table tbody tr:hover { background:#f9fafb; }
-
-.badge-archivos { background:#dbeafe; color:#1d4ed8; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:4px; }
-.badge-archivos.vacio { background:#f3f4f6; color:#9ca3af; }
-.badge-archivos.verde { background:#d1fae5; color:#065f46; }
-
-.btn-icon { width:32px; height:32px; border-radius:6px; border:none; cursor:pointer; color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:13px; margin-right:3px; }
-.btn-icon.azul    { background:#3b82f6; } .btn-icon.azul:hover    { background:#2563eb; }
-.btn-icon.verde   { background:#10b981; } .btn-icon.verde:hover   { background:#059669; }
-.btn-icon.rojo    { background:#ef4444; } .btn-icon.rojo:hover    { background:#dc2626; }
-.btn-icon.naranja { background:#f59e0b; } .btn-icon.naranja:hover { background:#d97706; }
-.btn-icon.gris    { background:#6b7280; } .btn-icon.gris:hover    { background:#4b5563; }
-.btn-icon.violeta { background:#7c3aed; } .btn-icon.violeta:hover { background:#6d28d9; }
-
-/* ── Paginación ─────────────────────────────────────────── */
-.paginacion { display:flex; align-items:center; gap:6px; margin-top:16px; justify-content:center; flex-wrap:wrap; }
-.paginacion button { padding:7px 13px; border-radius:8px; border:1px solid #d1d5db; background:#fff; cursor:pointer; font-size:13px; font-weight:600; }
-.paginacion button:hover   { background:#f3f4f6; }
-.paginacion button.active  { background:#1f3a5f; color:#fff; border-color:#1f3a5f; }
-.paginacion button:disabled{ opacity:.4; cursor:not-allowed; }
-.info-paginacion { text-align:center; margin-top:6px; font-size:13px; color:#6b7280; }
-
-/* ── Modal ──────────────────────────────────────────────── */
-.modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.6); z-index:9999999; align-items:center; justify-content:center; }
-.modal-overlay.active { display:flex; }
-.modal-box { background:#fff; border-radius:12px; box-shadow:0 25px 60px rgba(0,0,0,.3); padding:28px; position:relative; width:95%; max-height:90vh; overflow:auto; }
-.modal-box.grande  { max-width:920px; }
-.modal-box.pequeno { max-width:500px; }
-.modal-box.mediano { max-width:700px; }
-.close-btn { position:absolute; top:14px; right:14px; width:36px; height:36px; border-radius:50%; border:none; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,.2); cursor:pointer; font-size:18px; z-index:10; }
-.form-group { margin-bottom:14px; }
-.form-group label { display:block; font-size:12px; font-weight:700; color:#374151; margin-bottom:5px; }
-.form-group input, .form-group select, .form-group textarea { width:100%; padding:9px 11px; border-radius:8px; border:1px solid #d1d5db; font-size:14px; box-sizing:border-box; }
-.form-actions { margin-top:18px; display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
-
-.socio-info-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:12px 16px; margin-bottom:16px; }
-.socio-info-box p { margin:3px 0; font-size:13px; }
-
-/* ── Archivo item ───────────────────────────────────────── */
-.archivo-item { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:8px; background:#f9fafb; gap:10px; flex-wrap:wrap; }
-.archivo-item:hover { background:#f3f4f6; }
-.archivo-info { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
-.archivo-icon { font-size:22px; }
-.archivo-icon.kml { color:#10b981; }
-.archivo-icon.kmz { color:#f59e0b; }
-.archivo-nombre { font-weight:600; font-size:13px; color:#1f3a5f; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; }
-.archivo-codigo { display:inline-block; background:#e0f2fe; color:#0369a1; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; margin-left:6px; letter-spacing:.3px; }
-.archivo-meta   { font-size:11px; color:#6b7280; }
-.archivo-acciones { display:flex; gap:6px; flex-shrink:0; }
-
-/* ── Upload zone ────────────────────────────────────────── */
-.upload-zone { border:2px dashed #d1d5db; border-radius:10px; padding:30px; text-align:center; cursor:pointer; transition:all .2s; background:#fafafa; }
-.upload-zone:hover, .upload-zone.drag { border-color:#1f3a5f; background:#eff6ff; }
-.upload-zone i { font-size:36px; color:#9ca3af; margin-bottom:10px; display:block; }
-.upload-zone.drag i { color:#1f3a5f; }
-.upload-zone p { margin:4px 0; color:#6b7280; font-size:13px; }
-
-/* ── Cola archivos ──────────────────────────────────────── */
-.cola-archivos { margin-top:14px; display:flex; flex-direction:column; gap:8px; }
-.cola-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
-.cola-item.cola-ok    { border-color:#10b981; background:#f0fdf4; }
-.cola-item.cola-error { border-color:#ef4444; background:#fef2f2; }
-.cola-item.cola-subiendo { border-color:#3b82f6; background:#eff6ff; }
-.cola-item-header { display:flex; align-items:center; gap:8px; }
-.cola-item-nombre { font-weight:600; font-size:13px; color:#1f3a5f; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cola-item-estado { font-size:12px; font-weight:700; }
-.cola-item-estado.ok        { color:#10b981; }
-.cola-item-estado.error     { color:#ef4444; }
-.cola-item-estado.pending   { color:#6b7280; }
-.cola-item-estado.uploading { color:#3b82f6; }
-.cola-item-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.cola-item-inputs input { padding:7px 10px; border-radius:7px; border:1px solid #d1d5db; font-size:13px; width:100%; box-sizing:border-box; }
-.cola-item-inputs input.input-error { border-color:#ef4444; background:#fef2f2; }
-.cola-item-inputs input.input-ok    { border-color:#10b981; }
-.cola-item-remove { width:28px; height:28px; border-radius:6px; border:none; background:#fca5a5; color:#dc2626; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
-.cola-item-remove:hover { background:#ef4444; color:#fff; }
-.cola-hint { font-size:11px; color:#9ca3af; margin-top:2px; }
-
-/* ── Bulk progress ──────────────────────────────────────── */
-.bulk-progress { background:#e5e7eb; border-radius:999px; height:10px; overflow:hidden; margin:10px 0; }
-.bulk-progress-bar { height:100%; background:linear-gradient(90deg,#1f3a5f,#3b82f6); border-radius:999px; transition:width .3s; }
-.bulk-info { font-size:13px; color:#374151; font-weight:600; text-align:center; margin-bottom:8px; }
-
-/* ── Mapa ───────────────────────────────────────────────── */
-#mapaContainer { width:100%; height:420px; border-radius:10px; border:1px solid #e5e7eb; overflow:hidden; background:#f3f4f6; position:relative; }
-.mapa-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#9ca3af; font-size:14px; gap:12px; }
-.mapa-placeholder i { font-size:48px; }
-
-/* ── Tabs ───────────────────────────────────────────────── */
-.tabs { display:flex; gap:0; border-bottom:2px solid #e5e7eb; margin-bottom:18px; }
-.tab-btn { padding:10px 20px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:600; color:#6b7280; border-bottom:2px solid transparent; margin-bottom:-2px; }
-.tab-btn.active { color:#1f3a5f; border-bottom-color:#1f3a5f; }
-.tab-content { display:none; }
-.tab-content.active { display:block; }
-
-/* ── Stats mini ─────────────────────────────────────────── */
-.stats-mini { display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
-.stat-mini { background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:12px 18px; text-align:center; flex:1; min-width:120px; }
-.stat-mini h5 { margin:0 0 4px; font-size:11px; color:#6b7280; text-transform:uppercase; letter-spacing:.5px; }
-.stat-mini p  { margin:0; font-size:22px; font-weight:700; color:#1f3a5f; }
-.btn-actions { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-.badge-codigo { background:#fef3c7; color:#92400e; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; font-family:monospace; }
-
-/* ── Resumen modal ──────────────────────────────────────── */
-.resumen-header { background:linear-gradient(135deg,#1f3a5f,#2563eb); color:#fff; border-radius:10px; padding:16px 20px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
-.resumen-header h3 { margin:0; font-size:15px; font-weight:700; }
-.resumen-header p  { margin:4px 0 0; font-size:12px; opacity:.8; }
-.resumen-stats { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
-.resumen-stat { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 16px; text-align:center; flex:1; min-width:100px; }
-.resumen-stat h6 { margin:0 0 3px; font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:.5px; }
-.resumen-stat p  { margin:0; font-size:20px; font-weight:700; color:#1f3a5f; }
-.resumen-stat.verde p { color:#10b981; }
-.resumen-stat.azul  p { color:#3b82f6; }
-.resumen-stat.ambar p { color:#f59e0b; }
-.lotes-table { width:100%; border-collapse:collapse; font-size:12.5px; }
-.lotes-table thead th { background:#1f3a5f; color:#fff; padding:9px 10px; text-align:left; font-size:11px; letter-spacing:.3px; text-transform:uppercase; }
-.lotes-table td { padding:9px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
-.lotes-table tbody tr:hover { background:#f8fafc; }
-.lotes-table tbody tr:last-child td { border-bottom:none; }
-.badge-ocupado { background:#dcfce7; color:#166534; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:4px; }
-.badge-libre   { background:#fee2e2; color:#991b1b; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:4px; }
-.hectareas-val { font-weight:700; color:#1f3a5f; font-family:monospace; }
-.hectareas-nd  { color:#9ca3af; font-style:italic; font-size:11px; }
-.resumen-loading { text-align:center; padding:30px; color:#6b7280; font-size:14px; }
-
-/* ── Resumen global ─────────────────────────────────────── */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar,nav.sidebar,aside.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0}
+.content{flex:1;overflow-y:auto;height:100vh}
+.btn-primary{background:#1f3a5f;color:#fff;padding:10px 18px;border-radius:8px;border:none;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-secondary{background:#5f7c99;color:#fff;padding:10px 18px;border-radius:8px;border:none;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-danger{background:#ef4444;color:#fff;padding:10px 18px;border-radius:8px;border:none;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-success{background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;border:none;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-warning{background:#f59e0b;color:#fff;padding:10px 18px;border-radius:8px;border:none;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-primary:hover{background:#162e4a}.btn-secondary:hover{background:#4a6580}.btn-danger:hover{background:#dc2626}.btn-success:hover{background:#059669}.btn-warning:hover{background:#d97706}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;background:#f9fafb;padding:14px;border-radius:8px;border:1px solid #e5e7eb}
+.toolbar input{padding:9px 12px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;min-width:300px;flex:1}
+.toolbar input:focus{outline:none;border-color:#1f3a5f}
+.table-container{width:100%;overflow-x:auto}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table thead th{background:#1f3a5f;color:#fff;padding:12px 10px;text-align:left;white-space:nowrap;position:sticky;top:0;z-index:10}
+.data-table td{padding:10px;border-bottom:1px solid #e5e7eb;vertical-align:middle}
+.data-table tbody tr:hover{background:#f9fafb}
+.badge-archivos{background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.badge-archivos.vacio{background:#f3f4f6;color:#9ca3af}
+.badge-archivos.verde{background:#d1fae5;color:#065f46}
+.btn-icon{width:32px;height:32px;border-radius:6px;border:none;cursor:pointer;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;margin-right:3px}
+.btn-icon.azul{background:#3b82f6}.btn-icon.azul:hover{background:#2563eb}
+.btn-icon.verde{background:#10b981}.btn-icon.verde:hover{background:#059669}
+.btn-icon.rojo{background:#ef4444}.btn-icon.rojo:hover{background:#dc2626}
+.btn-icon.naranja{background:#f59e0b}.btn-icon.naranja:hover{background:#d97706}
+.btn-icon.gris{background:#6b7280}.btn-icon.gris:hover{background:#4b5563}
+.btn-icon.violeta{background:#7c3aed}.btn-icon.violeta:hover{background:#6d28d9}
+.paginacion{display:flex;align-items:center;gap:6px;margin-top:16px;justify-content:center;flex-wrap:wrap}
+.paginacion button{padding:7px 13px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:13px;font-weight:600}
+.paginacion button:hover{background:#f3f4f6}
+.paginacion button.active{background:#1f3a5f;color:#fff;border-color:#1f3a5f}
+.paginacion button:disabled{opacity:.4;cursor:not-allowed}
+.info-paginacion{text-align:center;margin-top:6px;font-size:13px;color:#6b7280}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:9999999;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal-box{background:#fff;border-radius:12px;box-shadow:0 25px 60px rgba(0,0,0,.3);padding:28px;position:relative;width:95%;max-height:90vh;overflow:auto}
+.modal-box.grande{max-width:920px}.modal-box.pequeno{max-width:500px}.modal-box.mediano{max-width:700px}
+.close-btn{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2);cursor:pointer;font-size:18px;z-index:10}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 11px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;box-sizing:border-box}
+.form-actions{margin-top:18px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.socio-info-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:16px}
+.socio-info-box p{margin:3px 0;font-size:13px}
+.archivo-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:8px;background:#f9fafb;gap:10px;flex-wrap:wrap}
+.archivo-item:hover{background:#f3f4f6}
+.archivo-info{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.archivo-icon{font-size:22px}
+.archivo-icon.kml{color:#10b981}.archivo-icon.kmz{color:#f59e0b}
+.archivo-nombre{font-weight:600;font-size:13px;color:#1f3a5f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.archivo-codigo{display:inline-block;background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;letter-spacing:.3px}
+.archivo-meta{font-size:11px;color:#6b7280}
+.archivo-acciones{display:flex;gap:6px;flex-shrink:0}
+.upload-zone{border:2px dashed #d1d5db;border-radius:10px;padding:30px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa}
+.upload-zone:hover,.upload-zone.drag{border-color:#1f3a5f;background:#eff6ff}
+.upload-zone i{font-size:36px;color:#9ca3af;margin-bottom:10px;display:block}
+.upload-zone.drag i{color:#1f3a5f}
+.upload-zone p{margin:4px 0;color:#6b7280;font-size:13px}
+.cola-archivos{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.cola-item{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.cola-item.cola-ok{border-color:#10b981;background:#f0fdf4}
+.cola-item.cola-error{border-color:#ef4444;background:#fef2f2}
+.cola-item.cola-subiendo{border-color:#3b82f6;background:#eff6ff}
+.cola-item-header{display:flex;align-items:center;gap:8px}
+.cola-item-nombre{font-weight:600;font-size:13px;color:#1f3a5f;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cola-item-estado{font-size:12px;font-weight:700}
+.cola-item-estado.ok{color:#10b981}.cola-item-estado.error{color:#ef4444}.cola-item-estado.pending{color:#6b7280}.cola-item-estado.uploading{color:#3b82f6}
+.cola-item-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cola-item-inputs input{padding:7px 10px;border-radius:7px;border:1px solid #d1d5db;font-size:13px;width:100%;box-sizing:border-box}
+.cola-item-inputs input.input-error{border-color:#ef4444;background:#fef2f2}
+.cola-item-inputs input.input-ok{border-color:#10b981}
+.cola-item-remove{width:28px;height:28px;border-radius:6px;border:none;background:#fca5a5;color:#dc2626;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.cola-item-remove:hover{background:#ef4444;color:#fff}
+.cola-hint{font-size:11px;color:#9ca3af;margin-top:2px}
+.bulk-progress{background:#e5e7eb;border-radius:999px;height:10px;overflow:hidden;margin:10px 0}
+.bulk-progress-bar{height:100%;background:linear-gradient(90deg,#1f3a5f,#3b82f6);border-radius:999px;transition:width .3s}
+.bulk-info{font-size:13px;color:#374151;font-weight:600;text-align:center;margin-bottom:8px}
+#mapaContainer{width:100%;height:420px;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;background:#f3f4f6;position:relative}
+.mapa-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#9ca3af;font-size:14px;gap:12px}
+.mapa-placeholder i{font-size:48px}
+.tabs{display:flex;gap:0;border-bottom:2px solid #e5e7eb;margin-bottom:18px}
+.tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab-btn.active{color:#1f3a5f;border-bottom-color:#1f3a5f}
+.tab-content{display:none}.tab-content.active{display:block}
+.stats-mini{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.stat-mini{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px 18px;text-align:center;flex:1;min-width:120px}
+.stat-mini h5{margin:0 0 4px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.stat-mini p{margin:0;font-size:22px;font-weight:700;color:#1f3a5f}
+.btn-actions{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.badge-codigo{background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;font-family:monospace}
+.resumen-header{background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;border-radius:10px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.resumen-header h3{margin:0;font-size:15px;font-weight:700}
+.resumen-header p{margin:4px 0 0;font-size:12px;opacity:.8}
+.resumen-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.resumen-stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 16px;text-align:center;flex:1;min-width:100px}
+.resumen-stat h6{margin:0 0 3px;font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.resumen-stat p{margin:0;font-size:20px;font-weight:700;color:#1f3a5f}
+.resumen-stat.verde p{color:#10b981}.resumen-stat.azul p{color:#3b82f6}.resumen-stat.ambar p{color:#f59e0b}
+.lotes-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.lotes-table thead th{background:#1f3a5f;color:#fff;padding:9px 10px;text-align:left;font-size:11px;letter-spacing:.3px;text-transform:uppercase}
+.lotes-table td{padding:9px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.lotes-table tbody tr:hover{background:#f8fafc}
+.lotes-table tbody tr:last-child td{border-bottom:none}
+.badge-ocupado{background:#dcfce7;color:#166534;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.badge-libre{background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.hectareas-val{font-weight:700;color:#1f3a5f;font-family:monospace}
+.hectareas-nd{color:#9ca3af;font-style:italic;font-size:11px}
+.resumen-loading{text-align:center;padding:30px;color:#6b7280;font-size:14px}
 .rg-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999999;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
 .rg-overlay.active{display:flex}
 .rg-box{background:#fff;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.35);width:96%;max-width:1050px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column}
@@ -211,11 +162,9 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
 .ocupado-chip{background:#fef2f2;border:1px solid #ef4444;border-radius:8px;padding:8px 12px;text-align:center;font-family:monospace;font-weight:700;font-size:12px;color:#991b1b}
 .rg-foot{padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;background:#f9fafb}
 .rg-loading{text-align:center;padding:40px;color:#6b7280;font-size:14px}
-
-/* ══ NUEVO: Modal comparación LPA vs KML ══ */
 .ic-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999999;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
 .ic-overlay.active{display:flex}
-.ic-box{background:#fff;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.35);width:96%;max-width:1100px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column}
+.ic-box{background:#fff;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.35);width:96%;max-width:1150px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column}
 .ic-head{background:linear-gradient(135deg,#0f766e,#0891b2);color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .ic-head h2{margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px}
 .ic-close{width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
@@ -263,47 +212,28 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
 <script src="layout/modal-message.js"></script>
 <div class="app">
 <?php include __DIR__ . "/layout/sidebar.php"; ?>
-
 <main class="content">
 <header class="topbar">
     <span>Bienvenido, <?= htmlspecialchars($_SESSION['usuario']) ?></span>
 </header>
-
 <section class="page">
 <h1><i class="fa fa-map-location-dot" style="color:#1f3a5f;margin-right:8px;"></i> Ubicaciones y Mapas KML</h1>
-
 <div class="stats-mini">
     <div class="stat-mini"><h5>Total Socios</h5><p id="stTotal"><i class="fa fa-spinner fa-spin" style="font-size:16px;"></i></p></div>
     <div class="stat-mini"><h5>Con Ubicación</h5><p id="stConUbic" style="color:#10b981;"><i class="fa fa-spinner fa-spin" style="font-size:16px;"></i></p></div>
     <div class="stat-mini"><h5>Sin Ubicación</h5><p id="stSinUbic" style="color:#ef4444;"><i class="fa fa-spinner fa-spin" style="font-size:16px;"></i></p></div>
     <div class="stat-mini"><h5>Total Archivos</h5><p id="stArchivos" style="color:#3b82f6;"><i class="fa fa-spinner fa-spin" style="font-size:16px;"></i></p></div>
 </div>
-
 <div class="btn-actions">
     <a href="mapa_global.php" target="_blank" style="text-decoration:none;">
-        <button class="btn-primary" style="background:linear-gradient(135deg,#0d9488,#0891b2);border:none;box-shadow:0 4px 14px rgba(13,148,136,.35);">
-            <i class="fa fa-globe"></i> Ver Mapa Global KML
-        </button>
+        <button class="btn-primary" style="background:linear-gradient(135deg,#0d9488,#0891b2);border:none;box-shadow:0 4px 14px rgba(13,148,136,.35);"><i class="fa fa-globe"></i> Ver Mapa Global KML</button>
     </a>
-    <button class="btn-warning" onclick="exportarTodos()">
-        <i class="fa fa-file-zipper"></i> Exportar Todo (ZIP)
-    </button>
-    <button class="btn-primary" onclick="abrirResumenGlobal()"
-            style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;box-shadow:0 4px 14px rgba(124,58,237,.35);">
-        <i class="fa fa-table-list"></i> Resumen Global
-    </button>
-    <!-- ★ NUEVO -->
-    <button class="btn-primary" onclick="abrirComparacion()"
-            style="background:linear-gradient(135deg,#0f766e,#0891b2);border:none;box-shadow:0 4px 14px rgba(8,145,178,.35);">
-        <i class="fa fa-scale-balanced"></i> Igualar Ha (LPA vs KML)
-    </button>
+    <button class="btn-warning" onclick="exportarTodos()"><i class="fa fa-file-zipper"></i> Exportar Todo (ZIP)</button>
+    <button class="btn-primary" onclick="abrirResumenGlobal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;box-shadow:0 4px 14px rgba(124,58,237,.35);"><i class="fa fa-table-list"></i> Resumen Global</button>
+    <button class="btn-primary" onclick="abrirComparacion()" style="background:linear-gradient(135deg,#0f766e,#0891b2);border:none;box-shadow:0 4px 14px rgba(8,145,178,.35);"><i class="fa fa-scale-balanced"></i> Igualar Ha (LPA vs KML)</button>
 </div>
-
 <div class="toolbar">
-    <input type="text" id="inputBuscar"
-           placeholder="🔍 Buscar por cédula, nombre o código SLC..."
-           oninput="buscarConDelay()"
-           value="<?= $buscarInicial ?>">
+    <input type="text" id="inputBuscar" placeholder="🔍 Buscar por cédula, nombre o código SLC..." oninput="buscarConDelay()" value="<?= $buscarInicial ?>">
     <select id="filtroKml" onchange="cargarSocios(1)" style="padding:9px 12px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;min-width:170px;">
         <option value="">— Archivos KML —</option>
         <option value="con">✅ Con archivos KML</option>
@@ -316,11 +246,8 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
     </select>
     <button class="btn-primary" onclick="cargarSocios(1)"><i class="fa fa-search"></i> Buscar</button>
     <button class="btn-secondary" onclick="limpiarBusqueda()"><i class="fa fa-rotate-left"></i> Limpiar</button>
-    <a href="conversor_kml.php" target="_blank">
-      <button class="btn-primary"><i class="fa fa-map"></i> Mini-QGIS</button>
-    </a>
+    <a href="conversor_kml.php" target="_blank"><button class="btn-primary"><i class="fa fa-map"></i> Mini-QGIS</button></a>
 </div>
-
 <div class="form-card">
 <div class="table-container">
 <table class="data-table">
@@ -344,7 +271,6 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
 </main>
 </div>
 
-<!-- ══ MODAL: Gestión ubicaciones ══ -->
 <div id="modalUbicacion" class="modal-overlay">
 <div class="modal-box grande">
 <button class="close-btn" onclick="cerrarModal('modalUbicacion')">×</button>
@@ -366,18 +292,20 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
         <button onclick="centrarMapa()" style="padding:8px 14px;border-radius:8px;background:#1f3a5f;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:13px;"><i class="fa fa-crosshairs"></i> Centrar</button>
         <button onclick="if(mapaLeaflet)mapaLeaflet.zoomIn()" style="padding:8px 12px;border-radius:8px;background:#5f7c99;color:#fff;border:none;cursor:pointer;font-size:13px;"><i class="fa fa-plus"></i></button>
         <button onclick="if(mapaLeaflet)mapaLeaflet.zoomOut()" style="padding:8px 12px;border-radius:8px;background:#5f7c99;color:#fff;border:none;cursor:pointer;font-size:13px;"><i class="fa fa-minus"></i></button>
-        <button onclick="toggleCapas()" style="padding:8px 12px;border-radius:8px;background:#5f7c99;color:#fff;border:none;cursor:pointer;font-size:13px;"><i class="fa fa-layer-group"></i></button>
+        <button onclick="toggleCapas()" style="padding:8px 12px;border-radius:8px;background:#5f7c99;color:#fff;border:none;cursor:pointer;font-size:13px;" title="Cambiar capa base"><i class="fa fa-layer-group"></i></button>
         <button onclick="mostrarTodosKml()" style="padding:8px 14px;border-radius:8px;background:#10b981;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:13px;"><i class="fa fa-map"></i> Ver todos</button>
     </div>
     <div id="listaCapasMapa" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;min-height:10px;"></div>
-    <div id="mapaContainer"><div class="mapa-placeholder"><i class="fa fa-map"></i><span>Haz clic en el ícono de mapa en la lista de archivos</span></div></div>
+    <div id="mapaContainer">
+        <div class="mapa-placeholder"><i class="fa fa-map"></i><span>Haz clic en el ícono de mapa <i class="fa fa-map" style="color:#3b82f6;"></i> en la lista de archivos</span></div>
+    </div>
 </div>
 <div id="tabSubir" class="tab-content">
     <input type="hidden" id="subirIdSocio">
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('archivoInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
         <i class="fa fa-cloud-arrow-up"></i>
         <p><strong>Clic para seleccionar</strong> o arrastra aquí</p>
-        <p>Formatos: <strong>.kml</strong>, <strong>.kmz</strong> — Múltiples archivos — Máx. 10MB c/u</p>
+        <p>Formatos: <strong>.kml</strong>, <strong>.kmz</strong> — Puedes seleccionar <strong>múltiples archivos</strong> a la vez — Máx. 10MB c/u</p>
     </div>
     <input type="file" id="archivoInput" accept=".kml,.kmz" multiple style="display:none;" onchange="onArchivosSeleccionados(this.files)">
     <div id="colaArchivos" class="cola-archivos" style="display:none;"></div>
@@ -393,7 +321,6 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
 </div>
 </div>
 
-<!-- ══ MODAL: Resumen de lotes ══ -->
 <div id="modalResumen" class="modal-overlay">
 <div class="modal-box mediano">
 <button class="close-btn" onclick="cerrarModal('modalResumen')">×</button>
@@ -406,18 +333,17 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
 </div>
 </div>
 
-<!-- ══ MODAL: Resumen Global ══ -->
 <div id="modalResumenGlobal" class="rg-overlay">
   <div class="rg-box">
     <div class="rg-head">
       <h2><i class="fa fa-table-list"></i> Resumen Global de Lotes KML</h2>
       <button class="rg-close" onclick="cerrarResumenGlobal()"><i class="fa fa-times"></i></button>
     </div>
-    <div class="rg-stats">
+    <div class="rg-stats" id="rgStats">
       <div class="rg-stat"><h6>Socios activos</h6><p id="rgStTotal">—</p></div>
       <div class="rg-stat verde"><h6>Con KML</h6><p id="rgStConKml">—</p></div>
       <div class="rg-stat rojo"><h6>Sin KML</h6><p id="rgStSinKml">—</p></div>
-      <div class="rg-stat violeta"><h6>Total ha</h6><p id="rgStHa">—</p></div>
+      <div class="rg-stat violeta"><h6>Total ha registradas</h6><p id="rgStHa">—</p></div>
       <div class="rg-stat ambar"><h6>Códigos libres</h6><p id="rgStLibres">—</p></div>
     </div>
     <div class="rg-tabs">
@@ -426,9 +352,7 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
     </div>
     <div class="rg-toolbar">
       <input type="text" class="rg-search" id="rgBuscar" placeholder="🔍 Buscar socio, cédula o código..." oninput="filtrarResumenGlobal()">
-      <button onclick="exportarResumenGlobalExcel()" style="padding:8px 16px;border-radius:8px;background:#10b981;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
-        <i class="fa fa-file-excel"></i> Exportar Excel
-      </button>
+      <button onclick="exportarResumenGlobalExcel()" style="padding:8px 16px;border-radius:8px;background:#10b981;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;"><i class="fa fa-file-excel"></i> Exportar Excel</button>
     </div>
     <div class="rg-body">
       <div id="rgTabSocios" class="rg-tc active"><div id="rgContenidoSocios"><div class="rg-loading"><i class="fa fa-spinner fa-spin" style="font-size:24px;color:#4f46e5;display:block;margin-bottom:8px;"></i>Cargando datos...</div></div></div>
@@ -440,7 +364,6 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
   </div>
 </div>
 
-<!-- ══ NUEVO MODAL: Comparación LPA vs KML ══ -->
 <div id="modalComparacion" class="ic-overlay">
   <div class="ic-box">
     <div class="ic-head">
@@ -472,39 +395,30 @@ $buscarInicial = htmlspecialchars($_GET['q'] ?? '');
         <span><span class="ic-dot" style="background:#f59e0b;"></span> Exceso KML</span>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="igualerTodos()"
-                style="padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#0f766e,#0891b2);color:#fff;border:none;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;">
-            <i class="fa fa-scale-balanced"></i> Igualar todos con diferencia
-        </button>
-        <button onclick="cerrarComparacion()" style="padding:8px 18px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#374151;">
-            <i class="fa fa-times"></i> Cerrar
-        </button>
+        <button onclick="igualerTodos()" style="padding:8px 16px;border-radius:8px;background:linear-gradient(135deg,#0f766e,#0891b2);color:#fff;border:none;cursor:pointer;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;"><i class="fa fa-scale-balanced"></i> Igualar todos con diferencia</button>
+        <button onclick="cerrarComparacion()" style="padding:8px 18px;border-radius:8px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#374151;"><i class="fa fa-times"></i> Cerrar</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-/* ══ VARIABLES GLOBALES ══ */
-let paginaActual = 1, buscarTimer = null, socioActual = null;
-let mapaLeaflet = null, colaFiles = [], resumenActual = null;
+let paginaActual=1,buscarTimer=null,socioActual=null,mapaLeaflet=null,colaFiles=[],resumenActual=null;
 
-window.onload = function() { cargarSocios(1); cargarStats(); };
+window.onload=function(){cargarSocios(1);cargarStats();};
 
-/* ── Stats ── */
-function cargarStats() {
+function cargarStats(){
     fetch('ubicaciones_api.php?accion=stats').then(r=>r.json()).then(data=>{
         if(!data.success)return;
-        document.getElementById('stTotal').textContent    = data.stats.total;
-        document.getElementById('stConUbic').textContent  = data.stats.con_ubic;
-        document.getElementById('stSinUbic').textContent  = data.stats.sin_ubic;
-        document.getElementById('stArchivos').textContent = data.stats.archivos;
+        document.getElementById('stTotal').textContent=data.stats.total;
+        document.getElementById('stConUbic').textContent=data.stats.con_ubic;
+        document.getElementById('stSinUbic').textContent=data.stats.sin_ubic;
+        document.getElementById('stArchivos').textContent=data.stats.archivos;
     }).catch(()=>{});
 }
 
-/* ── Cargar socios ── */
-function cargarSocios(pagina) {
-    pagina=pagina||paginaActual; paginaActual=pagina;
+function cargarSocios(pagina){
+    pagina=pagina||paginaActual;paginaActual=pagina;
     const q=(document.getElementById('inputBuscar').value||'').trim();
     const tbody=document.getElementById('cuerpoTabla');
     tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:25px;color:#6b7280;"><i class="fa fa-spinner fa-spin"></i> Cargando...</td></tr>';
@@ -513,9 +427,9 @@ function cargarSocios(pagina) {
     const url=`ubicaciones_api.php?accion=buscar_socios&pagina=${pagina}&q=${encodeURIComponent(q)}&con_kml=${encodeURIComponent(conKml)}&adendum_f=${encodeURIComponent(adendumF)}`;
     fetch(url).then(r=>r.text()).then(txt=>{
         let data;
-        try{data=JSON.parse(txt);}catch(e){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:25px;color:#ef4444;">❌ Respuesta inválida<br><small>${txt.substring(0,200).replace(/</g,'&lt;')}</small></td></tr>`;return;}
+        try{data=JSON.parse(txt);}catch(e){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:25px;color:#ef4444;">❌ El servidor devolvió una respuesta inválida.<br><small style="font-family:monospace;color:#9ca3af;">${txt.substring(0,300).replace(/</g,'&lt;')}</small></td></tr>`;return;}
         tbody.innerHTML='';
-        if(!data.success){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:25px;color:#ef4444;">❌ ${data.message||'Error'}</td></tr>`;return;}
+        if(!data.success){tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:25px;color:#ef4444;">❌ Error: ${data.message||'desconocido'}</td></tr>`;return;}
         if(!data.datos||!data.datos.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:30px;color:#6b7280;">No se encontraron socios.</td></tr>';document.getElementById('paginacion').innerHTML='';document.getElementById('infoPaginacion').textContent='';return;}
         const inicio=(data.pagina-1)*data.porPagina;
         data.datos.forEach((s,idx)=>{
@@ -523,27 +437,16 @@ function cargarSocios(pagina) {
             const adendum=parseInt(s.adendum||0);
             const adendumBadge=adendum===2?'<span style="background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">Adendum 2</span>':adendum===1?'<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">Adendum 1</span>':'<span style="background:#f3f4f6;color:#9ca3af;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">-</span>';
             const badge=total>0?`<span class="badge-archivos verde"><i class="fa fa-file"></i> ${total} archivo${total>1?'s':''}</span>`:`<span class="badge-archivos vacio"><i class="fa fa-file-circle-xmark"></i> Sin archivos</span>`;
-            tbody.innerHTML+=`<tr>
-                <td>${inicio+idx+1}</td><td>${s.identificacion||'-'}</td>
-                <td><strong>${s.nombre_completo||'-'}</strong></td><td>${s.zona||'-'}</td>
-                <td style="text-align:center;">${adendumBadge}</td>
-                <td style="text-align:center;">${badge}</td>
-                <td style="text-align:center;">
-                    <button class="btn-icon azul" title="Ver / Gestionar ubicaciones" onclick='abrirUbicaciones(${s.id_socio},"${esc(s.identificacion)}","${esc(s.nombre_completo)}","${esc(s.zona||'')}","${esc(s.comunidad_grupo||'')}","${esc(s.codigo_slc||'')}",${s.proximo_lote||1})'><i class="fa fa-map-location-dot"></i></button>
-                    <button class="btn-icon" style="background:#0891b2;" title="Plano catastral" onclick="window.open('plano_catastral.php?id_socio=${s.id_socio}','_blank')"><i class="fa-solid fa-globe"></i></button>
-                    <button class="btn-icon violeta" title="Resumen lotes" onclick='abrirResumen(${s.id_socio},"${esc(s.identificacion)}","${esc(s.nombre_completo)}","${esc(s.zona||'')}","${esc(s.codigo_slc||'')}",${total})'><i class="fa fa-eye"></i></button>
-                </td>
-            </tr>`;
+            tbody.innerHTML+=`<tr><td>${inicio+idx+1}</td><td>${s.identificacion||'-'}</td><td><strong>${s.nombre_completo||'-'}</strong></td><td>${s.zona||'-'}</td><td style="text-align:center;">${adendumBadge}</td><td style="text-align:center;">${badge}</td><td style="text-align:center;"><button class="btn-icon azul" title="Ver / Gestionar ubicaciones" onclick='abrirUbicaciones(${s.id_socio},"${esc(s.identificacion)}","${esc(s.nombre_completo)}","${esc(s.zona||'')}","${esc(s.comunidad_grupo||'')}","${esc(s.codigo_slc||'')}",${s.proximo_lote||1})'><i class="fa fa-map-location-dot"></i></button><button class="btn-icon" style="background:#0891b2;" title="Generar plano catastral" onclick="window.open('plano_catastral.php?id_socio=${s.id_socio}','_blank')"><i class="fa-solid fa-globe"></i></button><button class="btn-icon violeta" title="Ver resumen de lotes y hectáreas" onclick='abrirResumen(${s.id_socio},"${esc(s.identificacion)}","${esc(s.nombre_completo)}","${esc(s.zona||'')}","${esc(s.codigo_slc||'')}",${total})'><i class="fa fa-eye"></i></button></td></tr>`;
         });
         renderPaginacion(data.pagina,data.totalPaginas,data.total,data.porPagina);
-    }).catch(err=>{tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:25px;color:#ef4444;">❌ Error al cargar.</td></tr>';console.error(err);});
+    }).catch(err=>{tbody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:25px;color:#ef4444;">❌ Error al cargar. Ver consola.</td></tr>';console.error(err);});
 }
 
 function esc(s){return(s||'').replace(/"/g,'&quot;').replace(/'/g,"\\'");}
 function buscarConDelay(){clearTimeout(buscarTimer);buscarTimer=setTimeout(()=>cargarSocios(1),400);}
 function limpiarBusqueda(){document.getElementById('inputBuscar').value='';const fk=document.getElementById('filtroKml');if(fk)fk.value='';const fa=document.getElementById('filtroAdendum');if(fa)fa.value='';cargarSocios(1);}
 
-/* ── Resumen lotes ── */
 async function abrirResumen(idSocio,cedula,nombre,zona,codigoSlc,totalArchivos){
     resumenActual=null;
     document.getElementById('btnExportarResumen').style.display='none';
@@ -554,8 +457,8 @@ async function abrirResumen(idSocio,cedula,nombre,zona,codigoSlc,totalArchivos){
     const lotes=[];let totalHa=0;
     for(const arch of archivos){
         let hectareas=null;
-        if(arch.atributos){try{const atrs=typeof arch.atributos==='string'?JSON.parse(arch.atributos):arch.atributos;if(Array.isArray(atrs)){const a=atrs.find(a=>{const k=(a.k||'').toLowerCase();return k.includes('area')||k.includes('área')||k.includes('hectarea')||k.includes('ha')||a.tipo==='area';});if(a)hectareas=parseFloat((a.v||'').replace(',','.'));}}catch(e){}}
-        if(hectareas===null){try{const r2=await fetch(`ubicaciones_api.php?accion=leer_kml&id_ubicacion=${arch.id_ubicacion}`);const j2=await r2.json();if(j2.success){const kmlStr=atob(j2.kml);if(j2.atributos&&j2.atributos.length){const a=j2.atributos.find(a=>{const k=(a.k||'').toLowerCase();return k.includes('area')||k.includes('área')||k.includes('ha')||a.tipo==='area';});if(a)hectareas=parseFloat((a.v||'').replace(',','.'));}if(hectareas===null)hectareas=calcularAreaDesdeKml(kmlStr);}}catch(e){}}
+        if(arch.atributos){try{const atrs=typeof arch.atributos==='string'?JSON.parse(arch.atributos):arch.atributos;if(Array.isArray(atrs)){const areaAttr=atrs.find(a=>{const k=(a.k||'').toLowerCase();return k.includes('area')||k.includes('área')||k.includes('hectarea')||k.includes('ha')||a.tipo==='area';});if(areaAttr)hectareas=parseFloat((areaAttr.v||'').replace(',','.'));}}catch(e){}}
+        if(hectareas===null){try{const r2=await fetch(`ubicaciones_api.php?accion=leer_kml&id_ubicacion=${arch.id_ubicacion}`);const j2=await r2.json();if(j2.success){const kmlStr=atob(j2.kml);if(j2.atributos&&j2.atributos.length){const areaAttr=j2.atributos.find(a=>{const k=(a.k||'').toLowerCase();return k.includes('area')||k.includes('área')||k.includes('ha')||a.tipo==='area';});if(areaAttr)hectareas=parseFloat((areaAttr.v||'').replace(',','.'));}if(hectareas===null)hectareas=calcularAreaDesdeKml(kmlStr);}}catch(e){}}
         if(hectareas!==null&&!isNaN(hectareas))totalHa+=hectareas;
         lotes.push({id_ubicacion:arch.id_ubicacion,codigo:arch.codigo_archivo||arch.nombre_archivo,nombre:arch.nombre_archivo,hectareas,descripcion:arch.descripcion||'',fecha:arch.fecha_subida,tipo:arch.tipo_archivo});
     }
@@ -584,11 +487,8 @@ function renderResumen(data){
         const fecha=l.fecha?new Date(l.fecha).toLocaleDateString('es-EC',{day:'2-digit',month:'short',year:'numeric'}):'-';
         filas+=`<tr><td style="text-align:center;font-weight:600;color:#6b7280;">${i+1}</td><td><span style="font-family:monospace;font-weight:700;color:#1f3a5f;font-size:12px;">${escHtml(l.codigo)}</span></td><td style="text-align:center;">${haStr}</td><td>${escHtml(l.descripcion||'—')}</td><td style="text-align:center;"><span class="badge-ocupado"><i class="fa fa-check"></i> Activo</span></td><td style="font-size:11px;color:#6b7280;">${fecha}</td></tr>`;
     });
-    if(!data.lotes.length)filas=`<tr><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;"><i class="fa fa-folder-open" style="font-size:28px;display:block;margin-bottom:8px;"></i>Sin archivos KML</td></tr>`;
-    document.getElementById('resumenContenido').innerHTML=`
-        <div class="resumen-header"><div><h3><i class="fa fa-user"></i> ${escHtml(data.nombre)}</h3><p>Cédula: ${escHtml(data.cedula)} · Zona: ${escHtml(data.zona||'—')}${data.codigoSlc?' · Código: <strong>'+escHtml(data.codigoSlc)+'</strong>':''}</p></div></div>
-        <div class="resumen-stats"><div class="resumen-stat"><h6>Lotes</h6><p>${data.totalArchivos}</p></div><div class="resumen-stat verde"><h6>Total ha</h6><p>${data.totalHa>0?data.totalHa.toFixed(3):'—'}</p></div><div class="resumen-stat azul"><h6>KML/KMZ</h6><p>${data.totalArchivos}</p></div></div>
-        <div style="overflow-x:auto;"><table class="lotes-table"><thead><tr><th style="width:36px;">#</th><th>Código</th><th style="text-align:center;">Hectáreas</th><th>Descripción</th><th style="text-align:center;">Estado</th><th>Fecha</th></tr></thead><tbody>${filas}</tbody>${data.lotes.length?`<tfoot><tr style="background:#f1f5f9;"><td colspan="2" style="font-weight:700;padding:9px 10px;text-align:right;font-size:12px;">TOTAL:</td><td style="text-align:center;font-weight:700;color:#1f3a5f;font-family:monospace;">${data.totalHa>0?data.totalHa.toFixed(3)+' ha':'—'}</td><td colspan="3"></td></tr></tfoot>`:''}</table></div>`;
+    if(!data.lotes.length)filas=`<tr><td colspan="6" style="text-align:center;padding:24px;color:#9ca3af;"><i class="fa fa-folder-open" style="font-size:28px;display:block;margin-bottom:8px;"></i>Este productor no tiene archivos KML registrados</td></tr>`;
+    document.getElementById('resumenContenido').innerHTML=`<div class="resumen-header"><div><h3><i class="fa fa-user"></i> ${escHtml(data.nombre)}</h3><p>Cédula: ${escHtml(data.cedula)} &nbsp;·&nbsp; Zona: ${escHtml(data.zona||'—')}${data.codigoSlc?' &nbsp;·&nbsp; Código base: <strong>'+escHtml(data.codigoSlc)+'</strong>':''}</p></div></div><div class="resumen-stats"><div class="resumen-stat"><h6>Lotes registrados</h6><p>${data.totalArchivos}</p></div><div class="resumen-stat verde"><h6>Total hectáreas</h6><p>${data.totalHa>0?data.totalHa.toFixed(3):'—'}</p></div><div class="resumen-stat azul"><h6>Archivos KML/KMZ</h6><p>${data.totalArchivos}</p></div></div><div style="overflow-x:auto;"><table class="lotes-table"><thead><tr><th style="width:36px;">#</th><th>Código</th><th style="text-align:center;">Hectáreas</th><th>Descripción</th><th style="text-align:center;">Estado</th><th>Fecha</th></tr></thead><tbody>${filas}</tbody>${data.lotes.length?`<tfoot><tr style="background:#f1f5f9;"><td colspan="2" style="font-weight:700;padding:9px 10px;text-align:right;font-size:12px;">TOTAL:</td><td style="text-align:center;font-weight:700;color:#1f3a5f;font-family:monospace;">${data.totalHa>0?data.totalHa.toFixed(3)+' ha':'—'}</td><td colspan="3"></td></tr></tfoot>`:''}</table></div>`;
 }
 
 function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -603,7 +503,6 @@ function exportarResumenExcel(){
     form.appendChild(i1);form.appendChild(i2);document.body.appendChild(form);form.submit();document.body.removeChild(form);
 }
 
-/* ── Ubicaciones ── */
 function abrirUbicaciones(idSocio,cedula,nombre,zona,comunidad,codigoSlc,proximoLote){
     socioActual={idSocio,cedula,nombre,zona,comunidad,codigoSlc,proximoLote:proximoLote||1};
     document.getElementById('infoSocioModal').innerHTML=`<p><strong>Cédula:</strong> ${cedula} &nbsp;|&nbsp; <strong>Nombre:</strong> ${nombre} &nbsp;|&nbsp; <strong>Zona:</strong> ${zona||'-'}${comunidad?' &nbsp;|&nbsp; <strong>Comunidad:</strong> '+comunidad:''}${codigoSlc?' &nbsp;|&nbsp; <strong>Código:</strong> <span class="badge-codigo">'+codigoSlc+'</span>':''}</p>`;
@@ -622,17 +521,16 @@ function cargarArchivos(idSocio){
     const div=document.getElementById('listaArchivos');
     div.innerHTML='<p style="text-align:center;color:#9ca3af;padding:20px;"><i class="fa fa-spinner fa-spin"></i> Cargando archivos...</p>';
     fetch(`ubicaciones_api.php?accion=listar&id_socio=${idSocio}`).then(r=>r.json()).then(data=>{
-        if(!data.success||!data.datos.length){div.innerHTML='<div style="text-align:center;padding:30px;color:#9ca3af;"><i class="fa fa-folder-open" style="font-size:40px;margin-bottom:10px;display:block;"></i>No hay archivos subidos.<br><small>Ve a la pestaña <strong>Subir Archivos</strong>.</small></div>';return;}
+        if(!data.success||!data.datos.length){div.innerHTML=`<div style="text-align:center;padding:30px;color:#9ca3af;"><i class="fa fa-folder-open" style="font-size:40px;margin-bottom:10px;display:block;"></i>No hay archivos subidos para este productor.<br><small>Ve a la pestaña <strong>Subir Archivos</strong> para agregar uno.</small></div>`;return;}
         div.innerHTML='';
         data.datos.forEach(a=>{
             const fecha=new Date(a.fecha_subida).toLocaleDateString('es-EC',{day:'2-digit',month:'short',year:'numeric'});
             const codigoBadge=a.codigo_archivo?`<span class="archivo-codigo">${a.codigo_archivo}</span>`:'';
-            div.innerHTML+=`<div class="archivo-item"><div class="archivo-info"><i class="fa fa-map archivo-icon ${a.tipo_archivo}"></i><div style="min-width:0;"><div><span class="archivo-nombre" title="${a.nombre_archivo}">${a.nombre_archivo}</span>${codigoBadge}</div><div class="archivo-meta"><strong>${a.tipo_archivo.toUpperCase()}</strong> &nbsp;·&nbsp; ${fecha} &nbsp;·&nbsp; ${a.subido_por||'-'}${a.descripcion?'<br><em>'+a.descripcion+'</em>':''}</div></div></div><div class="archivo-acciones"><button class="btn-icon azul" title="Ver en mapa" onclick="verEnMapa(${a.id_ubicacion},'${esc(a.nombre_archivo)}')"><i class="fa fa-map"></i></button><a href="ubicaciones_api.php?accion=descargar_kml_actualizado&id_ubicacion=${a.id_ubicacion}" download="${a.codigo_archivo||a.nombre_archivo}.kml" style="text-decoration:none;"><button class="btn-icon naranja" type="button"><i class="fa fa-download"></i></button></a><button class="btn-icon rojo" title="Eliminar" onclick="eliminarArchivo(${a.id_ubicacion})"><i class="fa fa-trash"></i></button></div></div>`;
+            div.innerHTML+=`<div class="archivo-item"><div class="archivo-info"><i class="fa fa-map archivo-icon ${a.tipo_archivo}"></i><div style="min-width:0;"><div><span class="archivo-nombre" title="${a.nombre_archivo}">${a.nombre_archivo}</span>${codigoBadge}</div><div class="archivo-meta"><strong>${a.tipo_archivo.toUpperCase()}</strong> &nbsp;·&nbsp; ${fecha} &nbsp;·&nbsp; ${a.subido_por||'-'}${a.descripcion?'<br><em>'+a.descripcion+'</em>':''}</div></div></div><div class="archivo-acciones"><button class="btn-icon azul" title="Ver en mapa" onclick="verEnMapa(${a.id_ubicacion},'${esc(a.nombre_archivo)}')"><i class="fa fa-map"></i></button><a href="ubicaciones_api.php?accion=descargar_kml_actualizado&id_ubicacion=${a.id_ubicacion}" download="${a.codigo_archivo||a.nombre_archivo}.kml" style="text-decoration:none;"><button class="btn-icon naranja" title="Descargar" type="button"><i class="fa fa-download"></i></button></a><button class="btn-icon rojo" title="Eliminar" onclick="eliminarArchivo(${a.id_ubicacion})"><i class="fa fa-trash"></i></button></div></div>`;
         });
     });
 }
 
-/* ── Cola subida múltiple ── */
 function onArchivosSeleccionados(files){
     const nuevos=Array.from(files);let lote=socioActual?socioActual.proximoLote:1;
     nuevos.forEach(file=>{const ext=file.name.split('.').pop().toLowerCase();if(!['kml','kmz'].includes(ext))return;const codigoBase=socioActual?.codigoSlc||'';const codigoSugerido=codigoBase?`${codigoBase}_${lote}`:'';colaFiles.push({file,codigo:codigoSugerido,descripcion:'',estado:'pending',mensaje:''});lote++;});
@@ -699,7 +597,6 @@ function dragOver(e){e.preventDefault();document.getElementById('uploadZone').cl
 function dragLeave(e){document.getElementById('uploadZone').classList.remove('drag');}
 function dropFile(e){e.preventDefault();document.getElementById('uploadZone').classList.remove('drag');if(e.dataTransfer.files.length)onArchivosSeleccionados(e.dataTransfer.files);}
 
-/* ── Mapa ── */
 let modoMapa=0;
 const tilesDisponibles=[{url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',att:'© OpenStreetMap',nombre:'Mapa'},{url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',att:'© Esri',nombre:'Satélite'},{url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',att:'© OpenTopoMap',nombre:'Topográfico'}];
 let tileLayerActual=null,capasKml={};
@@ -792,7 +689,6 @@ function cerrarModal(id){
     if(id==='modalUbicacion'){if(mapaLeaflet){mapaLeaflet.remove();mapaLeaflet=null;}capasKml={};document.getElementById('listaCapasMapa').innerHTML='';}
 }
 
-/* ══ RESUMEN GLOBAL ══ */
 let rgDatos=[],rgFiltro='',rgCargado=false;
 
 async function abrirResumenGlobal(){document.getElementById('modalResumenGlobal').classList.add('active');if(!rgCargado)await cargarResumenGlobal();}
@@ -832,9 +728,9 @@ function renderResumenGlobalLibresDesdeData(libres,socios){
     const q=rgFiltro.toLowerCase();const ocupados=[];
     (socios||rgDatos).forEach(s=>{s.lotes.forEach(l=>{if(/^SLC-\d+/i.test(l.codigo))ocupados.push({codigo:l.codigo,socio:s.nombre,cedula:s.identificacion});});});
     ocupados.sort((a,b)=>a.codigo.localeCompare(b.codigo));
-    const libresHTML=(libres||[]).filter(c=>!q||c.toLowerCase().includes(q)).map(c=>`<div class="libre-chip"><i class="fa fa-check" style="color:#10b981;margin-right:4px;font-size:10px;"></i>${c}</div>`).join('');
+    const libresHTML=(libres||[]).filter(c=>!q||c.toLowerCase().includes(q)).map(c=>`<div class="libre-chip" title="Código disponible"><i class="fa fa-check" style="color:#10b981;margin-right:4px;font-size:10px;"></i>${c}</div>`).join('');
     const ocupadosFiltrados=ocupados.filter(o=>!q||o.codigo.toLowerCase().includes(q)||o.socio.toLowerCase().includes(q)||o.cedula.toLowerCase().includes(q));
-    document.getElementById('rgContenidoLibres').innerHTML=`<div style="padding:16px 20px 8px;"><div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:4px;"><i class="fa fa-circle-check" style="color:#10b981;"></i> Códigos disponibles (${(libres||[]).length} libres)</div><div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Números saltados entre SLC-001 y el código más alto.</div><div class="libre-grid">${libresHTML||'<div style="color:#9ca3af;padding:12px;font-size:13px;">No hay códigos libres</div>'}</div></div><div style="padding:0 20px 16px;"><div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;padding-top:10px;border-top:1px solid #e5e7eb;"><i class="fa fa-circle-xmark" style="color:#ef4444;"></i> Códigos en uso (${ocupadosFiltrados.length})</div><table class="rg-table"><thead><tr><th>Código</th><th>Socio</th><th>Cédula</th></tr></thead><tbody>${ocupadosFiltrados.map(o=>`<tr><td><span class="ocupado-chip">${escHtmlRg(o.codigo)}</span></td><td>${escHtmlRg(o.socio)}</td><td style="font-family:monospace;font-size:11px;">${escHtmlRg(o.cedula)}</td></tr>`).join('')}</tbody></table></div>`;
+    document.getElementById('rgContenidoLibres').innerHTML=`<div style="padding:16px 20px 8px;"><div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:4px;"><i class="fa fa-circle-check" style="color:#10b981;"></i> Códigos disponibles dentro del rango usado (${(libres||[]).length} libres)</div><div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Son los números saltados entre SLC-001 y el código más alto registrado.</div><div class="libre-grid">${libresHTML||'<div style="color:#9ca3af;padding:12px;font-size:13px;">No hay códigos libres en el rango actual</div>'}</div></div><div style="padding:0 20px 16px;"><div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;padding-top:10px;border-top:1px solid #e5e7eb;"><i class="fa fa-circle-xmark" style="color:#ef4444;"></i> Códigos en uso (${ocupadosFiltrados.length})</div><table class="rg-table"><thead><tr><th>Código</th><th>Socio</th><th>Cédula</th></tr></thead><tbody>${ocupadosFiltrados.map(o=>`<tr><td><span class="ocupado-chip">${escHtmlRg(o.codigo)}</span></td><td>${escHtmlRg(o.socio)}</td><td style="font-family:monospace;font-size:11px;">${escHtmlRg(o.cedula)}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 function filtrarResumenGlobal(){
@@ -859,7 +755,6 @@ function exportarResumenGlobalExcel(){
     form.appendChild(i1);form.appendChild(i2);document.body.appendChild(form);form.submit();document.body.removeChild(form);
 }
 
-/* ══ NUEVO: COMPARACIÓN LPA vs KML ══ */
 let icDatos=[],icDatosFiltro=[],icFiltroEstado='todos',icCargado=false;
 
 async function abrirComparacion(){document.getElementById('modalComparacion').classList.add('active');if(!icCargado)await cargarComparacion();}
@@ -868,14 +763,23 @@ function cerrarComparacion(){document.getElementById('modalComparacion').classLi
 async function cargarComparacion(){
     document.getElementById('icContenido').innerHTML='<div class="ic-loading"><i class="fa fa-spinner fa-spin" style="font-size:28px;color:#0891b2;display:block;margin-bottom:10px;"></i>Cargando datos LPA y KML...</div>';
     try{
-        const [rGlobal,rLpa]=await Promise.all([fetch('ubicaciones_resumen_global.php').then(r=>r.text()),fetch('lpa_area_comparar.php').then(r=>r.text())]);
+        const [rGlobal,rLpa]=await Promise.all([
+            fetch('ubicaciones_resumen_global.php').then(r=>r.text()),
+            fetch('lpa_area_comparar.php').then(r=>r.text())
+        ]);
         let dataGlobal,dataLpa;
         try{dataGlobal=JSON.parse(rGlobal);}catch(e){document.getElementById('icContenido').innerHTML='<div class="ic-loading" style="color:#ef4444;">❌ Error al leer resumen global</div>';return;}
         try{dataLpa=JSON.parse(rLpa);}catch(e){dataLpa={success:false,datos:[]};}
         const mapaLpa={};
-        if(dataLpa.success&&Array.isArray(dataLpa.datos))dataLpa.datos.forEach(d=>{mapaLpa[d.id_socio]={area_cacao_ha:d.area_cacao_ha!==null?parseFloat(d.area_cacao_ha):null};});
+        if(dataLpa.success&&Array.isArray(dataLpa.datos)){
+            dataLpa.datos.forEach(d=>{
+                mapaLpa[String(d.id_socio)]={area_cacao_ha:d.area_cacao_ha!==null&&d.area_cacao_ha!==''?parseFloat(d.area_cacao_ha):null};
+            });
+        }
         icDatos=(dataGlobal.socios||[]).map(s=>{
-            const lpaInfo=mapaLpa[s.id_socio]||{};const areaCacao=lpaInfo.area_cacao_ha??null;const haKml=s.totalHa>0?s.totalHa:null;
+            const lpaInfo=mapaLpa[String(s.id_socio)]||{};
+            const areaCacao=lpaInfo.area_cacao_ha??null;
+            const haKml=s.totalHa>0?parseFloat(s.totalHa):null;
             let diff=null,estado='sin_datos';
             if(areaCacao!==null&&haKml!==null){diff=parseFloat((haKml-areaCacao).toFixed(3));if(Math.abs(diff)<=0.05)estado='igual';else if(diff>0)estado='exceso';else estado='deficit';}
             else if(areaCacao!==null&&haKml===null)estado='sin-kml';
@@ -884,7 +788,8 @@ async function cargarComparacion(){
         });
         icCargado=true;
         const total=icDatos.length,igual=icDatos.filter(d=>d.estado==='igual').length,deficit=icDatos.filter(d=>d.estado==='deficit').length,exceso=icDatos.filter(d=>d.estado==='exceso').length,sinKml=icDatos.filter(d=>d.estado==='sin-kml').length;
-        document.getElementById('icStTotal').textContent=total;document.getElementById('icStIgual').textContent=igual;document.getElementById('icStDeficit').textContent=deficit;document.getElementById('icStExceso').textContent=exceso;document.getElementById('icStSinKml').textContent=sinKml;
+        document.getElementById('icStTotal').textContent=total;document.getElementById('icStIgual').textContent=igual;
+        document.getElementById('icStDeficit').textContent=deficit;document.getElementById('icStExceso').textContent=exceso;document.getElementById('icStSinKml').textContent=sinKml;
         filtrarComparacion();
     }catch(e){document.getElementById('icContenido').innerHTML=`<div class="ic-loading" style="color:#ef4444;">❌ Error: ${e.message}</div>`;console.error(e);}
 }
@@ -901,7 +806,7 @@ function renderTablaComparacion(){
     const cont=document.getElementById('icContenido');
     if(!icDatosFiltro.length){cont.innerHTML='<div class="ic-loading" style="color:#9ca3af;"><i class="fa fa-magnifying-glass" style="font-size:28px;display:block;margin-bottom:10px;"></i>Sin resultados.</div>';return;}
     const maxDiff=Math.max(...icDatosFiltro.map(d=>Math.abs(d.diferencia||0)),0.01);
-    const badgeMap={'igual':'<span class="ic-badge igual"><i class="fa fa-check"></i> Igualado</span>','deficit':'<span class="ic-badge deficit"><i class="fa fa-arrow-down"></i> Déficit</span>','exceso':'<span class="ic-badge exceso"><i class="fa fa-arrow-up"></i> Exceso</span>','sin-kml':'<span class="ic-badge sin-kml"><i class="fa fa-file-circle-xmark"></i> Sin KML</span>','sin-lpa':'<span class="ic-badge" style="background:#ede9fe;color:#5b21b6;"><i class="fa fa-file-circle-question"></i> Sin LPA</span>','sin_datos':'<span class="ic-badge sin-kml">—</span>'};
+    const badgeMap={igual:'<span class="ic-badge igual"><i class="fa fa-check"></i> Igualado</span>',deficit:'<span class="ic-badge deficit"><i class="fa fa-arrow-down"></i> Déficit</span>',exceso:'<span class="ic-badge exceso"><i class="fa fa-arrow-up"></i> Exceso</span>','sin-kml':'<span class="ic-badge sin-kml"><i class="fa fa-file-circle-xmark"></i> Sin KML</span>','sin-lpa':'<span class="ic-badge" style="background:#ede9fe;color:#5b21b6;"><i class="fa fa-file-circle-question"></i> Sin LPA</span>',sin_datos:'<span class="ic-badge sin-kml">—</span>'};
     let filas='';
     icDatosFiltro.forEach((d,idx)=>{
         const areaLpaStr=d.area_cacao_ha!==null?`<span class="ic-ha">${d.area_cacao_ha.toFixed(3)}</span>`:`<span class="ic-ha-nd">Sin LPA</span>`;
@@ -910,7 +815,6 @@ function renderTablaComparacion(){
         if(d.diferencia!==null){const pct=Math.min(100,Math.round((Math.abs(d.diferencia)/maxDiff)*100));const cls=d.diferencia>0.05?'pos':d.diferencia<-0.05?'neg':'cero';const sign=d.diferencia>0?'+':'';diffHtml=`<div style="display:flex;align-items:center;gap:8px;"><span style="font-family:monospace;font-weight:700;font-size:12px;min-width:60px;color:${cls==='pos'?'#d97706':cls==='neg'?'#ef4444':'#10b981'};">${sign}${d.diferencia.toFixed(3)}</span><div style="flex:1;background:#e5e7eb;border-radius:999px;height:6px;overflow:hidden;min-width:40px;"><div style="height:100%;border-radius:999px;width:${pct}%;background:${cls==='pos'?'#f59e0b':cls==='neg'?'#ef4444':'#10b981'};"></div></div></div>`;}
         const rowClass=d.estado==='deficit'?'row-deficit':d.estado==='exceso'?'row-exceso':d.estado==='igual'?'row-igual':'';
         const adBadge=d.adendum===2?'<span style="background:#fef9c3;color:#854d0e;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;">Ad.2</span>':d.adendum===1?'<span style="background:#dbeafe;color:#1d4ed8;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;">Ad.1</span>':'—';
-        // Botón igualar solo si hay KML y hay diferencia
         const btnIgualar=d.ha_kml!==null&&d.estado!=='igual'?`<button onclick="igualerHa(${d.id_socio},${d.ha_kml})" style="padding:4px 10px;border-radius:6px;background:#0f766e;color:#fff;border:none;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;"><i class="fa fa-check"></i> Igualar</button>`:'';
         filas+=`<tr class="${rowClass}"><td style="font-weight:600;color:#9ca3af;text-align:center;">${idx+1}</td><td style="font-family:monospace;font-size:12px;font-weight:700;">${escHtmlRg(d.identificacion)}</td><td><strong style="font-size:13px;">${escHtmlRg(d.nombre)}</strong><br><small style="color:#9ca3af;">${escHtmlRg(d.zona)}</small></td><td style="text-align:center;">${adBadge}</td><td style="text-align:center;">${areaLpaStr}</td><td style="text-align:center;">${haKmlStr}</td><td style="text-align:center;font-size:12px;color:#6b7280;">${d.total_archivos||0}</td><td style="min-width:160px;">${diffHtml}</td><td style="text-align:center;">${badgeMap[d.estado]||badgeMap['sin_datos']}</td><td style="text-align:center;">${btnIgualar}</td></tr>`;
     });
