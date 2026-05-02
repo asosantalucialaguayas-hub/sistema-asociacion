@@ -1,3 +1,4 @@
+
 <?php
 // receiver.php — Recibe marcaciones del bridge y las guarda en BD
 header('Content-Type: application/json');
@@ -57,25 +58,23 @@ if (!$socio) {
     exit;
 }
 
-// ── Evitar duplicados (misma persona, misma convocatoria, mismo día) ──
+// ── Evitar duplicados (misma persona, misma convocatoria) ──
 $stmtDup = $pdo->prepare("
-    SELECT id FROM asistencia 
-    WHERE socio_id = :sid 
-      AND convocatoria_id = :cid 
-      AND DATE(hora_registro) = DATE(:hora)
+    SELECT id FROM conv_asistencia 
+    WHERE id_socio = :sid 
+      AND convocatoria_id = :cid
     LIMIT 1
 ");
 $stmtDup->execute([
-    ':sid'  => $socio['id_socio'],
-    ':cid'  => $convocatoria_id,
-    ':hora' => $tiempo
+    ':sid' => $socio['id_socio'],
+    ':cid' => $convocatoria_id,
 ]);
 
 if ($stmtDup->fetch()) {
     echo json_encode([
-        "ok"     => true,
-        "msg"    => "Ya registrado hoy",
-        "nombre" => $socio['nombre_completo'],
+        "ok"        => true,
+        "msg"       => "Ya registrado",
+        "nombre"    => $socio['nombre_completo'],
         "duplicado" => true
     ]);
     exit;
@@ -83,13 +82,13 @@ if ($stmtDup->fetch()) {
 
 // ── Insertar asistencia ───────────────────────────────────────
 $stmtIns = $pdo->prepare("
-    INSERT INTO asistencia (socio_id, convocatoria_id, hora_registro, metodo)
-    VALUES (:sid, :cid, :hora, 'biometrico')
+    INSERT INTO conv_asistencia (convocatoria_id, id_socio, hora_registro, metodo)
+    VALUES (:cid, :sid, :hora, 'biometrico')
 ");
 
 $stmtIns->execute([
-    ':sid'  => $socio['id_socio'],
     ':cid'  => $convocatoria_id,
+    ':sid'  => $socio['id_socio'],
     ':hora' => $tiempo
 ]);
 
