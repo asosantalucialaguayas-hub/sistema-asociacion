@@ -1,4 +1,3 @@
-
 <?php
 // receiver.php — Recibe marcaciones del bridge y las guarda en BD
 header('Content-Type: application/json');
@@ -37,20 +36,32 @@ $employeeNo  = trim($input['employeeNo']);   // ID del biométrico
 $tiempo      = $input['time'] ?? date('Y-m-d H:i:s');
 $convocatoria_id = $input['convocatoria_id'] ?? 1;
 
-// ── Buscar socio ──────────────────────────────────────────────
-// Primero busca por cédula, luego por id_socio (para los que tienen ID simple)
-$stmt = $pdo->prepare("
-    SELECT id_socio, nombre_completo, identificacion 
-    FROM socios 
-    WHERE identificacion = :emp 
-       OR id_socio = :emp2
-    LIMIT 1
-");
-
-// Convertir "0000000000000002" → "2" para buscar por id_socio
+// Convertir "0000000000000001" → "1"
 $empLimpio = ltrim($employeeNo, '0') ?: '0';
 
-$stmt->execute([':emp' => $empLimpio, ':emp2' => $empLimpio]);
+// ── Buscar socio ──────────────────────────────────────────────
+// 1) Buscar en tabla de mapeo biometrico_socios
+$stmtMap = $pdo->prepare("
+    SELECT s.id_socio, s.nombre_completo, s.identificacion
+    FROM biometrico_socios b
+    JOIN socios s ON s.id_socio = b.id_socio
+    WHERE b.empleado_id = :emp
+    LIMIT 1
+");
+$stmtMap->execute([':emp' => $empLimpio]);
+$socio = $stmtMap->fetch(PDO::FETCH_ASSOC);
+
+// 2) Si no está en el mapeo, buscar por cédula directamente
+if (!$socio) {
+    $stmt = $pdo->prepare("
+        SELECT id_socio, nombre_completo, identificacion 
+        FROM socios 
+        WHERE identificacion = :emp
+        LIMIT 1
+    ");
+    $stmt->execute([':emp' => $empLimpio]);
+    $socio = $stmt->fetch(PDO::FETCH_ASSOC);
+}
 $socio = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$socio) {
