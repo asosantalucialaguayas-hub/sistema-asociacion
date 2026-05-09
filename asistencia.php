@@ -9,7 +9,11 @@ require __DIR__ . "/layout/bootstrap.php";
 
 $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
 $rol        = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
-$es_editor  = in_array($rol, ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
+if ($id_usuario && function_exists('tienePermiso') && isset($pdo)) {
+    $es_editor = tienePermiso($pdo, $id_usuario, 'asistencia', 'puede_agregar');
+} else {
+    $es_editor = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
+}
 
 $id_periodo = intval($periodoSeleccionado['id_periodo'] ?? 0);
 $conv_id    = intval($_GET['conv_id'] ?? 0);
