@@ -5,8 +5,8 @@ require __DIR__ . "/layout/bootstrap.php";
 
 $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
 if ($id_usuario && function_exists('tienePermiso') && isset($pdo)) {
-    $puede_agregar   = tienePermiso($pdo, $id_usuario, 'fairtrade', 'puede_agregar');
-    $puede_modificar = tienePermiso($pdo, $id_usuario, 'fairtrade', 'puede_modificar');
+    $puede_agregar   = tienePermiso($pdo, $id_usuario, 'fichas', 'puede_agregar');
+    $puede_modificar = tienePermiso($pdo, $id_usuario, 'fichas', 'puede_modificar');
 } else {
     $puede_agregar = $puede_modificar = false;
 }

@@ -3,6 +3,14 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['usuario'])) { header("Location: /auth/login.php"); exit; }
 require __DIR__ . "/layout/bootstrap.php";
 
+$id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
+if ($id_usuario && function_exists('tienePermiso') && isset($pdo)) {
+    $puede_modificar = tienePermiso($pdo, $id_usuario, 'fichas_registros', 'puede_modificar');
+    $puede_eliminar  = tienePermiso($pdo, $id_usuario, 'fichas_registros', 'puede_eliminar');
+} else {
+    $puede_modificar = $puede_eliminar = false;
+}
+
 $id_ficha = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $buscar   = trim($_GET['q'] ?? '');
 
