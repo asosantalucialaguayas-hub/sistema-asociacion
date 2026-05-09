@@ -20,7 +20,7 @@ if ($id_usr && function_exists('getModulosPermitidos') && isset($pdo)) {
         'periodo_comercializacion','asignacion_cupos','ubicaciones','documentacion',
         'actas','convocatorias','documentos_socios','auditoria','gestion_usuarios',
         'logs_sistema','fairtrade','fairtrade_actas','fairtrade_convocatorias',
-        'fairtrade_documentos'];
+        'fairtrade_documentos','visitas','visitas_tecnicas','visitas_sig'];
 }
 
 $puede = fn($clave) => in_array($clave, $permitidos);
@@ -182,6 +182,24 @@ $puede = fn($clave) => in_array($clave, $permitidos);
                 <?php endif; ?>
                 <?php if ($puede('fairtrade_documentos')): ?>
                 <li><a href="fairtrade_documentos.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>
+                <?php endif; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($puede('visitas') || $puede('visitas_tecnicas') || $puede('visitas_sig')): ?>
+        <div class="menu-item has-submenu">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(event)">
+                <i class="fa-solid fa-person-walking"></i>
+                <span>Visitas</span>
+                <span class="arrow">▸</span>
+            </a>
+            <ul class="submenu">
+                <?php if ($puede('visitas_tecnicas')): ?>
+                <li><a href="visitas_tecnicas.php"><i class="fa-solid fa-helmet-safety"></i> Visitas Técnicas</a></li>
+                <?php endif; ?>
+                <?php if ($puede('visitas_sig')): ?>
+                <li><a href="visitas_sig.php"><i class="fa-solid fa-map-pin"></i> Visitas del SIG</a></li>
                 <?php endif; ?>
             </ul>
         </div>
