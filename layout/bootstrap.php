@@ -7,9 +7,9 @@ if (!isset($_SESSION['usuario'])) {
 
 require __DIR__ . "/../config/conexion.php";
 require_once __DIR__ . "/../helpers/periodo.php";
+require_once __DIR__ . "/../auditoria_helper.php"; // ← AGREGA ESTA LÍNEA
 
-// ✅ Resolver período activo global (sesión -> abierto -> más reciente)
-
+// ✅ Resolver período activo global
 global $id_periodo_actual;
 $periodoSeleccionado = null;
 if (!empty($_SESSION['periodo_activo'])) {
