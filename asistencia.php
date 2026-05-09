@@ -10,9 +10,17 @@ require __DIR__ . "/layout/bootstrap.php";
 $id_usuario = (int)($_SESSION['id_usuario'] ?? 0);
 $rol        = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
 if ($id_usuario && function_exists('tienePermiso') && isset($pdo)) {
-    $es_editor = tienePermiso($pdo, $id_usuario, 'asistencia', 'puede_agregar');
+    $puede_ver      = tienePermiso($pdo, $id_usuario, 'asistencia', 'puede_ver');
+    $puede_agregar  = tienePermiso($pdo, $id_usuario, 'asistencia', 'puede_agregar');
+    $puede_modificar= tienePermiso($pdo, $id_usuario, 'asistencia', 'puede_modificar');
+    $puede_eliminar = tienePermiso($pdo, $id_usuario, 'asistencia', 'puede_eliminar');
 } else {
-    $es_editor = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
+    $fallback = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
+    $puede_ver = $puede_agregar = $puede_modificar = $puede_eliminar = $fallback;
+}
+if (!$puede_ver) {
+    http_response_code(403);
+    die('Sin permisos para ver asistencia.');
 }
 
 $id_periodo = intval($periodoSeleccionado['id_periodo'] ?? 0);
@@ -110,7 +118,7 @@ if ($convocatoria) {
 
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 
-if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta' && $es_editor) {
+if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta' && $puede_agregar) {
     $cid_p = intval($_POST['conv_id']??0);
     try {
         $stCk=$pdo->prepare("SELECT acta_bloqueada FROM convocatorias WHERE id=?");
@@ -388,7 +396,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                 <div style="font-weight:800;color:#92400e;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-triangle-exclamation"></i> Acta pendiente</div>
                 <div style="font-size:.8rem;color:#64748b;margin-top:3px;">Tiempo restante: <b><?= $horas_para_acta ?>h</b></div>
             </div>
-            <?php if ($es_editor): ?>
+            <?php if ($puede_agregar): ?>
             <form method="POST" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <input type="hidden" name="accion" value="subir_acta">
                 <input type="hidden" name="conv_id" value="<?= $convocatoria['id'] ?>">
@@ -402,7 +410,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 <?php endif; ?>
 
 <!-- Registro manual -->
-<?php if ($es_editor && $est==='activa'): ?>
+<?php if ($puede_agregar && $est==='activa'): ?>
 <div class="reg-card">
     <div style="font-weight:700;color:var(--azul);margin-bottom:14px;display:flex;align-items:center;gap:8px;">
         <i class="fa-solid fa-user-plus" style="color:var(--azul2);"></i> Registrar Asistencia Manual
@@ -441,7 +449,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                     Hora <i class="fa-solid fa-sort" id="iconHora" style="opacity:.5;font-size:.7rem;"></i>
                 </th>
                 <th>Método</th>
-                <?php if ($es_editor && $est==='activa'): ?><th>Acc.</th><?php endif; ?>
+                <?php if ($puede_eliminar && $est==='activa'): ?><th>Acc.</th><?php endif; ?>
             </tr>
         </thead>
         <tbody id="cuerpoTabla">
@@ -476,7 +484,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                     <?php else:?><i class="fa-solid fa-hand-pointer"></i> Manual<?php endif;?>
                 </span>
             </td>
-            <?php if ($es_editor && $est==='activa'): ?>
+            <?php if ($puede_eliminar && $est==='activa'): ?>
             <td>
                 <button class="btn-del" onclick="eliminarAsist(<?= $a['id'] ?>,'<?= htmlspecialchars($a['nombre_completo'],ENT_QUOTES) ?>')">
                     <i class="fa-solid fa-trash"></i>
@@ -540,7 +548,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 const CONV_ID         = <?= json_encode($convocatoria['id'] ?? 0) ?>;
 const TIPO_ASISTENTES = <?= json_encode($convocatoria['tipo_asistentes'] ?? 'general') ?>;
 const ID_PERIODO      = <?= json_encode($id_periodo) ?>;
-const ES_EDITOR       = <?= json_encode($es_editor) ?>;
+const PUEDE_ELIMINAR  = <?= json_encode($puede_eliminar) ?>;
 const EST_CONV        = <?= json_encode($est ?? '') ?>;
 
 /* ══ BUSCAR SOCIO PARA REGISTRAR (fix error JSON) ══ */

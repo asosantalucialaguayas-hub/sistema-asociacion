@@ -10,11 +10,19 @@ require __DIR__ . "/layout/bootstrap.php";
 $id_usuario   = (int)($_SESSION['id_usuario'] ?? 0);
 $rol          = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
 
-// ── $es_editor: usa tienePermiso() si existe, si no cae al fallback por rol ──
 if ($id_usuario && function_exists('tienePermiso') && isset($pdo)) {
-    $es_editor = tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_agregar');
+    $puede_ver      = tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_ver');
+    $puede_agregar  = tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_agregar');
+    $puede_modificar= tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_modificar');
+    $puede_eliminar = tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_eliminar');
 } else {
-    $es_editor = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
+    $fallback = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
+    $puede_ver = $puede_agregar = $puede_modificar = $puede_eliminar = $fallback;
+}
+
+if (!$puede_ver) {
+    http_response_code(403);
+    die('Sin permisos para ver convocatorias.');
 }
 
 // Periodo activo viene de bootstrap como $periodoSeleccionado
@@ -25,8 +33,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
 
     // ── GUARDAR (nueva o editar) ─────────────────────────────
-    if ($accion === 'guardar' && $es_editor) {
+    if ($accion === 'guardar') {
         $id_conv       = intval($_POST['id_conv'] ?? 0);
+        if ($id_conv && !$puede_modificar) {
+            $_SESSION['flash'] = ['tipo'=>'error','msg'=>'Sin permisos para editar convocatorias'];
+            header('Location: convocatorias.php'); exit;
+        }
+        if (!$id_conv && !$puede_agregar) {
+            $_SESSION['flash'] = ['tipo'=>'error','msg'=>'Sin permisos para crear convocatorias'];
+            header('Location: convocatorias.php'); exit;
+        }
+
         $id_per        = intval($_POST['id_periodo'] ?? $id_periodo_activo);
         $titulo        = trim($_POST['titulo'] ?? '');
         $tipo          = in_array($_POST['tipo']??'', ['ordinaria','extraordinaria','urgente']) ? $_POST['tipo'] : 'ordinaria';
@@ -88,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    if ($accion === 'cambiar_estado' && $es_editor) {
+    if ($accion === 'cambiar_estado' && $puede_modificar) {
         $id_conv  = intval($_POST['id_conv'] ?? 0);
         $nuevo    = $_POST['nuevo_estado'] ?? '';
         $ok_est   = ['borrador','programada','publicada','activa','cerrada','cancelada'];
@@ -100,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: convocatorias.php"); exit;
     }
 
-    if ($accion === 'eliminar' && $es_editor) {
+    if ($accion === 'eliminar' && $puede_eliminar) {
         $id_conv = intval($_POST['id_conv'] ?? 0);
         if ($id_conv) {
             $pdo->prepare("DELETE FROM convocatorias WHERE id=?")->execute([$id_conv]);
@@ -114,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $editando    = null;
 $edit_puntos = [];
 $edit_firmas = [];
-if (isset($_GET['editar']) && $es_editor) {
+if (isset($_GET['editar']) && $puede_modificar) {
     $stE = $pdo->prepare("SELECT * FROM convocatorias WHERE id=?");
     $stE->execute([intval($_GET['editar'])]);
     $editando = $stE->fetch(PDO::FETCH_ASSOC);
@@ -272,7 +289,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
             Período activo: <b><?= htmlspecialchars($periodoSeleccionado['nombre'] ?? '—') ?></b>
         </p>
     </div>
-    <?php if ($es_editor): ?>
+    <?php if ($puede_agregar): ?>
     <button class="btn-prim" onclick="abrirModal()">
         <i class="fa-solid fa-plus"></i> Nueva Convocatoria
     </button>
@@ -297,7 +314,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 <div class="empty">
     <i class="fa-regular fa-calendar-xmark"></i>
     <p>No hay convocatorias en este período.</p>
-    <?php if ($es_editor): ?>
+    <?php if ($puede_agregar): ?>
     <button class="btn-prim" onclick="abrirModal()" style="margin-top:14px;"><i class="fa-solid fa-plus"></i> Crear la primera</button>
     <?php endif; ?>
 </div>
@@ -345,7 +362,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
             <i class="fa-solid <?= $cfg['ico'] ?>" style="font-size:.6rem;"></i> <?= ucfirst($est) ?>
         </span>
         <div style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap;">
-            <?php if ($es_editor): ?>
+            <?php if ($puede_modificar): ?>
             <button class="btn-xs bx-edit" onclick="abrirEditar(<?= $cv['id'] ?>)">
                 <i class="fa-solid fa-pen"></i> Editar
             </button>
@@ -356,12 +373,12 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
             <a href="exportar_convocatoria.php?id=<?= $cv['id'] ?>" target="_blank" class="btn-xs bx-pdf">
                 <i class="fa-solid fa-file-pdf"></i> PDF
             </a>
-            <?php if ($es_editor && !in_array($est,['cerrada','cancelada'])): ?>
+            <?php if ($puede_modificar && !in_array($est,['cerrada','cancelada'])): ?>
             <button class="btn-xs bx-est" onclick="abrirCambioEstado(<?= $cv['id'] ?>,'<?= $est ?>')">
                 <i class="fa-solid fa-arrows-rotate"></i> Estado
             </button>
             <?php endif; ?>
-            <?php if ($es_editor && in_array($est,['borrador','programada','cancelada'])): ?>
+            <?php if ($puede_eliminar && in_array($est,['borrador','programada','cancelada'])): ?>
             <button class="btn-xs bx-del" onclick="confirmarBorrar(<?= $cv['id'] ?>,'<?= htmlspecialchars($cv['titulo'],ENT_QUOTES) ?>')">
                 <i class="fa-solid fa-trash"></i>
             </button>

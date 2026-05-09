@@ -9,7 +9,20 @@ require __DIR__ . "/layout/bootstrap.php";
 
 $rol      = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
 $id_usr   = (int)($_SESSION['id_usuario'] ?? 0);
-$es_admin = in_array($rol, ['admin','secretario','presidente','superadmin']) || $id_usr === 1;
+if ($id_usr && function_exists('tienePermiso') && isset($pdo)) {
+    $puede_ver       = tienePermiso($pdo, $id_usr, 'directiva', 'puede_ver');
+    $puede_agregar   = tienePermiso($pdo, $id_usr, 'directiva', 'puede_agregar');
+    $puede_modificar = tienePermiso($pdo, $id_usr, 'directiva', 'puede_modificar');
+    $puede_eliminar  = tienePermiso($pdo, $id_usr, 'directiva', 'puede_eliminar');
+} else {
+    $fallback = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usr === 1;
+    $puede_ver = $puede_agregar = $puede_modificar = $puede_eliminar = $fallback;
+}
+
+if (!$puede_ver) {
+    http_response_code(403);
+    die('Sin permisos para ver directiva.');
+}
 
 $flash = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -250,7 +263,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
             Gestión de Junta Directiva y Junta de Vigilancia
         </p>
     </div>
-    <?php if ($es_admin): ?>
+    <?php if ($puede_agregar): ?>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn-sec" onclick="abrirModalPeriodo()">
             <i class="fa-solid fa-plus"></i> Nuevo Período
@@ -279,7 +292,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
         <span><i class="fa-solid fa-clock"></i> <?= $periodo_activo['duracion_anos'] ?> año(s) de período</span>
         <?php endif; ?>
     </div>
-    <?php if ($es_admin): ?>
+    <?php if ($puede_modificar): ?>
     <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
         <?php if (!empty($periodo_activo['documento_pdf'])): ?>
         <a href="<?= htmlspecialchars($periodo_activo['documento_pdf']) ?>" target="_blank" class="btn-sec btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);">
@@ -309,7 +322,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
 
 <!-- Junta Directiva -->
 <div id="panel-directiva">
-    <?php if ($es_admin): ?>
+    <?php if ($puede_agregar): ?>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
         <button class="btn-prim btn-sm" onclick="abrirModalMiembro(<?= $periodo_activo['id'] ?>, 'directiva')">
             <i class="fa-solid fa-user-plus"></i> Agregar a Directiva
@@ -321,7 +334,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
     <div class="empty-state">
         <i class="fa-solid fa-users-slash"></i>
         <p>No hay miembros registrados en la Junta Directiva</p>
-        <?php if ($es_admin): ?>
+        <?php if ($puede_agregar): ?>
         <button class="btn-prim" style="margin-top:12px;" onclick="abrirModalMiembro(<?= $periodo_activo['id'] ?>, 'directiva')">
             <i class="fa-solid fa-user-plus"></i> Registrar miembros
         </button>
@@ -348,10 +361,14 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
                     <?php endif; ?>
                 </div>
             </div>
-            <?php if ($es_admin): ?>
+            <?php if ($puede_modificar || $puede_eliminar): ?>
             <div class="miembro-acciones">
+                <?php if ($puede_modificar): ?>
                 <button class="btn-ico" onclick="editarMiembro(<?= $m['id'] ?>)" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                <?php endif; ?>
+                <?php if ($puede_eliminar): ?>
                 <button class="btn-ico del" onclick="eliminarMiembro(<?= $m['id'] ?>, '<?= htmlspecialchars($m['nombre_completo'] ?? $m['nombre_manual'], ENT_QUOTES) ?>')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
@@ -362,7 +379,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
 
 <!-- Junta de Vigilancia -->
 <div id="panel-vigilancia" style="display:none;">
-    <?php if ($es_admin): ?>
+    <?php if ($puede_agregar): ?>
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
         <button class="btn-gold btn-sm" onclick="abrirModalMiembro(<?= $periodo_activo['id'] ?>, 'vigilancia')">
             <i class="fa-solid fa-user-plus"></i> Agregar a Vigilancia
@@ -374,7 +391,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
     <div class="empty-state">
         <i class="fa-solid fa-eye-slash"></i>
         <p>No hay miembros registrados en la Junta de Vigilancia</p>
-        <?php if ($es_admin): ?>
+        <?php if ($puede_agregar): ?>
         <button class="btn-gold" style="margin-top:12px;" onclick="abrirModalMiembro(<?= $periodo_activo['id'] ?>, 'vigilancia')">
             <i class="fa-solid fa-user-plus"></i> Registrar miembros
         </button>
@@ -397,10 +414,14 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
                     <?php endif; ?>
                 </div>
             </div>
-            <?php if ($es_admin): ?>
+            <?php if ($puede_modificar || $puede_eliminar): ?>
             <div class="miembro-acciones">
+                <?php if ($puede_modificar): ?>
                 <button class="btn-ico" onclick="editarMiembro(<?= $m['id'] ?>)" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                <?php endif; ?>
+                <?php if ($puede_eliminar): ?>
                 <button class="btn-ico del" onclick="eliminarMiembro(<?= $m['id'] ?>, '<?= htmlspecialchars($m['nombre_completo'] ?? $m['nombre_manual'], ENT_QUOTES) ?>')" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
@@ -413,7 +434,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
 <div class="empty-state">
     <i class="fa-solid fa-people-group"></i>
     <p style="font-size:1rem;">No hay un período de directiva activo</p>
-    <?php if ($es_admin): ?>
+    <?php if ($puede_agregar): ?>
     <button class="btn-prim" style="margin-top:14px;" onclick="abrirModalPeriodo()">
         <i class="fa-solid fa-plus"></i> Crear primer período
     </button>
@@ -453,12 +474,16 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--gris); }
                     <i class="fa-solid fa-file-pdf"></i> Documento
                 </a>
                 <?php endif; ?>
-                <?php if ($es_admin): ?>
-                <button class="btn-sec btn-sm" onclick="verPeriodo(<?= $p['id'] ?>)"><i class="fa-solid fa-eye"></i></button>
-                <button class="btn-sec btn-sm" onclick="editarPeriodo(<?= $p['id'] ?>)"><i class="fa-solid fa-pen"></i></button>
-                <?php if ($p['estado'] !== 'activo'): ?>
-                <button class="btn-sec btn-sm" style="color:var(--rojo);" onclick="eliminarPeriodo(<?= $p['id'] ?>, '<?= htmlspecialchars($p['nombre']??'', ENT_QUOTES) ?>')"><i class="fa-solid fa-trash"></i></button>
-                <?php endif; ?>
+                <?php if ($puede_ver || $puede_modificar || $puede_eliminar): ?>
+                    <?php if ($puede_ver): ?>
+                    <button class="btn-sec btn-sm" onclick="verPeriodo(<?= $p['id'] ?>)"><i class="fa-solid fa-eye"></i></button>
+                    <?php endif; ?>
+                    <?php if ($puede_modificar): ?>
+                    <button class="btn-sec btn-sm" onclick="editarPeriodo(<?= $p['id'] ?>)"><i class="fa-solid fa-pen"></i></button>
+                    <?php endif; ?>
+                    <?php if ($p['estado'] !== 'activo' && $puede_eliminar): ?>
+                    <button class="btn-sec btn-sm" style="color:var(--rojo);" onclick="eliminarPeriodo(<?= $p['id'] ?>, '<?= htmlspecialchars($p['nombre']??'', ENT_QUOTES) ?>')"><i class="fa-solid fa-trash"></i></button>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>

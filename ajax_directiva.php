@@ -13,7 +13,15 @@ header('Content-Type: application/json; charset=utf-8');
 
 $rol     = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
 $id_usr  = (int)($_SESSION['id_usuario'] ?? 0);
-$es_admin = in_array($rol, ['admin','secretario','presidente','superadmin']) || $id_usr === 1;
+if ($id_usr && function_exists('tienePermiso') && isset($pdo)) {
+    $puede_ver       = tienePermiso($pdo, $id_usr, 'directiva', 'puede_ver');
+    $puede_agregar   = tienePermiso($pdo, $id_usr, 'directiva', 'puede_agregar');
+    $puede_modificar = tienePermiso($pdo, $id_usr, 'directiva', 'puede_modificar');
+    $puede_eliminar  = tienePermiso($pdo, $id_usr, 'directiva', 'puede_eliminar');
+} else {
+    $fallback = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usr === 1;
+    $puede_ver = $puede_agregar = $puede_modificar = $puede_eliminar = $fallback;
+}
 
 $accion = $_GET['accion'] ?? $_POST['accion'] ?? '';
 
@@ -90,8 +98,19 @@ if ($accion === 'get_miembro') {
     jOk(['miembro'=>$m]);
 }
 
-// ── Solo admins para lo demás ─────────────────────────────────────────────────
-if (!$es_admin) jErr('Sin permisos');
+// ── Validar permisos por tipo de acción ───────────────────────────────────────
+if (in_array($accion, ['get_periodo','get_miembro'], true) && !$puede_ver) {
+    jErr('Sin permisos');
+}
+if (in_array($accion, ['crear_periodo','crear_miembro'], true) && !$puede_agregar) {
+    jErr('Sin permisos');
+}
+if (in_array($accion, ['editar_periodo','editar_miembro','subir_documento'], true) && !$puede_modificar) {
+    jErr('Sin permisos');
+}
+if (in_array($accion, ['eliminar_periodo','eliminar_miembro'], true) && !$puede_eliminar) {
+    jErr('Sin permisos');
+}
 
 // ── CREAR PERÍODO ─────────────────────────────────────────────────────────────
 if ($accion === 'crear_periodo') {
