@@ -20,7 +20,8 @@ if ($id_usr && function_exists('getModulosPermitidos') && isset($pdo)) {
         'periodo_comercializacion','asignacion_cupos','ubicaciones','documentacion',
         'actas','convocatorias','documentos_socios','auditoria','gestion_usuarios',
         'logs_sistema','fairtrade','fairtrade_actas','fairtrade_convocatorias',
-        'fairtrade_documentos','visitas','visitas_tecnicas','visitas_sig'];
+        'fairtrade_documentos','visitas','visitas_tecnicas','visitas_sig',
+        'fichas','fichas_aplicar','fichas_registros'];
 }
 
 $puede = fn($clave) => in_array($clave, $permitidos);
@@ -182,6 +183,27 @@ $puede = fn($clave) => in_array($clave, $permitidos);
                 <?php endif; ?>
                 <?php if ($puede('fairtrade_documentos')): ?>
                 <li><a href="fairtrade_documentos.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>
+                <?php endif; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($puede('fichas') || $puede('fichas_aplicar') || $puede('fichas_registros')): ?>
+        <div class="menu-item has-submenu">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(event)">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>Fichas</span>
+                <span class="arrow">▸</span>
+            </a>
+            <ul class="submenu">
+                <?php if ($puede('fichas')): ?>
+                <li><a href="fichas_lista.php"><i class="fa-solid fa-list-check"></i> Gestión de Fichas</a></li>
+                <?php endif; ?>
+                <?php if ($puede('fichas_aplicar')): ?>
+                <li><a href="fichas_aplicar.php"><i class="fa-solid fa-file-pen"></i> Aplicar Ficha</a></li>
+                <?php endif; ?>
+                <?php if ($puede('fichas_registros')): ?>
+                <li><a href="fichas_aplicaciones.php"><i class="fa-solid fa-file-lines"></i> Registros</a></li>
                 <?php endif; ?>
             </ul>
         </div>
