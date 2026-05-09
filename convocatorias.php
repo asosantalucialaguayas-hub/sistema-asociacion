@@ -1,7 +1,6 @@
 <?php
 // ============================================================
 // convocatorias.php  – Gestión de Convocatorias
-// Adaptado a la BD real: periodo_comercializacion, identificacion, etc.
 // ============================================================
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (!isset($_SESSION['usuario'])) { header("Location: /auth/login.php"); exit; }
@@ -10,7 +9,14 @@ require __DIR__ . "/layout/bootstrap.php";
 
 $id_usuario   = (int)($_SESSION['id_usuario'] ?? 0);
 $rol          = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
-$es_editor = tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_agregar');
+
+// ── $es_editor: usa tienePermiso() si existe, si no cae al fallback por rol ──
+if ($id_usuario && function_exists('tienePermiso') && isset($pdo)) {
+    $es_editor = tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_agregar');
+} else {
+    $es_editor = in_array(strtolower($rol), ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
+}
+
 // Periodo activo viene de bootstrap como $periodoSeleccionado
 $id_periodo_activo = intval($periodoSeleccionado['id_periodo'] ?? 0);
 
@@ -42,7 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $nombre_creador = $_SESSION['usuario'] ?? 'Sistema';
 
                 if ($id_conv > 0) {
-                    // EDITAR — mantiene columnas existentes intactas
                     $st = $pdo->prepare("
                         UPDATE convocatorias SET
                             id_periodo=?, titulo=?, tipo=?, tipo_reunion=?, tipo_asistentes=?,
@@ -53,7 +58,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare("DELETE FROM convocatoria_puntos WHERE convocatoria_id=?")->execute([$id_conv]);
                     $pdo->prepare("DELETE FROM convocatoria_firmas  WHERE convocatoria_id=?")->execute([$id_conv]);
                 } else {
-                    // NUEVA
                     $st = $pdo->prepare("
                         INSERT INTO convocatorias
                             (id_periodo,titulo,tipo,tipo_reunion,tipo_asistentes,fecha,hora,lugar,estado,creado_por,nombre_creador)
@@ -63,12 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $id_conv = $pdo->lastInsertId();
                 }
 
-                // Puntos del orden del día
                 $stP = $pdo->prepare("INSERT INTO convocatoria_puntos (convocatoria_id,numero,descripcion) VALUES (?,?,?)");
                 $n = 1;
                 foreach ($puntos as $p) { if ($p) $stP->execute([$id_conv,$n++,$p]); }
 
-                // Firmas
                 $stF = $pdo->prepare("INSERT INTO convocatoria_firmas (convocatoria_id,cargo,nombre,orden) VALUES (?,?,?,?)");
                 foreach ($firmas_cargo as $i => $cargo) {
                     $cargo  = trim($cargo);
@@ -86,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ── CAMBIAR ESTADO ──────────────────────────────────────
     if ($accion === 'cambiar_estado' && $es_editor) {
         $id_conv  = intval($_POST['id_conv'] ?? 0);
         $nuevo    = $_POST['nuevo_estado'] ?? '';
@@ -99,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: convocatorias.php"); exit;
     }
 
-    // ── ELIMINAR ────────────────────────────────────────────
     if ($accion === 'eliminar' && $es_editor) {
         $id_conv = intval($_POST['id_conv'] ?? 0);
         if ($id_conv) {
@@ -128,7 +128,7 @@ if (isset($_GET['editar']) && $es_editor) {
     }
 }
 
-// ── Lista convocatorias (filtro por período) ─────────────────
+// ── Lista convocatorias ──────────────────────────────────────
 $filtro_periodo = intval($_GET['periodo'] ?? $id_periodo_activo);
 $convocatorias  = [];
 try {
@@ -148,7 +148,6 @@ try {
     $error_lista = $e->getMessage();
 }
 
-// ── Todos los períodos para selector ────────────────────────
 $todos_periodos = [];
 try {
     $todos_periodos = $pdo->query("SELECT id_periodo,nombre,estado FROM periodo_comercializacion ORDER BY id_periodo DESC")->fetchAll(PDO::FETCH_ASSOC);
@@ -156,7 +155,6 @@ try {
 
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 
-// Paleta de estados
 $st_cfg = [
     'borrador'   => ['bg'=>'#f1f5f9','txt'=>'#475569','ico'=>'fa-pen'],
     'programada' => ['bg'=>'#e0f2fe','txt'=>'#0369a1','ico'=>'fa-calendar-days'],
@@ -184,8 +182,6 @@ $st_cfg = [
     --sombra:0 2px 12px rgba(0,0,0,.08);
 }
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
-
-/* ── Botones ──────────────────────────────────── */
 .btn-prim{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#1f3a5f,#2563eb);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-weight:700;font-size:.875rem;cursor:pointer;text-decoration:none;transition:.2s;box-shadow:0 4px 14px rgba(37,99,235,.25);}
 .btn-prim:hover{transform:translateY(-2px);color:#fff;box-shadow:0 6px 20px rgba(37,99,235,.35);}
 .btn-sec{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--azul);border:1.5px solid var(--borde);border-radius:10px;padding:9px 16px;font-weight:600;font-size:.85rem;cursor:pointer;text-decoration:none;transition:.2s;}
@@ -196,13 +192,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .bx-pdf {background:#fef3c7;color:#92400e;border-color:#fde68a;} .bx-pdf:hover{background:#fde68a;}
 .bx-del {background:#fee2e2;color:#b91c1c;border-color:#fecaca;} .bx-del:hover{background:#fecaca;}
 .bx-est {background:#f1f5f9;color:#374151;border-color:#d1d5db;} .bx-est:hover{background:#e5e7eb;}
-
-/* ── Flash ────────────────────────────────────── */
 .flash{padding:12px 18px;border-radius:10px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:.875rem;}
 .flash.success{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
 .flash.error  {background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
-
-/* ── Grid cards ───────────────────────────────── */
 .conv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px;}
 .conv-card{background:#fff;border-radius:16px;box-shadow:var(--sombra);border:1.5px solid var(--borde);overflow:hidden;display:flex;flex-direction:column;transition:.25s;}
 .conv-card:hover{transform:translateY(-4px);box-shadow:0 8px 28px rgba(0,0,0,.12);}
@@ -217,12 +209,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .prog-mini .bar-f{height:100%;border-radius:50px;background:linear-gradient(90deg,#16a34a,#22c55e);transition:width .8s;}
 .cc-foot{padding:11px 20px;border-top:1px solid var(--borde);display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#f8fafc;}
 .estado-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:.72rem;font-weight:700;}
-
-/* ── Empty ────────────────────────────────────── */
 .empty{text-align:center;padding:60px 20px;color:#94a3b8;}
 .empty i{font-size:3rem;display:block;margin-bottom:12px;}
-
-/* ── Modal ────────────────────────────────────── */
 .moverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(6px);z-index:10000;overflow-y:auto;padding:20px 16px;align-items:flex-start;justify-content:center;}
 .moverlay.show{display:flex;}
 .mbox{background:#fff;border-radius:20px;width:100%;max-width:740px;box-shadow:0 24px 60px rgba(0,0,0,.25);margin:auto;animation:slideUp .22s ease;}
@@ -233,8 +221,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .mcls:hover{background:rgba(255,255,255,.35);}
 .mbody{padding:24px 28px;max-height:72vh;overflow-y:auto;}
 .mfoot{padding:14px 28px;border-top:1px solid var(--borde);display:flex;justify-content:flex-end;gap:10px;background:#f8fafc;border-radius:0 0 20px 20px;}
-
-/* ── Formulario ───────────────────────────────── */
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .fg label{font-size:.8rem;font-weight:700;color:var(--azul);}
 .fg input,.fg select,.fg textarea{border:1.5px solid var(--borde);border-radius:8px;padding:9px 12px;font-size:.875rem;font-family:inherit;outline:none;transition:.2s;background:#fff;width:100%;}
@@ -250,11 +236,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 .btn-add:hover{border-color:var(--azul2);color:var(--azul2);background:#eff6ff;}
 .btn-rm{background:none;border:none;color:#ef4444;cursor:pointer;padding:4px 7px;border-radius:6px;font-size:.85rem;}
 .btn-rm:hover{background:#fee2e2;}
-
-/* filtros */
 .filtros{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
 .filtros select{border:1.5px solid var(--borde);border-radius:8px;padding:7px 12px;font-size:.85rem;background:#fff;}
-
 @media(max-width:600px){.conv-grid{grid-template-columns:1fr;}}
 </style>
 </head>
@@ -277,11 +260,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 <?php if (isset($error_lista)): ?>
 <div class="flash error"><i class="fa-solid fa-triangle-exclamation"></i>
     Error cargando convocatorias: <?= htmlspecialchars($error_lista) ?>
-    <br><small>Si ves "Unknown column 'id_periodo'", ejecuta primero <b>MIGRACION_ejecutar_primero.sql</b></small>
 </div>
 <?php endif; ?>
 
-<!-- Header -->
 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
     <div>
         <h1 style="font-size:1.45rem;font-weight:800;color:var(--azul);margin:0;display:flex;align-items:center;gap:10px;">
@@ -298,7 +279,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <?php endif; ?>
 </div>
 
-<!-- Filtros -->
 <div class="filtros">
     <i class="fa-solid fa-filter" style="color:#94a3b8;"></i>
     <form method="GET" style="display:contents;">
@@ -313,7 +293,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <span style="font-size:.82rem;color:#94a3b8;"><?= count($convocatorias) ?> convocatoria(s)</span>
 </div>
 
-<!-- Grid -->
 <?php if (empty($convocatorias) && !isset($error_lista)): ?>
 <div class="empty">
     <i class="fa-regular fa-calendar-xmark"></i>
@@ -353,8 +332,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
         <?php elseif ($est==='cerrada'): ?>
         <div class="cc-det" style="color:<?= !empty($cv['acta_bloqueada'])?'#dc2626':'#d97706' ?>;"><i class="fa-solid fa-file-circle-<?= !empty($cv['acta_bloqueada'])?'xmark':'exclamation' ?>"></i>Acta <?= !empty($cv['acta_bloqueada'])?'vencida':'pendiente' ?></div>
         <?php endif; ?>
-
-        <!-- mini progreso -->
         <div class="prog-mini" style="margin-top:10px;">
             <div style="display:flex;justify-content:space-between;font-size:.75rem;color:#64748b;margin-bottom:3px;">
                 <span>Asistencia</span>
@@ -400,9 +377,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </main>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!--  MODAL: FORMULARIO NUEVA / EDITAR CONVOCATORIA            -->
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODAL NUEVA / EDITAR -->
 <div class="moverlay" id="mConv">
 <div class="mbox">
     <div class="mhead">
@@ -411,16 +386,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
     <div class="mbody">
     <form method="POST" id="frmConv" autocomplete="off">
-        <input type="hidden" name="accion"   value="guardar">
-        <input type="hidden" name="id_conv"  id="fIdConv"  value="0">
+        <input type="hidden" name="accion"     value="guardar">
+        <input type="hidden" name="id_conv"    id="fIdConv"  value="0">
         <input type="hidden" name="id_periodo" value="<?= $id_periodo_activo ?>">
-
-        <!-- Título -->
         <div class="fg">
             <label>Título de la convocatoria *</label>
             <input type="text" name="titulo" id="fTitulo" placeholder="Ej: Asamblea General Ordinaria – CONTRATO 2026" required>
         </div>
-
         <div class="fgrid">
             <div class="fg">
                 <label>Tipo de reunión *</label>
@@ -438,7 +410,6 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                 </select>
             </div>
         </div>
-
         <div class="fgrid three">
             <div class="fg">
                 <label>Fecha *</label>
@@ -457,23 +428,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
                 </select>
             </div>
         </div>
-
         <div class="fg">
             <label>Lugar / Dirección *</label>
             <input type="text" name="lugar" id="fLugar" placeholder="Ej: Salón de la Asociación, Parroquia Santa Lucía, Guayas" required>
         </div>
-
-        <!-- Orden del día -->
         <div class="sec-lbl"><i class="fa-solid fa-list-ol"></i> Orden del Día</div>
         <div id="listaPuntos"></div>
         <button type="button" class="btn-add" onclick="addPunto()"><i class="fa-solid fa-plus"></i> Agregar punto</button>
-
-        <!-- Firmas -->
         <div class="sec-lbl" style="margin-top:20px;"><i class="fa-solid fa-signature"></i> Firmas del documento</div>
         <div id="listaFirmas"></div>
         <button type="button" class="btn-add" onclick="addFirma()"><i class="fa-solid fa-plus"></i> Agregar firma</button>
-
-        <!-- input oculto para compatibilidad con columna 'tipo' existente -->
         <input type="hidden" name="tipo" id="fTipo" value="ordinaria">
     </form>
     </div>
@@ -486,9 +450,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
 </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!--  MODAL: CAMBIAR ESTADO                                     -->
-<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODAL CAMBIAR ESTADO -->
 <div class="moverlay" id="mEstado">
 <div class="mbox" style="max-width:420px;">
     <div class="mhead">
@@ -497,8 +459,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     </div>
     <div class="mbody">
     <form method="POST" id="frmEstado">
-        <input type="hidden" name="accion"       value="cambiar_estado">
-        <input type="hidden" name="id_conv"      id="eIdConv">
+        <input type="hidden" name="accion"    value="cambiar_estado">
+        <input type="hidden" name="id_conv"   id="eIdConv">
         <div class="fg">
             <label>Nuevo estado</label>
             <select name="nuevo_estado" id="eEstado">
@@ -529,33 +491,15 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
     <input type="hidden" name="id_conv" id="bIdConv">
 </form>
 
-<!-- Datos para JS (edición) -->
 <script>
-const EDITANDO = <?= $editando ? json_encode([
-    'id'             => $editando['id'],
-    'titulo'         => $editando['titulo'],
-    'tipo_reunion'   => $editando['tipo_reunion'] ?? $editando['tipo'] ?? 'ordinaria',
-    'tipo_asistentes'=> $editando['tipo_asistentes'] ?? 'general',
-    'fecha_reunion'  => $editando['fecha'],
-    'hora_reunion'   => substr($editando['hora'],0,5),
-    'lugar'          => $editando['lugar'],
-    'estado'         => $editando['estado'],
-]) : 'null' ?>;
-const EDIT_PUNTOS = <?= json_encode($edit_puntos) ?>;
-const EDIT_FIRMAS = <?= json_encode($edit_firmas) ?>;
-
 let cP=0, cF=0;
 
-// ── Modal abrir/cerrar ──────────────────────────
 function abrirModal() {
     limpiarForm();
     document.getElementById('mTitulo').textContent = 'Nueva Convocatoria';
-    // Puntos por defecto
     ['Apertura de la sesión','Lectura y aprobación del orden del día','Informe de presidencia','Puntos varios','Clausura']
         .forEach(p => addPunto(p));
-    // Firmas por defecto
     addFirma('Presidente',''); addFirma('Secretario/a','');
-    // Fecha por defecto: hoy
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('fFecha').value = hoy;
     document.getElementById('mConv').classList.add('show');
@@ -563,22 +507,21 @@ function abrirModal() {
 }
 
 function abrirEditar(id) {
-    // Carga datos vía AJAX para no recargar la página
     fetch(`ajax_conv_datos.php?id=${id}`)
         .then(r=>r.json())
         .then(d=>{
             if(!d.ok){alert(d.msg);return;}
             limpiarForm();
             document.getElementById('mTitulo').textContent='Editar Convocatoria';
-            document.getElementById('fIdConv').value       = d.conv.id;
-            document.getElementById('fTitulo').value       = d.conv.titulo;
-            document.getElementById('fTipoReunion').value  = d.conv.tipo_reunion||d.conv.tipo||'ordinaria';
-            document.getElementById('fTipoAsist').value    = d.conv.tipo_asistentes||'general';
-            document.getElementById('fFecha').value        = d.conv.fecha;
-            document.getElementById('fHora').value         = (d.conv.hora||'').substring(0,5);
-            document.getElementById('fLugar').value        = d.conv.lugar;
-            document.getElementById('fEstado').value       = d.conv.estado;
-            document.getElementById('fTipo').value         = d.conv.tipo||d.conv.tipo_reunion||'ordinaria';
+            document.getElementById('fIdConv').value        = d.conv.id;
+            document.getElementById('fTitulo').value        = d.conv.titulo;
+            document.getElementById('fTipoReunion').value   = d.conv.tipo_reunion||d.conv.tipo||'ordinaria';
+            document.getElementById('fTipoAsist').value     = d.conv.tipo_asistentes||'general';
+            document.getElementById('fFecha').value         = d.conv.fecha;
+            document.getElementById('fHora').value          = (d.conv.hora||'').substring(0,5);
+            document.getElementById('fLugar').value         = d.conv.lugar;
+            document.getElementById('fEstado').value        = d.conv.estado;
+            document.getElementById('fTipo').value          = d.conv.tipo||d.conv.tipo_reunion||'ordinaria';
             d.puntos.forEach(p=>addPunto(p));
             d.firmas.forEach(f=>addFirma(f.cargo,f.nombre));
             document.getElementById('mConv').classList.add('show');
@@ -599,7 +542,6 @@ function limpiarForm() {
     document.getElementById('listaFirmas').innerHTML='';
 }
 
-// ── Puntos ───────────────────────────────────────
 function addPunto(val='') {
     cP++;
     const d=document.createElement('div');
@@ -616,7 +558,6 @@ function addPunto(val='') {
 function delPunto(id){document.getElementById(id)?.remove();renumPuntos();}
 function renumPuntos(){document.querySelectorAll('#listaPuntos .num-badge').forEach((e,i)=>e.textContent=i+1);}
 
-// ── Firmas ───────────────────────────────────────
 function addFirma(cargo='',nombre='') {
     cF++;
     const d=document.createElement('div');
@@ -630,34 +571,27 @@ function addFirma(cargo='',nombre='') {
     document.getElementById('listaFirmas').appendChild(d);
 }
 
-// ── Sincronizar tipo con tipo_reunion ────────────
 document.getElementById('fTipoReunion').addEventListener('change',function(){
     document.getElementById('fTipo').value = this.value;
 });
 
-// ── Estado ───────────────────────────────────────
 function abrirCambioEstado(id, estado) {
-    document.getElementById('eIdConv').value  = id;
-    document.getElementById('eEstado').value  = estado;
+    document.getElementById('eIdConv').value = id;
+    document.getElementById('eEstado').value = estado;
     document.getElementById('mEstado').classList.add('show');
     document.body.style.overflow='hidden';
 }
 
-// ── Eliminar ─────────────────────────────────────
 function confirmarBorrar(id, titulo) {
     if(!confirm(`¿Eliminar la convocatoria:\n"${titulo}"?\n\nEsta acción no se puede deshacer.`)) return;
     document.getElementById('bIdConv').value=id;
     document.getElementById('frmBorrar').submit();
 }
 
-// ── Cerrar con Escape ────────────────────────────
 document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'){
-        cerrarModal('mConv'); cerrarModal('mEstado');
-    }
+    if(e.key==='Escape'){ cerrarModal('mConv'); cerrarModal('mEstado'); }
 });
 
-// ── Cerrar clic fuera del modal ──────────────────
 ['mConv','mEstado'].forEach(id=>{
     document.getElementById(id).addEventListener('click',function(e){
         if(e.target===this) cerrarModal(id);
@@ -666,7 +600,6 @@ document.addEventListener('keydown',function(e){
 
 function escH(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// Abrir edición si viene ?editar=N en la URL
 <?php if ($editando): ?>
 window.addEventListener('DOMContentLoaded',()=>abrirEditar(<?= $editando['id'] ?>));
 <?php endif; ?>
