@@ -18,7 +18,9 @@ if ($id_usr && function_exists('getModulosPermitidos') && isset($pdo)) {
         'datos_lpa','estimacion_cosecha','plan_abastecimiento','ventas',
         'ventas_diarias','directiva','comisiones','asistencia','herramientas',
         'periodo_comercializacion','asignacion_cupos','ubicaciones','documentacion',
-        'actas','convocatorias','documentos_socios','auditoria','gestion_usuarios','logs_sistema'];
+        'actas','convocatorias','documentos_socios','auditoria','gestion_usuarios',
+        'logs_sistema','fairtrade','fairtrade_actas','fairtrade_convocatorias',
+        'fairtrade_documentos'];
 }
 
 $puede = fn($clave) => in_array($clave, $permitidos);
@@ -152,17 +154,34 @@ $puede = fn($clave) => in_array($clave, $permitidos);
             </a>
             <ul class="submenu">
                 <?php if ($puede('actas')): ?>
-                <li><a href="lpa_consulta.php"><i class="fa-solid fa-clipboard"></i> Actas</a></li>
+                <li><a href="actas.php"><i class="fa-solid fa-clipboard"></i> Actas</a></li>
                 <?php endif; ?>
                 <?php if ($puede('convocatorias')): ?>
-                <li>
-                    <a href="convocatorias.php">
-                        <i class="fa-solid fa-calendar-days"></i> Convocatorias
-                    </a>
-                </li>
+                <li><a href="convocatorias.php"><i class="fa-solid fa-calendar-days"></i> Convocatorias</a></li>
                 <?php endif; ?>
                 <?php if ($puede('documentos_socios')): ?>
                 <li><a href="documentos_socios.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>
+                <?php endif; ?>
+            </ul>
+        </div>
+        <?php endif; ?>
+
+        <?php if ($puede('fairtrade') || $puede('fairtrade_actas') || $puede('fairtrade_convocatorias') || $puede('fairtrade_documentos')): ?>
+        <div class="menu-item has-submenu">
+            <a href="#" class="menu-link" onclick="toggleSubmenu(event)">
+                <i class="fa-solid fa-leaf"></i>
+                <span>Fairtrade</span>
+                <span class="arrow">▸</span>
+            </a>
+            <ul class="submenu">
+                <?php if ($puede('fairtrade_actas')): ?>
+                <li><a href="fairtrade_actas.php"><i class="fa-solid fa-clipboard"></i> Actas</a></li>
+                <?php endif; ?>
+                <?php if ($puede('fairtrade_convocatorias')): ?>
+                <li><a href="fairtrade_convocatorias.php"><i class="fa-solid fa-calendar-days"></i> Convocatorias</a></li>
+                <?php endif; ?>
+                <?php if ($puede('fairtrade_documentos')): ?>
+                <li><a href="fairtrade_documentos.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>
                 <?php endif; ?>
             </ul>
         </div>
@@ -175,31 +194,6 @@ $puede = fn($clave) => in_array($clave, $permitidos);
                 <span>Auditoría</span>
                 <span class="arrow">▸</span>
             </a>
-        <?php endif; ?>
-
-        <?php if ($puede('documentacion') || $puede('actas') || $puede('convocatorias') || $puede('documentos_socios')): ?>
-        <div class="menu-item has-submenu">
-            <a href="#" class="menu-link" onclick="toggleSubmenu(event)">
-                <i class="C:\Users\Personal\Desktop\sistema-asociacion"></i>
-                <span>Fairtrade</span>
-                <span class="arrow">▸</span>
-            </a>
-            <ul class="submenu">
-                <?php if ($puede('actas')): ?>
-                <li><a href="lpa_consulta.php"><i class="fa-solid fa-clipboard"></i> Actas</a></li>
-                <?php endif; ?>
-                <?php if ($puede('convocatorias')): ?>
-                <li>
-                    <a href="convocatorias.php">
-                        <i class="fa-solid fa-calendar-days"></i> Convocatorias
-                    </a>
-                </li>
-                <?php endif; ?>
-                <?php if ($puede('documentos_socios')): ?>
-                <li><a href="documentos_socios.php"><i class="fa fa-folder-open"></i> Documentos de Socios</a></li>
-                <?php endif; ?>
-            </ul>
-        </div>
             <ul class="submenu">
                 <?php if ($puede('gestion_usuarios')): ?>
                 <li><a href="gestion_usuarios.php"><i class="fa fa-user-gear"></i> Gestión de Usuarios</a></li>
