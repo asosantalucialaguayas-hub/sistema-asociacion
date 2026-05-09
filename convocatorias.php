@@ -10,8 +10,7 @@ require __DIR__ . "/layout/bootstrap.php";
 
 $id_usuario   = (int)($_SESSION['id_usuario'] ?? 0);
 $rol          = $_SESSION['rol'] ?? $_SESSION['tipo_usuario'] ?? 'viewer';
-$es_editor    = in_array($rol, ['admin','secretario','presidente','superadmin']) || $id_usuario === 1;
-
+$es_editor = tienePermiso($pdo, $id_usuario, 'convocatorias', 'puede_agregar');
 // Periodo activo viene de bootstrap como $periodoSeleccionado
 $id_periodo_activo = intval($periodoSeleccionado['id_periodo'] ?? 0);
 
