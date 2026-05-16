@@ -52,7 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($id_ficha) {
             $pdo->prepare("UPDATE fichas SET nombre=?,descripcion=?,activa=? WHERE id_ficha=?")
                 ->execute([$nombre,$descripcion,$activa,$id_ficha]);
-            // Borrar secciones y preguntas para recrear
             $pdo->prepare("DELETE FROM ficha_secciones WHERE id_ficha=?")->execute([$id_ficha]);
         } else {
             $pdo->prepare("INSERT INTO fichas (nombre,descripcion,activa,creado_por) VALUES (?,?,?,?)")
@@ -60,10 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id_ficha = $pdo->lastInsertId();
         }
 
-        $secs     = $_POST['sec_titulo']    ?? [];
-        $preg_sec = $_POST['preg_sec']      ?? [];
-        $preg_txt = $_POST['preg_texto']    ?? [];
-        $preg_tip = $_POST['preg_tipo']     ?? [];
+        $secs          = $_POST['sec_titulo']    ?? [];
+        $preg_sec      = $_POST['preg_sec']      ?? [];
+        $preg_txt      = $_POST['preg_texto']    ?? [];
+        $preg_tip      = $_POST['preg_tipo']     ?? [];
+        // opciones personalizadas: array de strings JSON, one per pregunta index
+        $preg_opts     = $_POST['preg_opciones'] ?? [];
 
         $orden_s = 1;
         foreach ($secs as $idx => $titulo) {
@@ -75,12 +76,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $orden_p = 1;
             foreach ($preg_sec as $pi => $si) {
-                if ((int)$si !== $idx) continue;
+                if ((int)$si !== (int)$idx) continue;
                 $texto = trim($preg_txt[$pi] ?? '');
                 $tipo  = $preg_tip[$pi] ?? 'cumplimiento';
                 if (!$texto) continue;
-                $pdo->prepare("INSERT INTO ficha_preguntas (id_seccion,texto,tipo,orden) VALUES (?,?,?,?)")
-                    ->execute([$id_sec,$texto,$tipo,$orden_p]);
+                // guardar opciones como JSON en campo opciones_json (nuevo campo)
+                $opciones_raw = $preg_opts[$pi] ?? '';
+                $opciones_json = null;
+                if ($tipo === 'opciones' && $opciones_raw) {
+                    $opts = array_filter(array_map('trim', explode('|', $opciones_raw)));
+                    $opciones_json = json_encode(array_values($opts), JSON_UNESCAPED_UNICODE);
+                }
+                $pdo->prepare("INSERT INTO ficha_preguntas (id_seccion,texto,tipo,opciones_json,orden) VALUES (?,?,?,?,?)")
+                    ->execute([$id_sec, $texto, $tipo, $opciones_json, $orden_p]);
                 $orden_p++;
             }
             $orden_s++;
@@ -126,12 +134,42 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 .seccion-bloque{background:#f8fafc;border:1.5px solid var(--borde);border-radius:12px;padding:16px;margin-bottom:14px;position:relative;}
 .seccion-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .seccion-num{width:28px;height:28px;background:var(--azul);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;}
-.pregunta-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-bottom:8px;}
+
+/* Pregunta row: texto | tipo | borrar */
+.pregunta-row{background:#fff;border:1.5px solid var(--borde);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+.pregunta-top{display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center;}
+.pregunta-top input[type=text]{border:1.5px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:.85rem;width:100%;}
+.pregunta-top select{border:1.5px solid var(--borde);border-radius:8px;padding:7px 8px;font-size:.82rem;}
+
+/* Panel de opciones personalizadas */
+.opciones-panel{margin-top:10px;padding:10px 12px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:none;}
+.opciones-panel.visible{display:block;}
+.opciones-panel label{font-size:.75rem;font-weight:700;color:#1e40af;display:block;margin-bottom:6px;}
+.opciones-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.opcion-chip{display:inline-flex;align-items:center;gap:5px;background:#dbeafe;color:#1e40af;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:600;}
+.opcion-chip button{background:none;border:none;cursor:pointer;color:#3b82f6;padding:0;line-height:1;font-size:.75rem;}
+.opcion-chip button:hover{color:#dc2626;}
+.add-opcion-row{display:flex;gap:6px;}
+.add-opcion-row input{flex:1;border:1.5px solid #93c5fd;border-radius:8px;padding:6px 10px;font-size:.82rem;}
+.add-opcion-row button{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;white-space:nowrap;}
+.add-opcion-row button:hover{background:#1d4ed8;}
+
+/* Tipo badges en el select coloreados */
+.tipo-select option[value="cumplimiento"]{color:#7c3aed;}
+.tipo-select option[value="si_no"]{color:#0891b2;}
+.tipo-select option[value="texto"]{color:#374151;}
+.tipo-select option[value="numero"]{color:#059669;}
+.tipo-select option[value="coordenadas"]{color:#ea580c;}
+.tipo-select option[value="opciones"]{color:#db2777;}
+
 .btn-add{border:2px dashed #cbd5e1;background:transparent;color:#64748b;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:6px;justify-content:center;width:100%;transition:.2s;margin-top:6px;}
 .btn-add:hover{border-color:var(--azul2);color:var(--azul2);background:#eff6ff;}
 .btn-rm{background:none;border:none;color:#ef4444;cursor:pointer;padding:4px 7px;border-radius:6px;font-size:.85rem;}
 .btn-rm:hover{background:#fee2e2;}
-.tipo-badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:.72rem;font-weight:700;}
+
+/* Hint coordenadas */
+.coord-hint{margin-top:8px;padding:7px 10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:7px;font-size:.75rem;color:#92400e;display:none;}
+.coord-hint.visible{display:block;}
 </style>
 </head>
 <body>
@@ -189,6 +227,18 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
         </button>
     </div>
     <div class="card-body">
+
+        <!-- Leyenda de tipos -->
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding:10px 14px;background:#f1f5f9;border-radius:9px;align-items:center;">
+            <span style="font-size:.72rem;font-weight:700;color:#64748b;margin-right:4px;">TIPOS:</span>
+            <span style="background:#ede9fe;color:#7c3aed;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">B/R/M — Bueno/Regular/Malo</span>
+            <span style="background:#e0f2fe;color:#0891b2;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Sí/No</span>
+            <span style="background:#f1f5f9;color:#374151;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Texto libre</span>
+            <span style="background:#dcfce7;color:#059669;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Número</span>
+            <span style="background:#ffedd5;color:#ea580c;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Coordenadas (lat/lon)</span>
+            <span style="background:#fce7f3;color:#db2777;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Opciones personalizadas ✨</span>
+        </div>
+
         <div id="contenedorSecciones">
             <?php foreach ($secciones as $si => $sec): ?>
             <div class="seccion-bloque" id="sec-<?= $si ?>">
@@ -204,20 +254,54 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                     </button>
                 </div>
                 <div id="preguntas-<?= $si ?>">
-                    <?php foreach ($sec['preguntas'] as $pi => $preg): ?>
-                    <div class="pregunta-row" id="pr-<?= $si ?>-<?= $pi ?>">
+                    <?php foreach ($sec['preguntas'] as $pi => $preg):
+                        $opts_stored = '';
+                        if ($preg['tipo'] === 'opciones' && !empty($preg['opciones_json'])) {
+                            $arr = json_decode($preg['opciones_json'], true) ?? [];
+                            $opts_stored = implode('|', $arr);
+                        }
+                        $uid = $si.'_'.$pi;
+                    ?>
+                    <div class="pregunta-row" id="pr-<?= $uid ?>">
                         <input type="hidden" name="preg_sec[]" value="<?= $si ?>">
-                        <input type="text" name="preg_texto[]" value="<?= htmlspecialchars($preg['texto']) ?>"
-                               placeholder="Texto de la pregunta..." style="border:1.5px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:.85rem;">
-                        <select name="preg_tipo[]" style="border:1.5px solid var(--borde);border-radius:8px;padding:7px 8px;font-size:.8rem;">
-                            <option value="cumplimiento" <?= $preg['tipo']==='cumplimiento'?'selected':'' ?>>B/R/M</option>
-                            <option value="si_no"        <?= $preg['tipo']==='si_no'?'selected':'' ?>>Sí/No</option>
-                            <option value="texto"        <?= $preg['tipo']==='texto'?'selected':'' ?>>Texto</option>
-                            <option value="numero"       <?= $preg['tipo']==='numero'?'selected':'' ?>>Número</option>
-                        </select>
-                        <button type="button" class="btn-rm" onclick="this.closest('.pregunta-row').remove()">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
+                        <input type="hidden" name="preg_opciones[]" id="popts_<?= $uid ?>" value="<?= htmlspecialchars($opts_stored) ?>">
+                        <div class="pregunta-top">
+                            <input type="text" name="preg_texto[]" value="<?= htmlspecialchars($preg['texto']) ?>"
+                                   placeholder="Texto de la pregunta...">
+                            <select name="preg_tipo[]" class="tipo-select" onchange="onTipoChange(this,'<?= $uid ?>')">
+                                <option value="cumplimiento" <?= $preg['tipo']==='cumplimiento'?'selected':'' ?>>B/R/M</option>
+                                <option value="si_no"        <?= $preg['tipo']==='si_no'?'selected':'' ?>>Sí/No</option>
+                                <option value="texto"        <?= $preg['tipo']==='texto'?'selected':'' ?>>Texto</option>
+                                <option value="numero"       <?= $preg['tipo']==='numero'?'selected':'' ?>>Número</option>
+                                <option value="coordenadas"  <?= $preg['tipo']==='coordenadas'?'selected':'' ?>>Coordenadas</option>
+                                <option value="opciones"     <?= $preg['tipo']==='opciones'?'selected':'' ?>>Opciones ✨</option>
+                            </select>
+                            <button type="button" class="btn-rm" onclick="this.closest('.pregunta-row').remove()">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <!-- Panel opciones personalizadas -->
+                        <div class="opciones-panel <?= $preg['tipo']==='opciones'?'visible':'' ?>" id="opanel_<?= $uid ?>">
+                            <label><i class="fa-solid fa-list-check"></i> Opciones disponibles para marcar:</label>
+                            <div class="opciones-list" id="olist_<?= $uid ?>">
+                                <?php if ($preg['tipo']==='opciones' && !empty($preg['opciones_json'])):
+                                    foreach (json_decode($preg['opciones_json'], true) ?? [] as $opt): ?>
+                                <span class="opcion-chip">
+                                    <?= htmlspecialchars($opt) ?>
+                                    <button type="button" onclick="removeChip(this,'<?= $uid ?>')" title="Quitar">×</button>
+                                </span>
+                                <?php endforeach; endif; ?>
+                            </div>
+                            <div class="add-opcion-row">
+                                <input type="text" id="onew_<?= $uid ?>" placeholder="Ej: Pozo, Albarrada, Río..."
+                                       onkeydown="if(event.key==='Enter'){event.preventDefault();addChip('<?= $uid ?>');}">
+                                <button type="button" onclick="addChip('<?= $uid ?>')"><i class="fa-solid fa-plus"></i> Añadir</button>
+                            </div>
+                        </div>
+                        <!-- Hint coordenadas -->
+                        <div class="coord-hint <?= $preg['tipo']==='coordenadas'?'visible':'' ?>" id="chint_<?= $uid ?>">
+                            <i class="fa-solid fa-location-dot"></i> Acepta formato: <strong>-2.1234, -79.5678</strong> (con signo negativo y punto decimal)
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -227,7 +311,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
             </div>
             <?php endforeach; ?>
             <?php if (empty($secciones)): ?>
-            <div style="text-align:center;padding:30px;color:#94a3b8;">
+            <div id="msgVacio" style="text-align:center;padding:30px;color:#94a3b8;">
                 <i class="fa-solid fa-layer-group" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
                 <p>Aún no hay secciones. Agrega una para comenzar.</p>
             </div>
@@ -248,7 +332,50 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 
 <script>
 let cntSec = <?= count($secciones) ?>;
+let cntPreg = 1000;
 
+/* ── Cambio de tipo ── */
+function onTipoChange(sel, uid) {
+    const tipo = sel.value;
+    const panel = document.getElementById('opanel_' + uid);
+    const hint  = document.getElementById('chint_' + uid);
+    panel?.classList.toggle('visible', tipo === 'opciones');
+    hint?.classList.toggle('visible', tipo === 'coordenadas');
+}
+
+/* ── Chips de opciones ── */
+function addChip(uid) {
+    const inp = document.getElementById('onew_' + uid);
+    const val = inp.value.trim();
+    if (!val) return;
+    const list = document.getElementById('olist_' + uid);
+    const chip = document.createElement('span');
+    chip.className = 'opcion-chip';
+    chip.innerHTML = `${escHtml(val)} <button type="button" onclick="removeChip(this,'${uid}')" title="Quitar">×</button>`;
+    list.appendChild(chip);
+    inp.value = '';
+    syncOpciones(uid);
+    inp.focus();
+}
+
+function removeChip(btn, uid) {
+    btn.closest('.opcion-chip').remove();
+    syncOpciones(uid);
+}
+
+function syncOpciones(uid) {
+    const list  = document.getElementById('olist_' + uid);
+    const hidde = document.getElementById('popts_' + uid);
+    const chips = list.querySelectorAll('.opcion-chip');
+    const vals  = [...chips].map(c => c.childNodes[0].textContent.trim());
+    hidde.value = vals.join('|');
+}
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Secciones ── */
 function agregarSeccion() {
     const idx = cntSec++;
     const div = document.createElement('div');
@@ -271,9 +398,7 @@ function agregarSeccion() {
         </button>
     `;
     const cont = document.getElementById('contenedorSecciones');
-    // Quitar mensaje vacío si existe
-    const empty = cont.querySelector('div[style*="text-align:center"]');
-    if (empty) empty.remove();
+    document.getElementById('msgVacio')?.remove();
     cont.appendChild(div);
 }
 
@@ -282,27 +407,46 @@ function eliminarSeccion(idx) {
     document.getElementById('sec-'+idx)?.remove();
 }
 
-let cntPreg = 1000;
+/* ── Preguntas ── */
 function agregarPregunta(secIdx) {
-    const pi = cntPreg++;
+    const pi  = cntPreg++;
+    const uid = secIdx + '_' + pi;
     const row = document.createElement('div');
     row.className = 'pregunta-row';
-    row.id = 'pr-' + secIdx + '-' + pi;
+    row.id = 'pr-' + uid;
     row.innerHTML = `
         <input type="hidden" name="preg_sec[]" value="${secIdx}">
-        <input type="text" name="preg_texto[]" placeholder="Texto de la pregunta..."
-               style="border:1.5px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:.85rem;">
-        <select name="preg_tipo[]" style="border:1.5px solid var(--borde);border-radius:8px;padding:7px 8px;font-size:.8rem;">
-            <option value="cumplimiento">B/R/M</option>
-            <option value="si_no">Sí/No</option>
-            <option value="texto">Texto</option>
-            <option value="numero">Número</option>
-        </select>
-        <button type="button" class="btn-rm" onclick="this.closest('.pregunta-row').remove()">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
+        <input type="hidden" name="preg_opciones[]" id="popts_${uid}" value="">
+        <div class="pregunta-top">
+            <input type="text" name="preg_texto[]" placeholder="Texto de la pregunta...">
+            <select name="preg_tipo[]" class="tipo-select" onchange="onTipoChange(this,'${uid}')">
+                <option value="cumplimiento">B/R/M</option>
+                <option value="si_no">Sí/No</option>
+                <option value="texto">Texto</option>
+                <option value="numero">Número</option>
+                <option value="coordenadas">Coordenadas</option>
+                <option value="opciones">Opciones ✨</option>
+            </select>
+            <button type="button" class="btn-rm" onclick="this.closest('.pregunta-row').remove()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <!-- Panel opciones personalizadas -->
+        <div class="opciones-panel" id="opanel_${uid}">
+            <label><i class="fa-solid fa-list-check"></i> Opciones disponibles para marcar:</label>
+            <div class="opciones-list" id="olist_${uid}"></div>
+            <div class="add-opcion-row">
+                <input type="text" id="onew_${uid}" placeholder="Ej: Pozo, Albarrada, Río..."
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();addChip('${uid}');}">
+                <button type="button" onclick="addChip('${uid}')"><i class="fa-solid fa-plus"></i> Añadir</button>
+            </div>
+        </div>
+        <!-- Hint coordenadas -->
+        <div class="coord-hint" id="chint_${uid}">
+            <i class="fa-solid fa-location-dot"></i> Acepta formato: <strong>-2.1234, -79.5678</strong> (con signo negativo y punto decimal)
+        </div>
     `;
-    document.getElementById('preguntas-'+secIdx).appendChild(row);
+    document.getElementById('preguntas-' + secIdx).appendChild(row);
 }
 </script>
 </body>
