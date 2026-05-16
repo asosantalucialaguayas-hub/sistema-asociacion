@@ -61,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $secs      = $_POST['sec_titulo']    ?? [];
         $preg_sec  = $_POST['preg_sec']      ?? [];
         $preg_txt  = $_POST['preg_texto']    ?? [];
-        $preg_tip  = $_POST['preg_tipo']     ?? [];
+        // ── CAMBIO: leer tipo desde campo hidden "preg_tipo_val[]" en lugar del select ──
+        $preg_tip  = $_POST['preg_tipo_val'] ?? [];
         $preg_opts = $_POST['preg_opciones'] ?? [];
 
         $orden_s = 1;
@@ -76,8 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($preg_sec as $pi => $si) {
                 if ((int)$si !== (int)$idx) continue;
                 $texto = trim($preg_txt[$pi] ?? '');
-                $tipo  = $preg_tip[$pi] ?? 'si_no_aplica';
+                $tipo  = trim($preg_tip[$pi] ?? 'si_no_aplica');
                 if (!$texto) continue;
+                // Validar que tipo sea un valor permitido
+                $tipos_validos = ['si_no_aplica','cumplimiento','si_no','texto','numero','coordenadas','opciones'];
+                if (!in_array($tipo, $tipos_validos)) $tipo = 'si_no_aplica';
+
                 $opciones_raw  = $preg_opts[$pi] ?? '';
                 $opciones_json = null;
                 if ($tipo === 'opciones' && $opciones_raw) {
@@ -257,36 +262,39 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                 <div id="preguntas-<?= $si ?>">
                     <?php foreach ($sec['preguntas'] as $pi => $preg):
                         $uid = $si.'_'.$pi;
+                        $tipo_actual = $preg['tipo'] ?: 'si_no_aplica';
                         $opts_stored = '';
-                        if ($preg['tipo'] === 'opciones' && !empty($preg['opciones_json'])) {
+                        if ($tipo_actual === 'opciones' && !empty($preg['opciones_json'])) {
                             $arr = json_decode($preg['opciones_json'], true) ?? [];
                             $opts_stored = implode('|', $arr);
                         }
                     ?>
                     <div class="pregunta-card" id="pr-<?= $uid ?>">
-                        <input type="hidden" name="preg_sec[]" value="<?= $si ?>">
+                        <input type="hidden" name="preg_sec[]"      value="<?= $si ?>">
                         <input type="hidden" name="preg_opciones[]" id="popts_<?= $uid ?>" value="<?= htmlspecialchars($opts_stored) ?>">
+                        <!-- ── CAMPO HIDDEN PARA TIPO (siempre sincronizado con el select) ── -->
+                        <input type="hidden" name="preg_tipo_val[]" id="ptipo_<?= $uid ?>" value="<?= htmlspecialchars($tipo_actual) ?>">
                         <div class="pregunta-top">
                             <input type="text" name="preg_texto[]"
                                    value="<?= htmlspecialchars($preg['texto']) ?>"
                                    placeholder="Texto de la pregunta...">
-                            <select name="preg_tipo[]" onchange="onTipoChange(this,'<?= $uid ?>')">
-                                <option value="si_no_aplica" <?= $preg['tipo']==='si_no_aplica'?'selected':'' ?>>✅ SI / NO / APLICA</option>
-                                <option value="cumplimiento" <?= $preg['tipo']==='cumplimiento'?'selected':'' ?>>⚖️ B / R / M</option>
-                                <option value="si_no"        <?= $preg['tipo']==='si_no'?'selected':'' ?>>☑️ Solo Sí / No</option>
-                                <option value="texto"        <?= $preg['tipo']==='texto'?'selected':'' ?>>✏️ Texto libre</option>
-                                <option value="numero"       <?= $preg['tipo']==='numero'?'selected':'' ?>>🔢 Número</option>
-                                <option value="coordenadas"  <?= $preg['tipo']==='coordenadas'?'selected':'' ?>>📍 Coordenadas</option>
-                                <option value="opciones"     <?= $preg['tipo']==='opciones'?'selected':'' ?>>☑️ Opciones personalizadas</option>
+                            <select onchange="onTipoChange(this,'<?= $uid ?>')">
+                                <option value="si_no_aplica" <?= $tipo_actual==='si_no_aplica'?'selected':'' ?>>✅ SI / NO / APLICA</option>
+                                <option value="cumplimiento" <?= $tipo_actual==='cumplimiento'?'selected':'' ?>>⚖️ B / R / M</option>
+                                <option value="si_no"        <?= $tipo_actual==='si_no'?'selected':'' ?>>☑️ Solo Sí / No</option>
+                                <option value="texto"        <?= $tipo_actual==='texto'?'selected':'' ?>>✏️ Texto libre</option>
+                                <option value="numero"       <?= $tipo_actual==='numero'?'selected':'' ?>>🔢 Número</option>
+                                <option value="coordenadas"  <?= $tipo_actual==='coordenadas'?'selected':'' ?>>📍 Coordenadas</option>
+                                <option value="opciones"     <?= $tipo_actual==='opciones'?'selected':'' ?>>☑️ Opciones personalizadas</option>
                             </select>
                             <button type="button" class="btn-rm" onclick="this.closest('.pregunta-card').remove()">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
                         </div>
                         <div class="tipo-preview" id="prev_<?= $uid ?>">
-                            <?= renderPreview($preg['tipo']) ?>
+                            <?= renderPreview($tipo_actual) ?>
                         </div>
-                        <div class="opciones-panel <?= $preg['tipo']==='opciones'?'visible':'' ?>" id="opanel_<?= $uid ?>">
+                        <div class="opciones-panel <?= $tipo_actual==='opciones'?'visible':'' ?>" id="opanel_<?= $uid ?>">
                             <label style="font-size:.75rem;font-weight:700;color:#1e40af;display:block;margin-bottom:6px;">
                                 <i class="fa-solid fa-list-check"></i> Define las opciones:
                             </label>
@@ -348,8 +356,13 @@ const PREVIEWS = {
     opciones:     `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag" style="background:#fce7f3;color:#db2777;">☑️ Opciones personalizables</span>`,
 };
 
+// Al cambiar el select: actualiza hidden + preview + panel opciones
 function onTipoChange(sel, uid) {
     const tipo = sel.value;
+    // ── CLAVE: actualizar el campo hidden con el tipo seleccionado ──
+    const hidden = document.getElementById('ptipo_' + uid);
+    if (hidden) hidden.value = tipo;
+
     const prev = document.getElementById('prev_' + uid);
     const pan  = document.getElementById('opanel_' + uid);
     if (prev) prev.innerHTML = PREVIEWS[tipo] || '';
@@ -408,12 +421,14 @@ function agregarPregunta(secIdx) {
     const row = document.createElement('div');
     row.className = 'pregunta-card'; row.id = 'pr-'+uid;
     row.innerHTML = `
-        <input type="hidden" name="preg_sec[]" value="${secIdx}">
+        <input type="hidden" name="preg_sec[]"      value="${secIdx}">
         <input type="hidden" name="preg_opciones[]" id="popts_${uid}" value="">
+        <!-- hidden tipo sincronizado con el select -->
+        <input type="hidden" name="preg_tipo_val[]" id="ptipo_${uid}" value="si_no_aplica">
         <div class="pregunta-top">
             <input type="text" name="preg_texto[]" placeholder="Texto de la pregunta...">
-            <select name="preg_tipo[]" onchange="onTipoChange(this,'${uid}')">
-                <option value="si_no_aplica">✅ SI / NO / APLICA</option>
+            <select onchange="onTipoChange(this,'${uid}')">
+                <option value="si_no_aplica" selected>✅ SI / NO / APLICA</option>
                 <option value="cumplimiento">⚖️ B / R / M</option>
                 <option value="si_no">☑️ Solo Sí / No</option>
                 <option value="texto">✏️ Texto libre</option>
