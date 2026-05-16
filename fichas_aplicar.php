@@ -16,11 +16,10 @@ if (!$puede_agregar) {
 $id_ficha = isset($_GET['ficha']) ? (int)$_GET['ficha'] : 0;
 $id_socio = isset($_GET['socio']) ? (int)$_GET['socio'] : 0;
 
-// Cargar fichas activas
 $fichas_activas = $pdo->query("SELECT id_ficha,nombre FROM fichas WHERE activa=1 ORDER BY nombre")->fetchAll(PDO::FETCH_ASSOC);
 
-$ficha   = null;
-$socio   = null;
+$ficha     = null;
+$socio     = null;
 $secciones = [];
 
 if ($id_ficha) {
@@ -51,55 +50,52 @@ if ($id_socio) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $puede_agregar) {
     $id_f = (int)$_POST['id_ficha'];
     $id_s = (int)$_POST['id_socio'];
-    $firma_inspector = $_POST['firma_inspector'] ?? null;
-    $firma_productor = $_POST['firma_productor'] ?? null;
 
     $pdo->beginTransaction();
     try {
         $pdo->prepare("
             INSERT INTO ficha_aplicaciones
-                (id_ficha,id_socio,id_usuario,canton,parroquia,sector,
-                 coord_hogar_x,coord_hogar_y,coord_hogar_z,
-                 coord_finca_x,coord_finca_y,coord_finca_z,
-                 cultivo,variedad,edad_cultivo,hectareas,
-                 riego,fuente_agua,poda_semestre,
-                 firma_inspector,firma_productor,fecha_aplicacion)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
+                (id_ficha, id_socio, id_usuario,
+                 canton, parroquia, sector,
+                 coord_hogar_x, coord_hogar_y, coord_hogar_z,
+                 coord_finca_x, coord_finca_y, coord_finca_z,
+                 firma_inspector, firma_productor, fecha_aplicacion)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())
         ")->execute([
             $id_f, $id_s, $id_usuario,
             $_POST['canton']??'', $_POST['parroquia']??'', $_POST['sector']??'',
             $_POST['coord_hogar_x']??'', $_POST['coord_hogar_y']??'', $_POST['coord_hogar_z']??'',
             $_POST['coord_finca_x']??'', $_POST['coord_finca_y']??'', $_POST['coord_finca_z']??'',
-            $_POST['cultivo']??'', $_POST['variedad']??'', $_POST['edad_cultivo']??'', $_POST['hectareas']??'',
-            isset($_POST['riego']) ? 1 : 0,
-            $_POST['fuente_agua']??'',
-            $_POST['poda_semestre']??'',
-            $firma_inspector, $firma_productor
+            $_POST['firma_inspector']??null, $_POST['firma_productor']??null
         ]);
         $id_aplicacion = $pdo->lastInsertId();
 
-        // Guardar respuestas
         $stR = $pdo->prepare("
-            INSERT INTO ficha_respuestas (id_aplicacion,id_pregunta,respuesta_sino,cumplimiento,observacion,respuesta_texto)
+            INSERT INTO ficha_respuestas
+                (id_aplicacion, id_pregunta, respuesta_sino, cumplimiento, observacion, respuesta_texto)
             VALUES (?,?,?,?,?,?)
         ");
 
-        $preguntas_ids = $_POST['pregunta_id'] ?? [];
-        foreach ($preguntas_ids as $id_pregunta) {
+        foreach ($_POST['pregunta_id'] ?? [] as $id_pregunta) {
             $id_pregunta = (int)$id_pregunta;
-            $cumpl  = $_POST["cumpl_$id_pregunta"]  ?? null;
-            $sino   = $_POST["sino_$id_pregunta"]   ?? null;
-            $obs    = $_POST["obs_$id_pregunta"]     ?? '';
-            $txt    = $_POST["texto_$id_pregunta"]   ?? '';
-            $num    = $_POST["numero_$id_pregunta"]  ?? '';
+            $tipo  = $_POST["tipo_$id_pregunta"]   ?? 'texto';
+            $cumpl = $_POST["cumpl_$id_pregunta"]  ?? null;
+            $sino  = $_POST["sino_$id_pregunta"]   ?? null;
+            $obs      = $_POST["obs_$id_pregunta"]    ?? '';
+            $resp_raw = $_POST["resp_$id_pregunta"] ?? '';
+            if (is_array($resp_raw)) {
+                $txt = implode(', ', $resp_raw);
+            } else {
+                $txt = $resp_raw;
+            }
 
             $stR->execute([
                 $id_aplicacion,
                 $id_pregunta,
-                $sino !== null ? (int)$sino : null,
+                ($sino !== null && $sino !== '') ? (int)$sino : null,
                 $cumpl ?: null,
                 $obs,
-                $txt ?: $num
+                $txt
             ]);
         }
 
@@ -142,28 +138,52 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 .fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .fgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
 @media(max-width:600px){.fgrid2,.fgrid3{grid-template-columns:1fr;}}
-.sec-lbl{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--azul2);display:flex;align-items:center;gap:6px;border-bottom:2px solid var(--borde);padding-bottom:7px;margin:0 0 14px;}
-.preg-table{width:100%;border-collapse:collapse;font-size:.85rem;}
-.preg-table th{background:#f1f5f9;padding:8px 12px;text-align:left;font-size:.75rem;font-weight:700;color:#374151;border-bottom:1px solid var(--borde);}
-.preg-table td{padding:8px 12px;border-bottom:1px solid #f9fafb;vertical-align:middle;}
+
+/* ── Tabla de preguntas ── */
+.preg-table{width:100%;border-collapse:collapse;font-size:.855rem;}
+.preg-table th{
+    background:#f1f5f9;padding:9px 12px;text-align:left;
+    font-size:.75rem;font-weight:700;color:#374151;
+    border-bottom:2px solid var(--borde);white-space:nowrap;
+}
+.preg-table td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+.preg-table tr:last-child td{border-bottom:none;}
 .preg-table tr:hover td{background:#f8fafc;}
-.cumpl-group{display:flex;gap:6px;}
-.cumpl-btn{padding:5px 10px;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:.15s;}
-.cumpl-b{background:#e0f2fe;color:#0369a1;border-color:#bae6fd;}
-.cumpl-r{background:#fef3c7;color:#92400e;border-color:#fde68a;}
-.cumpl-m{background:#fee2e2;color:#b91c1c;border-color:#fecaca;}
-.cumpl-btn.selected-B{background:#0369a1;color:#fff;}
-.cumpl-btn.selected-R{background:#d97706;color:#fff;}
-.cumpl-btn.selected-M{background:#dc2626;color:#fff;}
-.sino-group{display:flex;gap:6px;}
-.sino-btn{padding:5px 12px;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;border:1.5px solid #e5e7eb;background:#f9fafb;transition:.15s;}
-.sino-btn.sel-si{background:#16a34a;color:#fff;border-color:#16a34a;}
-.sino-btn.sel-no{background:#dc2626;color:#fff;border-color:#dc2626;}
-/* Firma canvas */
+.preg-table td.txt-pregunta{font-size:.855rem;color:#1e293b;line-height:1.4;}
+
+/* Cumplimiento B/R/M */
+.cumpl-group{display:flex;gap:5px;justify-content:center;}
+.cumpl-btn{padding:4px 10px;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:.15s;background:#f1f5f9;color:#374151;}
+.cumpl-btn:hover{opacity:.85;}
+.cumpl-btn.sel-B{background:#0369a1;color:#fff;border-color:#0369a1;}
+.cumpl-btn.sel-R{background:#d97706;color:#fff;border-color:#d97706;}
+.cumpl-btn.sel-M{background:#dc2626;color:#fff;border-color:#dc2626;}
+
+/* Sí / No radios */
+.sino-wrap{display:flex;justify-content:center;}
+.sino-wrap input[type=radio]{width:18px;height:18px;accent-color:var(--azul2);cursor:pointer;}
+
+/* Inputs en tabla */
+.inp-tabla{border:1.5px solid var(--borde);border-radius:7px;padding:6px 9px;font-size:.82rem;width:100%;font-family:inherit;outline:none;transition:.2s;}
+.inp-tabla:focus{border-color:var(--azul2);box-shadow:0 0 0 2px rgba(37,99,235,.1);}
+.inp-obs{width:100%;}
+
+/* Opciones personalizadas (checkboxes) */
+.opciones-checks{display:flex;flex-wrap:wrap;gap:6px;}
+.opciones-checks label{display:inline-flex;align-items:center;gap:5px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:20px;padding:4px 11px;font-size:.78rem;font-weight:600;color:#1e40af;cursor:pointer;transition:.15s;}
+.opciones-checks label:hover{background:#dbeafe;}
+.opciones-checks input[type=checkbox]{accent-color:#2563eb;width:14px;height:14px;}
+
+/* Coordenadas hint */
+.coord-badge{display:inline-flex;align-items:center;gap:5px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:3px 8px;font-size:.72rem;color:#92400e;margin-bottom:4px;}
+
+/* Firma */
 .firma-wrap{border:2px dashed #cbd5e1;border-radius:10px;background:#fafafa;position:relative;}
 .firma-wrap canvas{display:block;touch-action:none;}
-.firma-lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#cbd5e1;font-size:.8rem;pointer-events:none;}
-.firma-btns{display:flex;gap:8px;margin-top:6px;}
+.firma-lbl{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#cbd5e1;font-size:.8rem;pointer-events:none;white-space:nowrap;}
+
+/* Socio results dropdown */
+#resultSocios{position:relative;z-index:10;}
 </style>
 </head>
 <body>
@@ -234,119 +254,160 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 <input type="hidden" name="firma_inspector" id="firmaInspectorData">
 <input type="hidden" name="firma_productor" id="firmaProductorData">
 
-<!-- Datos generales de la visita -->
+<!-- Datos de ubicación (campos fijos de cabecera) -->
 <div class="card">
     <div class="card-head"><h3><i class="fa-solid fa-location-dot"></i> Datos de Ubicación</h3></div>
     <div class="card-body">
-        <div class="fgrid3">
+        <div class="fgrid3" style="margin-bottom:16px;">
             <div class="fg"><label>Cantón</label><input type="text" name="canton" placeholder="Cantón"></div>
             <div class="fg"><label>Parroquia</label><input type="text" name="parroquia" placeholder="Parroquia"></div>
             <div class="fg"><label>Sector</label><input type="text" name="sector" placeholder="Sector"></div>
         </div>
-        <div class="sec-lbl"><i class="fa-solid fa-house"></i> Coordenadas Hogar (UTM)</div>
-        <div class="fgrid3">
+
+        <div style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--azul2);border-bottom:2px solid var(--borde);padding-bottom:6px;margin-bottom:12px;">
+            <i class="fa-solid fa-house"></i> Coordenadas Hogar (UTM)
+        </div>
+        <div class="fgrid3" style="margin-bottom:16px;">
             <div class="fg"><label>X</label><input type="text" name="coord_hogar_x" placeholder="X"></div>
             <div class="fg"><label>Y</label><input type="text" name="coord_hogar_y" placeholder="Y"></div>
-            <div class="fg"><label>Z</label><input type="text" name="coord_hogar_z" placeholder="Z"></div>
+            <div class="fg"><label>Z (altitud)</label><input type="text" name="coord_hogar_z" placeholder="Z"></div>
         </div>
-        <div class="sec-lbl"><i class="fa-solid fa-tree"></i> Coordenadas Finca (UTM)</div>
+
+        <div style="font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--azul2);border-bottom:2px solid var(--borde);padding-bottom:6px;margin-bottom:12px;">
+            <i class="fa-solid fa-tree"></i> Coordenadas Finca (UTM)
+        </div>
         <div class="fgrid3">
             <div class="fg"><label>X</label><input type="text" name="coord_finca_x" placeholder="X"></div>
             <div class="fg"><label>Y</label><input type="text" name="coord_finca_y" placeholder="Y"></div>
-            <div class="fg"><label>Z</label><input type="text" name="coord_finca_z" placeholder="Z"></div>
+            <div class="fg"><label>Z (altitud)</label><input type="text" name="coord_finca_z" placeholder="Z"></div>
         </div>
     </div>
 </div>
 
-<!-- Datos del cultivo -->
-<div class="card">
-    <div class="card-head"><h3><i class="fa-solid fa-seedling"></i> Datos del Cultivo</h3></div>
-    <div class="card-body">
-        <div class="fgrid2">
-            <div class="fg"><label>Cultivo</label><input type="text" name="cultivo" placeholder="Ej: Cacao"></div>
-            <div class="fg"><label>Variedad</label><input type="text" name="variedad" placeholder="Variedad"></div>
-            <div class="fg"><label>Edad del Cultivo</label><input type="text" name="edad_cultivo" placeholder="Años"></div>
-            <div class="fg"><label>Hectáreas</label><input type="number" step="0.01" name="hectareas" placeholder="Has"></div>
-        </div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:4px;">
-            <label style="display:flex;align-items:center;gap:8px;font-size:.875rem;font-weight:600;cursor:pointer;">
-                <input type="checkbox" name="riego"> Tiene riego
-            </label>
-            <div class="fg" style="margin:0;">
-                <label>Fuente de agua</label>
-                <select name="fuente_agua">
-                    <option value="">— Selecciona —</option>
-                    <option value="Pozo">Pozo</option>
-                    <option value="Albarrada">Albarrada</option>
-                </select>
-            </div>
-            <div class="fg" style="margin:0;">
-                <label>Poda</label>
-                <select name="poda_semestre">
-                    <option value="">— Selecciona —</option>
-                    <option value="1er semestre">1er semestre</option>
-                    <option value="2do semestre">2do semestre</option>
-                </select>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Secciones de la ficha -->
+<!-- ══════════════════════════════════════════════
+     SECCIONES Y PREGUNTAS DINÁMICAS DE LA FICHA
+     ══════════════════════════════════════════════ -->
 <?php foreach ($secciones as $sec): ?>
 <div class="card">
-    <div class="card-head"><h3><i class="fa-solid fa-list-check"></i> <?= htmlspecialchars($sec['titulo']) ?></h3></div>
+    <div class="card-head">
+        <h3><i class="fa-solid fa-list-check"></i> <?= htmlspecialchars($sec['titulo']) ?></h3>
+    </div>
     <div class="card-body" style="padding:0;">
         <table class="preg-table">
             <thead>
                 <tr>
-                    <th style="width:45%;">Descripción de actividades</th>
-                    <th style="width:8%;text-align:center;">No</th>
-                    <th style="width:8%;text-align:center;">Sí</th>
-                    <th style="width:20%;text-align:center;">Cumplimiento (B/R/M)</th>
+                    <th style="width:40%;">Criterio / Pregunta</th>
+                    <th style="width:6%;text-align:center;">No</th>
+                    <th style="width:6%;text-align:center;">Sí</th>
+                    <th style="width:22%;text-align:center;">Respuesta / Cumplimiento</th>
                     <th>Observaciones</th>
                 </tr>
             </thead>
             <tbody>
-            <?php foreach ($sec['preguntas'] as $preg): ?>
+            <?php foreach ($sec['preguntas'] as $preg):
+                $pid  = $preg['id_pregunta'];
+                $tipo = $preg['tipo'];
+                // Decodificar opciones JSON si aplica
+                $opts = [];
+                if ($tipo === 'opciones' && !empty($preg['opciones_json'])) {
+                    $opts = json_decode($preg['opciones_json'], true) ?? [];
+                }
+            ?>
             <tr>
-                <td>
-                    <input type="hidden" name="pregunta_id[]" value="<?= $preg['id_pregunta'] ?>">
+                <!-- Texto de la pregunta -->
+                <td class="txt-pregunta">
+                    <input type="hidden" name="pregunta_id[]" value="<?= $pid ?>">
+                    <input type="hidden" name="tipo_<?= $pid ?>" value="<?= htmlspecialchars($tipo) ?>">
                     <?= htmlspecialchars($preg['texto']) ?>
                 </td>
-                <?php if ($preg['tipo'] === 'cumplimiento'): ?>
-                <td style="text-align:center;">
-                    <input type="radio" name="sino_<?= $preg['id_pregunta'] ?>" value="0">
+
+                <?php if ($tipo === 'cumplimiento'): ?>
+                <!-- ── B/R/M: tiene No | Sí | botones BRM | obs ── -->
+                <td class="sino-wrap">
+                    <input type="radio" name="sino_<?= $pid ?>" value="0">
                 </td>
-                <td style="text-align:center;">
-                    <input type="radio" name="sino_<?= $preg['id_pregunta'] ?>" value="1">
+                <td class="sino-wrap">
+                    <input type="radio" name="sino_<?= $pid ?>" value="1">
                 </td>
                 <td>
-                    <div class="cumpl-group" style="justify-content:center;" id="cg-<?= $preg['id_pregunta'] ?>">
-                        <input type="hidden" name="cumpl_<?= $preg['id_pregunta'] ?>" id="cv-<?= $preg['id_pregunta'] ?>">
-                        <button type="button" class="cumpl-btn cumpl-b" onclick="setCumpl(<?= $preg['id_pregunta'] ?>,'B')">B</button>
-                        <button type="button" class="cumpl-btn cumpl-r" onclick="setCumpl(<?= $preg['id_pregunta'] ?>,'R')">R</button>
-                        <button type="button" class="cumpl-btn cumpl-m" onclick="setCumpl(<?= $preg['id_pregunta'] ?>,'M')">M</button>
+                    <input type="hidden" name="cumpl_<?= $pid ?>" id="cv-<?= $pid ?>">
+                    <div class="cumpl-group">
+                        <button type="button" class="cumpl-btn" onclick="setCumpl(<?= $pid ?>,'B',this)">B</button>
+                        <button type="button" class="cumpl-btn" onclick="setCumpl(<?= $pid ?>,'R',this)">R</button>
+                        <button type="button" class="cumpl-btn" onclick="setCumpl(<?= $pid ?>,'M',this)">M</button>
                     </div>
                 </td>
-                <td><input type="text" name="obs_<?= $preg['id_pregunta'] ?>" placeholder="Observación..." style="border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:.8rem;width:100%;"></td>
-                <?php elseif ($preg['tipo'] === 'si_no'): ?>
-                <td style="text-align:center;">
-                    <input type="radio" name="sino_<?= $preg['id_pregunta'] ?>" value="0">
+                <td>
+                    <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>" placeholder="Observación...">
                 </td>
-                <td style="text-align:center;">
-                    <input type="radio" name="sino_<?= $preg['id_pregunta'] ?>" value="1">
+
+                <?php elseif ($tipo === 'si_no'): ?>
+                <!-- ── Sí/No: solo radios, sin BRM ── -->
+                <td class="sino-wrap">
+                    <input type="radio" name="sino_<?= $pid ?>" value="0">
                 </td>
-                <td></td>
-                <td><input type="text" name="obs_<?= $preg['id_pregunta'] ?>" placeholder="Observación..." style="border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:.8rem;width:100%;"></td>
-                <?php else: ?>
-                <td colspan="3">
-                    <input type="<?= $preg['tipo'] === 'numero' ? 'number' : 'text' ?>"
-                           name="<?= $preg['tipo'] === 'numero' ? 'numero' : 'texto' ?>_<?= $preg['id_pregunta'] ?>"
-                           placeholder="Respuesta..."
-                           style="border:1px solid var(--borde);border-radius:6px;padding:5px 8px;font-size:.8rem;width:100%;">
+                <td class="sino-wrap">
+                    <input type="radio" name="sino_<?= $pid ?>" value="1">
                 </td>
                 <td></td>
+                <td>
+                    <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>" placeholder="Observación...">
+                </td>
+
+                <?php elseif ($tipo === 'numero'): ?>
+                <!-- ── Número: campo numérico, span todas las cols de respuesta ── -->
+                <td colspan="2"></td>
+                <td>
+                    <input type="number" step="any" class="inp-tabla"
+                           name="resp_<?= $pid ?>" placeholder="0">
+                </td>
+                <td>
+                    <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>" placeholder="Observación...">
+                </td>
+
+                <?php elseif ($tipo === 'coordenadas'): ?>
+                <!-- ── Coordenadas: acepta negativos y decimales ── -->
+                <td colspan="2"></td>
+                <td>
+                    <div class="coord-badge"><i class="fa-solid fa-location-dot"></i> lat, lon</div>
+                    <input type="text" class="inp-tabla"
+                           name="resp_<?= $pid ?>"
+                           placeholder="-2.1234, -79.5678"
+                           pattern="^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$">
+                </td>
+                <td>
+                    <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>" placeholder="Observación...">
+                </td>
+
+                <?php elseif ($tipo === 'opciones'): ?>
+                <!-- ── Opciones personalizadas: checkboxes ── -->
+                <td colspan="2"></td>
+                <td colspan="2">
+                    <?php if ($opts): ?>
+                    <div class="opciones-checks">
+                        <?php foreach ($opts as $opt): ?>
+                        <label>
+                            <input type="checkbox"
+                                   name="resp_<?= $pid ?>[]"
+                                   value="<?= htmlspecialchars($opt) ?>">
+                            <?= htmlspecialchars($opt) ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <span style="color:#94a3b8;font-size:.8rem;">Sin opciones configuradas</span>
+                    <?php endif; ?>
+                    <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>"
+                           placeholder="Observación..." style="margin-top:6px;">
+                </td>
+
+                <?php else: /* texto */ ?>
+                <!-- ── Texto libre ── -->
+                <td colspan="2"></td>
+                <td colspan="2">
+                    <input type="text" class="inp-tabla"
+                           name="resp_<?= $pid ?>" placeholder="Respuesta...">
+                </td>
                 <?php endif; ?>
             </tr>
             <?php endforeach; ?>
@@ -364,10 +425,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
             <div>
                 <div style="font-weight:700;font-size:.85rem;color:var(--azul);margin-bottom:8px;">Firma Inspector Interno</div>
                 <div class="firma-wrap">
-                    <canvas id="canvasInspector" width="280" height="120"></canvas>
+                    <canvas id="canvasInspector" width="300" height="120"></canvas>
                     <span class="firma-lbl" id="lblInspector">Firme aquí</span>
                 </div>
-                <div class="firma-btns">
+                <div style="margin-top:6px;">
                     <button type="button" class="btn-sec" style="font-size:.78rem;padding:5px 12px;" onclick="limpiarFirma('Inspector')">
                         <i class="fa-solid fa-eraser"></i> Limpiar
                     </button>
@@ -376,10 +437,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
             <div>
                 <div style="font-weight:700;font-size:.85rem;color:var(--azul);margin-bottom:8px;">Firma Productor</div>
                 <div class="firma-wrap">
-                    <canvas id="canvasProductor" width="280" height="120"></canvas>
+                    <canvas id="canvasProductor" width="300" height="120"></canvas>
                     <span class="firma-lbl" id="lblProductor">Firme aquí</span>
                 </div>
-                <div class="firma-btns">
+                <div style="margin-top:6px;">
                     <button type="button" class="btn-sec" style="font-size:.78rem;padding:5px 12px;" onclick="limpiarFirma('Productor')">
                         <i class="fa-solid fa-eraser"></i> Limpiar
                     </button>
@@ -403,27 +464,29 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 </div>
 
 <script>
-// Buscar socio
+/* ── Buscar socio ── */
 let timerSocio;
 function buscarSocio(q) {
     clearTimeout(timerSocio);
-    if (q.length < 2) { document.getElementById('resultSocios').innerHTML=''; return; }
+    const box = document.getElementById('resultSocios');
+    if (q.length < 2) { box.innerHTML = ''; return; }
     timerSocio = setTimeout(async () => {
-        const r = await fetch(`api/socios.php?q=${encodeURIComponent(q)}`);
-        const d = await r.json();
-        if (!d.ok || !d.data.length) {
-            document.getElementById('resultSocios').innerHTML = '<p style="font-size:.8rem;color:#94a3b8;padding:6px 0;">Sin resultados</p>';
-            return;
-        }
-        document.getElementById('resultSocios').innerHTML = d.data.slice(0,8).map(s => `
-            <div onclick="selSocio(${s.id_socio},'${s.nombre_completo} · ${s.identificacion}')"
-                 style="padding:8px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-top:4px;cursor:pointer;font-size:.85rem;">
-                <b>${s.nombre_completo}</b><br>
-                <span style="color:#64748b;font-size:.75rem;">${s.identificacion}</span>
-            </div>`).join('');
+        try {
+            const r = await fetch(`api/socios.php?q=${encodeURIComponent(q)}`);
+            const d = await r.json();
+            if (!d.ok || !d.data.length) {
+                box.innerHTML = '<p style="font-size:.8rem;color:#94a3b8;padding:6px 0;">Sin resultados</p>';
+                return;
+            }
+            box.innerHTML = d.data.slice(0,8).map(s => `
+                <div onclick="selSocio(${s.id_socio},'${s.nombre_completo} · ${s.identificacion}')"
+                     style="padding:8px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;margin-top:4px;cursor:pointer;font-size:.85rem;">
+                    <b>${s.nombre_completo}</b><br>
+                    <span style="color:#64748b;font-size:.75rem;">${s.identificacion}</span>
+                </div>`).join('');
+        } catch(e) { box.innerHTML = ''; }
     }, 300);
 }
-
 function selSocio(id, nombre) {
     document.getElementById('socioSelId').value = id;
     document.getElementById('inputSocio').value = nombre;
@@ -432,46 +495,48 @@ function selSocio(id, nombre) {
     if (ficha) window.location = `fichas_aplicar.php?ficha=${ficha}&socio=${id}`;
 }
 
-// Cumplimiento B/R/M
-function setCumpl(id, val) {
-    document.getElementById('cv-'+id).value = val;
-    document.querySelectorAll('#cg-'+id+' .cumpl-btn').forEach(b => {
-        b.className = b.className.replace(/selected-[BRM]/,'').trim();
+/* ── Cumplimiento B/R/M ── */
+function setCumpl(pid, val, btn) {
+    document.getElementById('cv-' + pid).value = val;
+    btn.closest('.cumpl-group').querySelectorAll('.cumpl-btn').forEach(b => {
+        b.classList.remove('sel-B','sel-R','sel-M');
     });
-    event.target.classList.add('selected-'+val);
+    btn.classList.add('sel-' + val);
 }
 
-// Firma canvas
+/* ── Opciones personalizadas → serializar checkboxes a campo texto ── */
+// Al guardar, los checkboxes con name="resp_XX[]" se envían automáticamente como array.
+// En el PHP de guardado concatenamos con coma para almacenar en respuesta_texto.
+// Ajuste en el backend: detectar array y hacer implode(',', ...).
+
+/* ── Canvas de firma ── */
 function initCanvas(id) {
-    const canvas = document.getElementById('canvas'+id);
-    const lbl    = document.getElementById('lbl'+id);
+    const canvas = document.getElementById('canvas' + id);
+    const lbl    = document.getElementById('lbl' + id);
     const ctx    = canvas.getContext('2d');
     ctx.strokeStyle = '#1f3a5f';
     ctx.lineWidth   = 2;
     ctx.lineCap     = 'round';
     let drawing = false;
 
-    const getPos = e => {
+    const pos = e => {
         const r = canvas.getBoundingClientRect();
         const t = e.touches ? e.touches[0] : e;
         return { x: t.clientX - r.left, y: t.clientY - r.top };
     };
-
-    canvas.addEventListener('mousedown',  e => { drawing=true; ctx.beginPath(); lbl.style.display='none'; const p=getPos(e); ctx.moveTo(p.x,p.y); });
-    canvas.addEventListener('mousemove',  e => { if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); });
+    canvas.addEventListener('mousedown',  e => { drawing=true; ctx.beginPath(); lbl.style.display='none'; const p=pos(e); ctx.moveTo(p.x,p.y); });
+    canvas.addEventListener('mousemove',  e => { if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); });
     canvas.addEventListener('mouseup',    () => drawing=false);
     canvas.addEventListener('mouseleave', () => drawing=false);
-    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing=true; ctx.beginPath(); lbl.style.display='none'; const p=getPos(e); ctx.moveTo(p.x,p.y); }, {passive:false});
-    canvas.addEventListener('touchmove',  e => { e.preventDefault(); if(!drawing) return; const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); }, {passive:false});
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing=true; ctx.beginPath(); lbl.style.display='none'; const p=pos(e); ctx.moveTo(p.x,p.y); }, {passive:false});
+    canvas.addEventListener('touchmove',  e => { e.preventDefault(); if(!drawing) return; const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); }, {passive:false});
     canvas.addEventListener('touchend',   () => drawing=false);
 }
-
 function limpiarFirma(id) {
-    const canvas = document.getElementById('canvas'+id);
-    canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-    document.getElementById('lbl'+id).style.display='block';
+    const c = document.getElementById('canvas'+id);
+    c.getContext('2d').clearRect(0,0,c.width,c.height);
+    document.getElementById('lbl'+id).style.display = 'block';
 }
-
 function capturarFirmas() {
     document.getElementById('firmaInspectorData').value = document.getElementById('canvasInspector').toDataURL();
     document.getElementById('firmaProductorData').value = document.getElementById('canvasProductor').toDataURL();
