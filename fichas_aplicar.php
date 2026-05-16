@@ -89,10 +89,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $puede_agregar) {
                 $txt = $resp_raw;
             }
 
+            // sino: 0=No, 1=Sí, 2=Aplica (para si_no_aplica), null=no aplica
+            $sino_val = ($sino !== null && $sino !== '') ? (int)$sino : null;
+
             $stR->execute([
                 $id_aplicacion,
                 $id_pregunta,
-                ($sino !== null && $sino !== '') ? (int)$sino : null,
+                $sino_val,
                 $cumpl ?: null,
                 $obs,
                 $txt
@@ -289,16 +292,19 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
      ══════════════════════════════════════════════ -->
 <?php foreach ($secciones as $sec):
 
-    // ─── CAMBIO PRINCIPAL: detectar si esta sección tiene preguntas Si/No o Cumplimiento ───
-    $tiene_sino = false;
+    // ─── Detectar qué tipos de columnas necesita esta sección ───
+    $tiene_sino      = false; // si_no o si_no_aplica o cumplimiento → muestra col SI
+    $tiene_aplica    = false; // si_no_aplica → muestra col APLICA
+    $tiene_cumpl     = false; // cumplimiento → muestra col B/R/M
     foreach ($sec['preguntas'] as $p) {
-        if (in_array($p['tipo'], ['si_no', 'cumplimiento'])) {
-            $tiene_sino = true;
-            break;
-        }
+        if (in_array($p['tipo'], ['si_no', 'si_no_aplica', 'cumplimiento'])) $tiene_sino   = true;
+        if ($p['tipo'] === 'si_no_aplica')                                    $tiene_aplica = true;
+        if ($p['tipo'] === 'cumplimiento')                                    $tiene_cumpl  = true;
     }
-    // Ancho de la columna "Criterio/Pregunta" según si hay columnas No/Sí
-    $ancho_preg = $tiene_sino ? '40%' : '55%';
+    // Número de columnas "radio" que ocupa esta sección
+    // si_no → 2 cols (No, Sí) | si_no_aplica → 3 cols (SI, NO, APLICA) | cumplimiento → 2 cols (No, Sí) + BRM en Respuesta
+    $num_radio_cols = $tiene_sino ? ($tiene_aplica ? 3 : 2) : 0;
+    $ancho_preg     = $tiene_sino ? '38%' : '55%';
 ?>
 <div class="card">
     <div class="card-head">
@@ -309,11 +315,17 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
             <thead>
                 <tr>
                     <th style="width:<?= $ancho_preg ?>;">Criterio / Pregunta</th>
-                    <?php if ($tiene_sino): ?>
-                    <th style="width:6%;text-align:center;">No</th>
-                    <th style="width:6%;text-align:center;">Sí</th>
+                    <?php if ($tiene_sino && !$tiene_aplica): ?>
+                        <th style="width:6%;text-align:center;">No</th>
+                        <th style="width:6%;text-align:center;">Sí</th>
+                    <?php elseif ($tiene_aplica): ?>
+                        <th style="width:6%;text-align:center;">SI</th>
+                        <th style="width:6%;text-align:center;">NO</th>
+                        <th style="width:6%;text-align:center;">APLICA</th>
                     <?php endif; ?>
-                    <th style="width:22%;text-align:center;">Respuesta / Cumplimiento</th>
+                    <?php if ($tiene_cumpl): ?>
+                        <th style="width:18%;text-align:center;">Cumplimiento</th>
+                    <?php endif; ?>
                     <th>Observaciones</th>
                 </tr>
             </thead>
@@ -334,14 +346,32 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                     <?= htmlspecialchars($preg['texto']) ?>
                 </td>
 
-                <?php if ($tipo === 'cumplimiento'): ?>
-                <!-- ── Cumplimiento: Sí/No + BRM + obs ── -->
+                <?php if ($tipo === 'si_no_aplica'): ?>
+                <!-- ── SI / NO / APLICA ── -->
+                <td class="sino-wrap">
+                    <input type="radio" name="sino_<?= $pid ?>" value="1">
+                </td>
                 <td class="sino-wrap">
                     <input type="radio" name="sino_<?= $pid ?>" value="0">
                 </td>
                 <td class="sino-wrap">
-                    <input type="radio" name="sino_<?= $pid ?>" value="1">
+                    <input type="radio" name="sino_<?= $pid ?>" value="2">
                 </td>
+                <?php if ($tiene_cumpl): ?><td></td><?php endif; ?>
+                <td>
+                    <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>" placeholder="Observación...">
+                </td>
+
+                <?php elseif ($tipo === 'cumplimiento'): ?>
+                <!-- ── Cumplimiento: No/Sí + BRM + obs ── -->
+                <td class="sino-wrap">
+                    <input type="radio" name="sino_<?= $pid ?>" value="0">
+                </td>
+                <?php if ($tiene_aplica): ?><td class="sino-wrap"><input type="radio" name="sino_<?= $pid ?>" value="1"></td><?php else: ?>
+                <td class="sino-wrap">
+                    <input type="radio" name="sino_<?= $pid ?>" value="1">
+                </td><?php endif; ?>
+                <?php if ($tiene_cumpl): ?>
                 <td>
                     <input type="hidden" name="cumpl_<?= $pid ?>" id="cv-<?= $pid ?>">
                     <div class="cumpl-group">
@@ -350,26 +380,29 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                         <button type="button" class="cumpl-btn" onclick="setCumpl(<?= $pid ?>,'M',this)">M</button>
                     </div>
                 </td>
+                <?php endif; ?>
                 <td>
                     <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>" placeholder="Observación...">
                 </td>
 
                 <?php elseif ($tipo === 'si_no'): ?>
-                <!-- ── Sí/No: solo radios, sin BRM ── -->
+                <!-- ── Solo Sí/No ── -->
                 <td class="sino-wrap">
                     <input type="radio" name="sino_<?= $pid ?>" value="0">
                 </td>
                 <td class="sino-wrap">
                     <input type="radio" name="sino_<?= $pid ?>" value="1">
                 </td>
-                <td></td>
+                <?php if ($tiene_aplica): ?><td></td><?php endif; ?>
+                <?php if ($tiene_cumpl): ?><td></td><?php endif; ?>
                 <td>
                     <input type="text" class="inp-tabla inp-obs" name="obs_<?= $pid ?>" placeholder="Observación...">
                 </td>
 
                 <?php elseif ($tipo === 'numero'): ?>
                 <!-- ── Número ── -->
-                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
+                <?php if ($num_radio_cols > 0): ?><td colspan="<?= $num_radio_cols ?>"></td><?php endif; ?>
+                <?php if ($tiene_cumpl): ?><td></td><?php endif; ?>
                 <td>
                     <input type="number" step="any" class="inp-tabla"
                            name="resp_<?= $pid ?>" placeholder="0">
@@ -380,7 +413,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 
                 <?php elseif ($tipo === 'coordenadas'): ?>
                 <!-- ── Coordenadas ── -->
-                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
+                <?php if ($num_radio_cols > 0): ?><td colspan="<?= $num_radio_cols ?>"></td><?php endif; ?>
+                <?php if ($tiene_cumpl): ?><td></td><?php endif; ?>
                 <td>
                     <div class="coord-badge"><i class="fa-solid fa-location-dot"></i> lat, lon</div>
                     <input type="text" class="inp-tabla"
@@ -394,7 +428,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 
                 <?php elseif ($tipo === 'opciones'): ?>
                 <!-- ── Opciones (checkboxes) ── -->
-                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
+                <?php if ($num_radio_cols > 0): ?><td colspan="<?= $num_radio_cols ?>"></td><?php endif; ?>
+                <?php if ($tiene_cumpl): ?><td></td><?php endif; ?>
                 <td colspan="2">
                     <?php if ($opts): ?>
                     <div class="opciones-checks">
@@ -414,9 +449,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                            placeholder="Observación..." style="margin-top:6px;">
                 </td>
 
-                <?php else: /* texto */ ?>
+                <?php else: /* texto libre */ ?>
                 <!-- ── Texto libre ── -->
-                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
+                <?php if ($num_radio_cols > 0): ?><td colspan="<?= $num_radio_cols ?>"></td><?php endif; ?>
+                <?php if ($tiene_cumpl): ?><td></td><?php endif; ?>
                 <td colspan="2">
                     <input type="text" class="inp-tabla"
                            name="resp_<?= $pid ?>" placeholder="Respuesta...">
