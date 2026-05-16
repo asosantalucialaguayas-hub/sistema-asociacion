@@ -35,9 +35,13 @@ if ($id_ficha) {
             $stP = $pdo->prepare("SELECT * FROM ficha_preguntas WHERE id_seccion=? ORDER BY orden");
             $stP->execute([$s['id_seccion']]);
             $pregs = $stP->fetchAll(PDO::FETCH_ASSOC);
-            // Normalizar tipo vacío/null → 'texto'
+            // Normalizar tipo vacío/null → 'texto' y corregir en BD automáticamente
+            $stFix = $pdo->prepare("UPDATE ficha_preguntas SET tipo='texto' WHERE id_pregunta=? AND (tipo IS NULL OR tipo='')");
             foreach ($pregs as &$p) {
-                if (empty($p['tipo'])) $p['tipo'] = 'texto';
+                if (empty($p['tipo'])) {
+                    $p['tipo'] = 'texto';
+                    $stFix->execute([$p['id_pregunta']]);
+                }
             }
             unset($p);
             $s['preguntas'] = $pregs;
@@ -691,8 +695,9 @@ function capturarFirmas(){
     document.getElementById('firmaInspectorData').value=document.getElementById('canvasInspector').toDataURL();
     document.getElementById('firmaProductorData').value=document.getElementById('canvasProductor').toDataURL();
 }
-initCanvas('Inspector');
-initCanvas('Productor');
+// Solo inicializar canvas si existen en el DOM
+if (document.getElementById('canvasInspector')) initCanvas('Inspector');
+if (document.getElementById('canvasProductor')) initCanvas('Productor');
 </script>
 </body>
 </html>
