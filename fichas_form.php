@@ -15,8 +15,8 @@ if (!$puede_agregar && !$puede_modificar) {
     die('<div style="text-align:center;margin-top:80px;font-family:sans-serif;"><h2>⛔ Acceso denegado</h2><a href="fichas_lista.php">← Volver</a></div>');
 }
 
-$id_ficha = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$ficha    = null;
+$id_ficha  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$ficha     = null;
 $secciones = [];
 
 if ($id_ficha) {
@@ -36,7 +36,6 @@ if ($id_ficha) {
     }
 }
 
-// GUARDAR
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre      = trim($_POST['nombre'] ?? '');
     $descripcion = trim($_POST['descripcion'] ?? '');
@@ -59,12 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id_ficha = $pdo->lastInsertId();
         }
 
-        $secs          = $_POST['sec_titulo']    ?? [];
-        $preg_sec      = $_POST['preg_sec']      ?? [];
-        $preg_txt      = $_POST['preg_texto']    ?? [];
-        $preg_tip      = $_POST['preg_tipo']     ?? [];
-        // opciones personalizadas: array de strings JSON, one per pregunta index
-        $preg_opts     = $_POST['preg_opciones'] ?? [];
+        $secs      = $_POST['sec_titulo']    ?? [];
+        $preg_sec  = $_POST['preg_sec']      ?? [];
+        $preg_txt  = $_POST['preg_texto']    ?? [];
+        $preg_tip  = $_POST['preg_tipo']     ?? [];
+        $preg_opts = $_POST['preg_opciones'] ?? [];
 
         $orden_s = 1;
         foreach ($secs as $idx => $titulo) {
@@ -78,10 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($preg_sec as $pi => $si) {
                 if ((int)$si !== (int)$idx) continue;
                 $texto = trim($preg_txt[$pi] ?? '');
-                $tipo  = $preg_tip[$pi] ?? 'cumplimiento';
+                $tipo  = $preg_tip[$pi] ?? 'si_no_aplica';
                 if (!$texto) continue;
-                // guardar opciones como JSON en campo opciones_json (nuevo campo)
-                $opciones_raw = $preg_opts[$pi] ?? '';
+                $opciones_raw  = $preg_opts[$pi] ?? '';
                 $opciones_json = null;
                 if ($tipo === 'opciones' && $opciones_raw) {
                     $opts = array_filter(array_map('trim', explode('|', $opciones_raw)));
@@ -105,6 +102,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
+
+function renderPreview(string $tipo): string {
+    $map = [
+        'si_no_aplica' => '<span class="prev-tag prev-si">SI</span><span class="prev-tag prev-no">NO</span><span class="prev-tag prev-aplica">APLICA</span><span class="prev-tag prev-obs">Observaciones</span>',
+        'cumplimiento' => '<span class="prev-tag prev-b">B</span><span class="prev-tag prev-r">R</span><span class="prev-tag prev-m">M</span><span class="prev-tag prev-obs">Observaciones</span>',
+        'si_no'        => '<span class="prev-tag prev-si">SI</span><span class="prev-tag prev-no">NO</span><span class="prev-tag prev-obs">Observaciones</span>',
+        'texto'        => '<span class="prev-tag prev-obs">✏️ Texto libre</span>',
+        'numero'       => '<span class="prev-tag prev-obs">🔢 Número</span>',
+        'coordenadas'  => '<span class="prev-tag prev-obs">📍 Lat, Lon</span>',
+        'opciones'     => '<span class="prev-tag" style="background:#fce7f3;color:#db2777;">☑️ Opciones personalizables</span>',
+    ];
+    return '<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span>' . ($map[$tipo] ?? '');
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -129,47 +139,39 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 .card-body{padding:18px 20px;}
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .fg label{font-size:.8rem;font-weight:700;color:var(--azul);}
-.fg input,.fg select,.fg textarea{border:1.5px solid var(--borde);border-radius:8px;padding:9px 12px;font-size:.875rem;font-family:inherit;outline:none;transition:.2s;width:100%;}
+.fg input,.fg select,.fg textarea{border:1.5px solid var(--borde);border-radius:8px;padding:9px 12px;font-size:.875rem;font-family:inherit;outline:none;transition:.2s;width:100%;box-sizing:border-box;}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--azul2);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
-.seccion-bloque{background:#f8fafc;border:1.5px solid var(--borde);border-radius:12px;padding:16px;margin-bottom:14px;position:relative;}
+.seccion-bloque{background:#f8fafc;border:1.5px solid var(--borde);border-radius:12px;padding:16px;margin-bottom:14px;}
 .seccion-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .seccion-num{width:28px;height:28px;background:var(--azul);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;}
-
-/* Pregunta row: texto | tipo | borrar */
-.pregunta-row{background:#fff;border:1.5px solid var(--borde);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
-.pregunta-top{display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center;}
-.pregunta-top input[type=text]{border:1.5px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:.85rem;width:100%;}
+.pregunta-card{background:#fff;border:1.5px solid var(--borde);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.pregunta-top{display:grid;grid-template-columns:1fr 220px auto;gap:8px;align-items:center;}
+.pregunta-top input[type=text]{border:1.5px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:.85rem;width:100%;box-sizing:border-box;}
 .pregunta-top select{border:1.5px solid var(--borde);border-radius:8px;padding:7px 8px;font-size:.82rem;}
-
-/* Panel de opciones personalizadas */
-.opciones-panel{margin-top:10px;padding:10px 12px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:none;}
+.tipo-preview{margin-top:8px;padding:7px 10px;background:#f8fafc;border-radius:8px;font-size:.75rem;color:#64748b;display:flex;align-items:center;gap:6px;flex-wrap:wrap;border:1px dashed #e2e8f0;}
+.prev-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-weight:700;font-size:.72rem;}
+.prev-si{background:#dcfce7;color:#166534;}
+.prev-no{background:#fee2e2;color:#991b1b;}
+.prev-aplica{background:#e0f2fe;color:#0369a1;}
+.prev-b{background:#dcfce7;color:#166534;}
+.prev-r{background:#fef3c7;color:#92400e;}
+.prev-m{background:#fee2e2;color:#991b1b;}
+.prev-obs{background:#f1f5f9;color:#374151;}
+.opciones-panel{margin-top:8px;padding:10px 12px;background:#eff6ff;border:1.5px dashed #93c5fd;border-radius:8px;display:none;}
 .opciones-panel.visible{display:block;}
-.opciones-panel label{font-size:.75rem;font-weight:700;color:#1e40af;display:block;margin-bottom:6px;}
 .opciones-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .opcion-chip{display:inline-flex;align-items:center;gap:5px;background:#dbeafe;color:#1e40af;border-radius:20px;padding:4px 10px;font-size:.78rem;font-weight:600;}
-.opcion-chip button{background:none;border:none;cursor:pointer;color:#3b82f6;padding:0;line-height:1;font-size:.75rem;}
+.opcion-chip button{background:none;border:none;cursor:pointer;color:#3b82f6;padding:0;line-height:1;}
 .opcion-chip button:hover{color:#dc2626;}
 .add-opcion-row{display:flex;gap:6px;}
 .add-opcion-row input{flex:1;border:1.5px solid #93c5fd;border-radius:8px;padding:6px 10px;font-size:.82rem;}
-.add-opcion-row button{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;white-space:nowrap;}
-.add-opcion-row button:hover{background:#1d4ed8;}
-
-/* Tipo badges en el select coloreados */
-.tipo-select option[value="cumplimiento"]{color:#7c3aed;}
-.tipo-select option[value="si_no"]{color:#0891b2;}
-.tipo-select option[value="texto"]{color:#374151;}
-.tipo-select option[value="numero"]{color:#059669;}
-.tipo-select option[value="coordenadas"]{color:#ea580c;}
-.tipo-select option[value="opciones"]{color:#db2777;}
-
-.btn-add{border:2px dashed #cbd5e1;background:transparent;color:#64748b;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:6px;justify-content:center;width:100%;transition:.2s;margin-top:6px;}
+.add-opcion-row button{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:.8rem;cursor:pointer;}
+.btn-add{border:2px dashed #cbd5e1;background:transparent;color:#64748b;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:6px;justify-content:center;width:100%;transition:.2s;margin-top:6px;box-sizing:border-box;}
 .btn-add:hover{border-color:var(--azul2);color:var(--azul2);background:#eff6ff;}
-.btn-rm{background:none;border:none;color:#ef4444;cursor:pointer;padding:4px 7px;border-radius:6px;font-size:.85rem;}
+.btn-rm{background:none;border:none;color:#ef4444;cursor:pointer;padding:4px 8px;border-radius:6px;font-size:.9rem;}
 .btn-rm:hover{background:#fee2e2;}
-
-/* Hint coordenadas */
-.coord-hint{margin-top:8px;padding:7px 10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:7px;font-size:.75rem;color:#92400e;display:none;}
-.coord-hint.visible{display:block;}
+.leyenda{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding:10px 14px;background:#f1f5f9;border-radius:9px;align-items:center;}
+.ley-item{padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;}
 </style>
 </head>
 <body>
@@ -198,7 +200,6 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 
 <form method="POST" id="frmFicha">
 
-<!-- Datos generales -->
 <div class="card">
     <div class="card-head"><h3><i class="fa-solid fa-circle-info"></i> Datos Generales</h3></div>
     <div class="card-body">
@@ -209,7 +210,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
         </div>
         <div class="fg">
             <label>Descripción</label>
-            <textarea name="descripcion" rows="2" placeholder="Descripción breve de la ficha..."><?= htmlspecialchars($ficha['descripcion'] ?? '') ?></textarea>
+            <textarea name="descripcion" rows="2" placeholder="Descripción breve..."><?= htmlspecialchars($ficha['descripcion'] ?? '') ?></textarea>
         </div>
         <label style="display:flex;align-items:center;gap:8px;font-size:.875rem;font-weight:600;color:var(--azul);cursor:pointer;">
             <input type="checkbox" name="activa" <?= (!$ficha || $ficha['activa']) ? 'checked' : '' ?>>
@@ -218,25 +219,25 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
     </div>
 </div>
 
-<!-- Secciones y preguntas -->
 <div class="card">
     <div class="card-head">
         <h3><i class="fa-solid fa-layer-group"></i> Secciones y Preguntas</h3>
-        <button type="button" class="btn-sec" onclick="agregarSeccion()" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);">
-            <i class="fa-solid fa-plus"></i> Sección
+        <button type="button" class="btn-sec" onclick="agregarSeccion()"
+                style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);">
+            <i class="fa-solid fa-plus"></i> Añadir Sección
         </button>
     </div>
     <div class="card-body">
 
-        <!-- Leyenda de tipos -->
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;padding:10px 14px;background:#f1f5f9;border-radius:9px;align-items:center;">
+        <div class="leyenda">
             <span style="font-size:.72rem;font-weight:700;color:#64748b;margin-right:4px;">TIPOS:</span>
-            <span style="background:#ede9fe;color:#7c3aed;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">B/R/M — Bueno/Regular/Malo</span>
-            <span style="background:#e0f2fe;color:#0891b2;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Sí/No</span>
-            <span style="background:#f1f5f9;color:#374151;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Texto libre</span>
-            <span style="background:#dcfce7;color:#059669;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Número</span>
-            <span style="background:#ffedd5;color:#ea580c;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Coordenadas (lat/lon)</span>
-            <span style="background:#fce7f3;color:#db2777;padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:700;">Opciones personalizadas ✨</span>
+            <span class="ley-item" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;">✅ SI / NO / APLICA</span>
+            <span class="ley-item" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;">⚖️ B / R / M</span>
+            <span class="ley-item" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;">☑️ Solo Sí / No</span>
+            <span class="ley-item" style="background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;">✏️ Texto libre</span>
+            <span class="ley-item" style="background:#dcfce7;color:#059669;border:1px solid #a7f3d0;">🔢 Número</span>
+            <span class="ley-item" style="background:#ffedd5;color:#ea580c;border:1px solid #fed7aa;">📍 Coordenadas</span>
+            <span class="ley-item" style="background:#fce7f3;color:#db2777;border:1px solid #fbcfe8;">☑️ Opciones personalizadas</span>
         </div>
 
         <div id="contenedorSecciones">
@@ -249,58 +250,62 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                            placeholder="Título de la sección"
                            oninput="document.getElementById('sec_titulo_<?= $si ?>').value=this.value"
                            style="flex:1;border:1.5px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:.875rem;font-weight:700;color:var(--azul);">
-                    <button type="button" class="btn-rm" onclick="eliminarSeccion(<?= $si ?>)" title="Eliminar sección">
+                    <button type="button" class="btn-rm" onclick="eliminarSeccion(<?= $si ?>)">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
                 <div id="preguntas-<?= $si ?>">
                     <?php foreach ($sec['preguntas'] as $pi => $preg):
+                        $uid = $si.'_'.$pi;
                         $opts_stored = '';
                         if ($preg['tipo'] === 'opciones' && !empty($preg['opciones_json'])) {
                             $arr = json_decode($preg['opciones_json'], true) ?? [];
                             $opts_stored = implode('|', $arr);
                         }
-                        $uid = $si.'_'.$pi;
                     ?>
-                    <div class="pregunta-row" id="pr-<?= $uid ?>">
+                    <div class="pregunta-card" id="pr-<?= $uid ?>">
                         <input type="hidden" name="preg_sec[]" value="<?= $si ?>">
                         <input type="hidden" name="preg_opciones[]" id="popts_<?= $uid ?>" value="<?= htmlspecialchars($opts_stored) ?>">
                         <div class="pregunta-top">
-                            <input type="text" name="preg_texto[]" value="<?= htmlspecialchars($preg['texto']) ?>"
+                            <input type="text" name="preg_texto[]"
+                                   value="<?= htmlspecialchars($preg['texto']) ?>"
                                    placeholder="Texto de la pregunta...">
-                            <select name="preg_tipo[]" class="tipo-select" onchange="onTipoChange(this,'<?= $uid ?>')">
-                                <option value="cumplimiento" <?= $preg['tipo']==='cumplimiento'?'selected':'' ?>>B/R/M</option>
-                                <option value="si_no"        <?= $preg['tipo']==='si_no'?'selected':'' ?>>Sí/No</option>
-                                <option value="texto"        <?= $preg['tipo']==='texto'?'selected':'' ?>>Texto</option>
-                                <option value="numero"       <?= $preg['tipo']==='numero'?'selected':'' ?>>Número</option>
-                                <option value="coordenadas"  <?= $preg['tipo']==='coordenadas'?'selected':'' ?>>Coordenadas</option>
-                                <option value="opciones"     <?= $preg['tipo']==='opciones'?'selected':'' ?>>Opciones ✨</option>
+                            <select name="preg_tipo[]" onchange="onTipoChange(this,'<?= $uid ?>')">
+                                <option value="si_no_aplica" <?= $preg['tipo']==='si_no_aplica'?'selected':'' ?>>✅ SI / NO / APLICA</option>
+                                <option value="cumplimiento" <?= $preg['tipo']==='cumplimiento'?'selected':'' ?>>⚖️ B / R / M</option>
+                                <option value="si_no"        <?= $preg['tipo']==='si_no'?'selected':'' ?>>☑️ Solo Sí / No</option>
+                                <option value="texto"        <?= $preg['tipo']==='texto'?'selected':'' ?>>✏️ Texto libre</option>
+                                <option value="numero"       <?= $preg['tipo']==='numero'?'selected':'' ?>>🔢 Número</option>
+                                <option value="coordenadas"  <?= $preg['tipo']==='coordenadas'?'selected':'' ?>>📍 Coordenadas</option>
+                                <option value="opciones"     <?= $preg['tipo']==='opciones'?'selected':'' ?>>☑️ Opciones personalizadas</option>
                             </select>
-                            <button type="button" class="btn-rm" onclick="this.closest('.pregunta-row').remove()">
+                            <button type="button" class="btn-rm" onclick="this.closest('.pregunta-card').remove()">
                                 <i class="fa-solid fa-xmark"></i>
                             </button>
                         </div>
-                        <!-- Panel opciones personalizadas -->
+                        <div class="tipo-preview" id="prev_<?= $uid ?>">
+                            <?= renderPreview($preg['tipo']) ?>
+                        </div>
                         <div class="opciones-panel <?= $preg['tipo']==='opciones'?'visible':'' ?>" id="opanel_<?= $uid ?>">
-                            <label><i class="fa-solid fa-list-check"></i> Opciones disponibles para marcar:</label>
+                            <label style="font-size:.75rem;font-weight:700;color:#1e40af;display:block;margin-bottom:6px;">
+                                <i class="fa-solid fa-list-check"></i> Define las opciones:
+                            </label>
                             <div class="opciones-list" id="olist_<?= $uid ?>">
-                                <?php if ($preg['tipo']==='opciones' && !empty($preg['opciones_json'])):
+                                <?php if (!empty($preg['opciones_json'])):
                                     foreach (json_decode($preg['opciones_json'], true) ?? [] as $opt): ?>
                                 <span class="opcion-chip">
                                     <?= htmlspecialchars($opt) ?>
-                                    <button type="button" onclick="removeChip(this,'<?= $uid ?>')" title="Quitar">×</button>
+                                    <button type="button" onclick="removeChip(this,'<?= $uid ?>')">×</button>
                                 </span>
                                 <?php endforeach; endif; ?>
                             </div>
                             <div class="add-opcion-row">
-                                <input type="text" id="onew_<?= $uid ?>" placeholder="Ej: Pozo, Albarrada, Río..."
+                                <input type="text" id="onew_<?= $uid ?>" placeholder="Ej: Pozo, Albarrada..."
                                        onkeydown="if(event.key==='Enter'){event.preventDefault();addChip('<?= $uid ?>');}">
-                                <button type="button" onclick="addChip('<?= $uid ?>')"><i class="fa-solid fa-plus"></i> Añadir</button>
+                                <button type="button" onclick="addChip('<?= $uid ?>')">
+                                    <i class="fa-solid fa-plus"></i> Añadir
+                                </button>
                             </div>
-                        </div>
-                        <!-- Hint coordenadas -->
-                        <div class="coord-hint <?= $preg['tipo']==='coordenadas'?'visible':'' ?>" id="chint_<?= $uid ?>">
-                            <i class="fa-solid fa-location-dot"></i> Acepta formato: <strong>-2.1234, -79.5678</strong> (con signo negativo y punto decimal)
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -311,39 +316,46 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
             </div>
             <?php endforeach; ?>
             <?php if (empty($secciones)): ?>
-            <div id="msgVacio" style="text-align:center;padding:30px;color:#94a3b8;">
-                <i class="fa-solid fa-layer-group" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-                <p>Aún no hay secciones. Agrega una para comenzar.</p>
+            <div id="msgVacio" style="text-align:center;padding:40px;color:#94a3b8;">
+                <i class="fa-solid fa-layer-group" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:.4;"></i>
+                <p style="margin:0;">Aún no hay secciones. Pulsa <strong>Añadir Sección</strong> para comenzar.</p>
             </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
 
-<div style="display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
     <a href="fichas_lista.php" class="btn-sec"><i class="fa-solid fa-arrow-left"></i> Volver</a>
     <button type="submit" class="btn-prim"><i class="fa-solid fa-floppy-disk"></i> Guardar Ficha</button>
 </div>
-
 </form>
 </section>
 </main>
 </div>
 
 <script>
-let cntSec = <?= count($secciones) ?>;
+let cntSec  = <?= count($secciones) ?>;
 let cntPreg = 1000;
 
-/* ── Cambio de tipo ── */
+const PREVIEWS = {
+    si_no_aplica: `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag prev-si">SI</span><span class="prev-tag prev-no">NO</span><span class="prev-tag prev-aplica">APLICA</span><span class="prev-tag prev-obs">Observaciones</span>`,
+    cumplimiento: `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag prev-b">B</span><span class="prev-tag prev-r">R</span><span class="prev-tag prev-m">M</span><span class="prev-tag prev-obs">Observaciones</span>`,
+    si_no:        `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag prev-si">SI</span><span class="prev-tag prev-no">NO</span><span class="prev-tag prev-obs">Observaciones</span>`,
+    texto:        `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag prev-obs">✏️ Texto libre</span>`,
+    numero:       `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag prev-obs">🔢 Número</span>`,
+    coordenadas:  `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag prev-obs">📍 Lat, Lon (acepta negativos)</span>`,
+    opciones:     `<span style="font-size:.7rem;color:#94a3b8;margin-right:4px;">Vista previa:</span><span class="prev-tag" style="background:#fce7f3;color:#db2777;">☑️ Opciones personalizables</span>`,
+};
+
 function onTipoChange(sel, uid) {
     const tipo = sel.value;
-    const panel = document.getElementById('opanel_' + uid);
-    const hint  = document.getElementById('chint_' + uid);
-    panel?.classList.toggle('visible', tipo === 'opciones');
-    hint?.classList.toggle('visible', tipo === 'coordenadas');
+    const prev = document.getElementById('prev_' + uid);
+    const pan  = document.getElementById('opanel_' + uid);
+    if (prev) prev.innerHTML = PREVIEWS[tipo] || '';
+    if (pan)  pan.classList.toggle('visible', tipo === 'opciones');
 }
 
-/* ── Chips de opciones ── */
 function addChip(uid) {
     const inp = document.getElementById('onew_' + uid);
     const val = inp.value.trim();
@@ -351,36 +363,22 @@ function addChip(uid) {
     const list = document.getElementById('olist_' + uid);
     const chip = document.createElement('span');
     chip.className = 'opcion-chip';
-    chip.innerHTML = `${escHtml(val)} <button type="button" onclick="removeChip(this,'${uid}')" title="Quitar">×</button>`;
+    chip.innerHTML = `${esc(val)} <button type="button" onclick="removeChip(this,'${uid}')">×</button>`;
     list.appendChild(chip);
-    inp.value = '';
-    syncOpciones(uid);
-    inp.focus();
+    inp.value = ''; syncOpts(uid); inp.focus();
 }
-
-function removeChip(btn, uid) {
-    btn.closest('.opcion-chip').remove();
-    syncOpciones(uid);
+function removeChip(btn, uid) { btn.closest('.opcion-chip').remove(); syncOpts(uid); }
+function syncOpts(uid) {
+    const vals = [...document.getElementById('olist_'+uid).querySelectorAll('.opcion-chip')]
+                 .map(c => c.childNodes[0].textContent.trim());
+    document.getElementById('popts_'+uid).value = vals.join('|');
 }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function syncOpciones(uid) {
-    const list  = document.getElementById('olist_' + uid);
-    const hidde = document.getElementById('popts_' + uid);
-    const chips = list.querySelectorAll('.opcion-chip');
-    const vals  = [...chips].map(c => c.childNodes[0].textContent.trim());
-    hidde.value = vals.join('|');
-}
-
-function escHtml(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-/* ── Secciones ── */
 function agregarSeccion() {
     const idx = cntSec++;
     const div = document.createElement('div');
-    div.className = 'seccion-bloque';
-    div.id = 'sec-' + idx;
+    div.className = 'seccion-bloque'; div.id = 'sec-'+idx;
     div.innerHTML = `
         <input type="hidden" name="sec_titulo[]" id="sec_titulo_${idx}" value="">
         <div class="seccion-header">
@@ -395,58 +393,53 @@ function agregarSeccion() {
         <div id="preguntas-${idx}"></div>
         <button type="button" class="btn-add" onclick="agregarPregunta(${idx})">
             <i class="fa-solid fa-plus"></i> Agregar pregunta
-        </button>
-    `;
-    const cont = document.getElementById('contenedorSecciones');
+        </button>`;
     document.getElementById('msgVacio')?.remove();
-    cont.appendChild(div);
+    document.getElementById('contenedorSecciones').appendChild(div);
 }
-
 function eliminarSeccion(idx) {
-    if (!confirm('¿Eliminar esta sección y todas sus preguntas?')) return;
+    if (!confirm('¿Eliminar esta sección y sus preguntas?')) return;
     document.getElementById('sec-'+idx)?.remove();
 }
 
-/* ── Preguntas ── */
 function agregarPregunta(secIdx) {
     const pi  = cntPreg++;
     const uid = secIdx + '_' + pi;
     const row = document.createElement('div');
-    row.className = 'pregunta-row';
-    row.id = 'pr-' + uid;
+    row.className = 'pregunta-card'; row.id = 'pr-'+uid;
     row.innerHTML = `
         <input type="hidden" name="preg_sec[]" value="${secIdx}">
         <input type="hidden" name="preg_opciones[]" id="popts_${uid}" value="">
         <div class="pregunta-top">
             <input type="text" name="preg_texto[]" placeholder="Texto de la pregunta...">
-            <select name="preg_tipo[]" class="tipo-select" onchange="onTipoChange(this,'${uid}')">
-                <option value="cumplimiento">B/R/M</option>
-                <option value="si_no">Sí/No</option>
-                <option value="texto">Texto</option>
-                <option value="numero">Número</option>
-                <option value="coordenadas">Coordenadas</option>
-                <option value="opciones">Opciones ✨</option>
+            <select name="preg_tipo[]" onchange="onTipoChange(this,'${uid}')">
+                <option value="si_no_aplica">✅ SI / NO / APLICA</option>
+                <option value="cumplimiento">⚖️ B / R / M</option>
+                <option value="si_no">☑️ Solo Sí / No</option>
+                <option value="texto">✏️ Texto libre</option>
+                <option value="numero">🔢 Número</option>
+                <option value="coordenadas">📍 Coordenadas</option>
+                <option value="opciones">☑️ Opciones personalizadas</option>
             </select>
-            <button type="button" class="btn-rm" onclick="this.closest('.pregunta-row').remove()">
+            <button type="button" class="btn-rm" onclick="this.closest('.pregunta-card').remove()">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-        <!-- Panel opciones personalizadas -->
+        <div class="tipo-preview" id="prev_${uid}">${PREVIEWS['si_no_aplica']}</div>
         <div class="opciones-panel" id="opanel_${uid}">
-            <label><i class="fa-solid fa-list-check"></i> Opciones disponibles para marcar:</label>
+            <label style="font-size:.75rem;font-weight:700;color:#1e40af;display:block;margin-bottom:6px;">
+                <i class="fa-solid fa-list-check"></i> Define las opciones:
+            </label>
             <div class="opciones-list" id="olist_${uid}"></div>
             <div class="add-opcion-row">
-                <input type="text" id="onew_${uid}" placeholder="Ej: Pozo, Albarrada, Río..."
+                <input type="text" id="onew_${uid}" placeholder="Ej: Pozo, Albarrada..."
                        onkeydown="if(event.key==='Enter'){event.preventDefault();addChip('${uid}');}">
-                <button type="button" onclick="addChip('${uid}')"><i class="fa-solid fa-plus"></i> Añadir</button>
+                <button type="button" onclick="addChip('${uid}')">
+                    <i class="fa-solid fa-plus"></i> Añadir
+                </button>
             </div>
-        </div>
-        <!-- Hint coordenadas -->
-        <div class="coord-hint" id="chint_${uid}">
-            <i class="fa-solid fa-location-dot"></i> Acepta formato: <strong>-2.1234, -79.5678</strong> (con signo negativo y punto decimal)
-        </div>
-    `;
-    document.getElementById('preguntas-' + secIdx).appendChild(row);
+        </div>`;
+    document.getElementById('preguntas-'+secIdx).appendChild(row);
 }
 </script>
 </body>
