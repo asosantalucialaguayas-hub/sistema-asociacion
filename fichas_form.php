@@ -268,14 +268,15 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                             $arr = json_decode($preg['opciones_json'], true) ?? [];
                             $opts_stored = implode('|', $arr);
                         }
+                        // Índice único global para evitar colisiones entre secciones
+                        $gidx = $si * 10000 + $pi;
                     ?>
                     <div class="pregunta-card" id="pr-<?= $uid ?>">
-                        <input type="hidden" name="preg_sec[]"      value="<?= $si ?>">
-                        <input type="hidden" name="preg_opciones[]" id="popts_<?= $uid ?>" value="<?= htmlspecialchars($opts_stored) ?>">
-                        <!-- ── CAMPO HIDDEN PARA TIPO (siempre sincronizado con el select) ── -->
-                        <input type="hidden" name="preg_tipo_val[]" id="ptipo_<?= $uid ?>" value="<?= htmlspecialchars($tipo_actual) ?>">
+                        <input type="hidden" name="preg_sec[<?= $gidx ?>]"      value="<?= $si ?>">
+                        <input type="hidden" name="preg_opciones[<?= $gidx ?>]" id="popts_<?= $uid ?>" value="<?= htmlspecialchars($opts_stored) ?>">
+                        <input type="hidden" name="preg_tipo_val[<?= $gidx ?>]" id="ptipo_<?= $uid ?>" value="<?= htmlspecialchars($tipo_actual) ?>">
                         <div class="pregunta-top">
-                            <input type="text" name="preg_texto[]"
+                            <input type="text" name="preg_texto[<?= $gidx ?>]"
                                    value="<?= htmlspecialchars($preg['texto']) ?>"
                                    placeholder="Texto de la pregunta...">
                             <select onchange="onTipoChange(this,'<?= $uid ?>')">
@@ -418,15 +419,16 @@ function eliminarSeccion(idx) {
 function agregarPregunta(secIdx) {
     const pi  = cntPreg++;
     const uid = secIdx + '_' + pi;
+    // Índice único: mismo esquema que PHP (sec*10000 + pi), pero pi es > 1000 siempre
+    const gidx = pi; // cntPreg empieza en 1000, único globalmente
     const row = document.createElement('div');
     row.className = 'pregunta-card'; row.id = 'pr-'+uid;
     row.innerHTML = `
-        <input type="hidden" name="preg_sec[]"      value="${secIdx}">
-        <input type="hidden" name="preg_opciones[]" id="popts_${uid}" value="">
-        <!-- hidden tipo sincronizado con el select -->
-        <input type="hidden" name="preg_tipo_val[]" id="ptipo_${uid}" value="si_no_aplica">
+        <input type="hidden" name="preg_sec[${gidx}]"      value="${secIdx}">
+        <input type="hidden" name="preg_opciones[${gidx}]" id="popts_${uid}" value="">
+        <input type="hidden" name="preg_tipo_val[${gidx}]" id="ptipo_${uid}" value="si_no_aplica">
         <div class="pregunta-top">
-            <input type="text" name="preg_texto[]" placeholder="Texto de la pregunta...">
+            <input type="text" name="preg_texto[${gidx}]" placeholder="Texto de la pregunta...">
             <select onchange="onTipoChange(this,'${uid}')">
                 <option value="si_no_aplica" selected>✅ SI / NO / APLICA</option>
                 <option value="cumplimiento">⚖️ B / R / M</option>
