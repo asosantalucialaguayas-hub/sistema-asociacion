@@ -254,7 +254,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 <input type="hidden" name="firma_inspector" id="firmaInspectorData">
 <input type="hidden" name="firma_productor" id="firmaProductorData">
 
-<!-- Datos de ubicación (campos fijos de cabecera) -->
+<!-- Datos de ubicación -->
 <div class="card">
     <div class="card-head"><h3><i class="fa-solid fa-location-dot"></i> Datos de Ubicación</h3></div>
     <div class="card-body">
@@ -287,7 +287,19 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 <!-- ══════════════════════════════════════════════
      SECCIONES Y PREGUNTAS DINÁMICAS DE LA FICHA
      ══════════════════════════════════════════════ -->
-<?php foreach ($secciones as $sec): ?>
+<?php foreach ($secciones as $sec):
+
+    // ─── CAMBIO PRINCIPAL: detectar si esta sección tiene preguntas Si/No o Cumplimiento ───
+    $tiene_sino = false;
+    foreach ($sec['preguntas'] as $p) {
+        if (in_array($p['tipo'], ['si_no', 'cumplimiento'])) {
+            $tiene_sino = true;
+            break;
+        }
+    }
+    // Ancho de la columna "Criterio/Pregunta" según si hay columnas No/Sí
+    $ancho_preg = $tiene_sino ? '40%' : '55%';
+?>
 <div class="card">
     <div class="card-head">
         <h3><i class="fa-solid fa-list-check"></i> <?= htmlspecialchars($sec['titulo']) ?></h3>
@@ -296,9 +308,11 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
         <table class="preg-table">
             <thead>
                 <tr>
-                    <th style="width:40%;">Criterio / Pregunta</th>
+                    <th style="width:<?= $ancho_preg ?>;">Criterio / Pregunta</th>
+                    <?php if ($tiene_sino): ?>
                     <th style="width:6%;text-align:center;">No</th>
                     <th style="width:6%;text-align:center;">Sí</th>
+                    <?php endif; ?>
                     <th style="width:22%;text-align:center;">Respuesta / Cumplimiento</th>
                     <th>Observaciones</th>
                 </tr>
@@ -307,7 +321,6 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
             <?php foreach ($sec['preguntas'] as $preg):
                 $pid  = $preg['id_pregunta'];
                 $tipo = $preg['tipo'];
-                // Decodificar opciones JSON si aplica
                 $opts = [];
                 if ($tipo === 'opciones' && !empty($preg['opciones_json'])) {
                     $opts = json_decode($preg['opciones_json'], true) ?? [];
@@ -322,7 +335,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                 </td>
 
                 <?php if ($tipo === 'cumplimiento'): ?>
-                <!-- ── B/R/M: tiene No | Sí | botones BRM | obs ── -->
+                <!-- ── Cumplimiento: Sí/No + BRM + obs ── -->
                 <td class="sino-wrap">
                     <input type="radio" name="sino_<?= $pid ?>" value="0">
                 </td>
@@ -355,8 +368,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                 </td>
 
                 <?php elseif ($tipo === 'numero'): ?>
-                <!-- ── Número: campo numérico, span todas las cols de respuesta ── -->
-                <td colspan="2"></td>
+                <!-- ── Número ── -->
+                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
                 <td>
                     <input type="number" step="any" class="inp-tabla"
                            name="resp_<?= $pid ?>" placeholder="0">
@@ -366,8 +379,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                 </td>
 
                 <?php elseif ($tipo === 'coordenadas'): ?>
-                <!-- ── Coordenadas: acepta negativos y decimales ── -->
-                <td colspan="2"></td>
+                <!-- ── Coordenadas ── -->
+                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
                 <td>
                     <div class="coord-badge"><i class="fa-solid fa-location-dot"></i> lat, lon</div>
                     <input type="text" class="inp-tabla"
@@ -380,8 +393,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
                 </td>
 
                 <?php elseif ($tipo === 'opciones'): ?>
-                <!-- ── Opciones personalizadas: checkboxes ── -->
-                <td colspan="2"></td>
+                <!-- ── Opciones (checkboxes) ── -->
+                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
                 <td colspan="2">
                     <?php if ($opts): ?>
                     <div class="opciones-checks">
@@ -403,11 +416,12 @@ body{font-family:'Segoe UI',sans-serif;background:var(--gris);}
 
                 <?php else: /* texto */ ?>
                 <!-- ── Texto libre ── -->
-                <td colspan="2"></td>
+                <?php if ($tiene_sino): ?><td colspan="2"></td><?php endif; ?>
                 <td colspan="2">
                     <input type="text" class="inp-tabla"
                            name="resp_<?= $pid ?>" placeholder="Respuesta...">
                 </td>
+
                 <?php endif; ?>
             </tr>
             <?php endforeach; ?>
@@ -503,11 +517,6 @@ function setCumpl(pid, val, btn) {
     });
     btn.classList.add('sel-' + val);
 }
-
-/* ── Opciones personalizadas → serializar checkboxes a campo texto ── */
-// Al guardar, los checkboxes con name="resp_XX[]" se envían automáticamente como array.
-// En el PHP de guardado concatenamos con coma para almacenar en respuesta_texto.
-// Ajuste en el backend: detectar array y hacer implode(',', ...).
 
 /* ── Canvas de firma ── */
 function initCanvas(id) {
