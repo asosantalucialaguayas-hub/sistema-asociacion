@@ -142,14 +142,31 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='subir_acta'
     header("Location: asistencia.php?conv_id=$cid_p"); exit;
 }
 
+// ── DESBLOQUEAR ACTA (solo admin) ─────────────────────────────
+if ($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['accion']??'')==='desbloquear_acta'
+        && ($id_usuario === 1 || in_array(strtolower($rol), ['admin','superadmin']))) {
+    $cid_p = intval($_POST['conv_id'] ?? 0);
+    $horas = max(1, min(48, intval($_POST['horas_extra'] ?? 24)));
+    $nueva_fecha = date('Y-m-d H:i:s', time() - (48 * 3600) + ($horas * 3600));
+    try {
+        $pdo->prepare("UPDATE convocatorias SET acta_bloqueada=0, fecha_cierre_real=? WHERE id=?")
+                ->execute([$nueva_fecha, $cid_p]);
+        $_SESSION['flash'] = ['tipo'=>'success','msg'=>"✅ Acta desbloqueada por {$horas}h."];
+    } catch(Exception $e) {
+        $_SESSION['flash'] = ['tipo'=>'error','msg'=>$e->getMessage()];
+    }
+    header("Location: asistencia.php?conv_id=$cid_p"); exit;
+}
+
 $horas_para_acta=null;
 if ($convocatoria && ($convocatoria['estado']??'')==='cerrada'
-    && !empty($convocatoria['fecha_cierre_real']) && empty($convocatoria['acta_pdf_path'])) {
+        && !empty($convocatoria['fecha_cierre_real']) && empty($convocatoria['acta_pdf_path'])) {
     $horas_para_acta = max(0,round(48-((time()-strtotime($convocatoria['fecha_cierre_real']))/3600),1));
 }
 
 $col_bg=['borrador'=>'#f1f5f9','programada'=>'#e0f2fe','publicada'=>'#dbeafe','activa'=>'#dcfce7','cerrada'=>'#fee2e2','cancelada'=>'#fef3c7'];
 $col_tx=['borrador'=>'#475569','programada'=>'#0369a1','publicada'=>'#1d4ed8','activa'=>'#15803d','cerrada'=>'#b91c1c','cancelada'=>'#92400e'];
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -386,9 +403,32 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--gris);}
         </div>
     </div>
     <?php elseif (!empty($convocatoria['acta_bloqueada'])): ?>
-    <div class="acta-card acta-block">
-        <div style="font-weight:800;color:#991b1b;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-lock"></i> Plazo vencido (más de 48h)</div>
-    </div>
+        <div class="acta-card acta-block">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                <div style="font-weight:800;color:#991b1b;display:flex;align-items:center;gap:8px;">
+                    <i class="fa-solid fa-lock"></i> Plazo vencido (más de 48h)
+                </div>
+                <?php if ($id_usuario === 1 || in_array(strtolower($rol), ['admin','superadmin'])): ?>
+                    <form method="POST">
+                        <input type="hidden" name="accion"  value="desbloquear_acta">
+                        <input type="hidden" name="conv_id" value="<?= $convocatoria['id'] ?>">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <label style="font-size:.8rem;font-weight:700;color:#64748b;">Abrir por:</label>
+                            <select name="horas_extra" style="border:1.5px solid #fecaca;border-radius:8px;padding:5px 10px;font-size:.82rem;font-family:inherit;">
+                                <option value="1">1 hora</option>
+                                <option value="6">6 horas</option>
+                                <option value="12">12 horas</option>
+                                <option value="24" selected>24 horas</option>
+                                <option value="48">48 horas</option>
+                            </select>
+                            <button type="submit" class="btn-prim" style="background:linear-gradient(135deg,#92400e,#d97706);padding:6px 14px;font-size:.82rem;">
+                                <i class="fa-solid fa-lock-open"></i> Desbloquear
+                            </button>
+                        </div>
+                    </form>
+                <?php endif; ?>
+            </div>
+        </div>
     <?php else: ?>
     <div class="acta-card acta-pend">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
