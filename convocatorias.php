@@ -152,7 +152,13 @@ try {
     $stL = $pdo->prepare("
         SELECT c.*,
                COUNT(DISTINCT a.id) AS total_asistentes,
-               (SELECT COUNT(*) FROM socios WHERE estado='activo') AS total_socios
+               (CASE 
+                   WHEN c.tipo_asistentes = 'solo_directivos' 
+                   THEN (SELECT COUNT(*) FROM directiva_miembros dm 
+                         INNER JOIN directiva_periodos dp ON dp.id = dm.periodo_id 
+                         WHERE dp.estado = 'activo')
+                   ELSE (SELECT COUNT(*) FROM socios WHERE estado='activo')
+               END) AS total_socios
         FROM convocatorias c
         LEFT JOIN conv_asistencia a ON a.convocatoria_id=c.id
         WHERE c.id_periodo=?
@@ -173,12 +179,12 @@ try {
 $flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 
 $st_cfg = [
-    'borrador'   => ['bg'=>'#f1f5f9','txt'=>'#475569','ico'=>'fa-pen'],
-    'programada' => ['bg'=>'#e0f2fe','txt'=>'#0369a1','ico'=>'fa-calendar-days'],
-    'publicada'  => ['bg'=>'#dbeafe','txt'=>'#1d4ed8','ico'=>'fa-paper-plane'],
-    'activa'     => ['bg'=>'#dcfce7','txt'=>'#15803d','ico'=>'fa-circle-play'],
-    'cerrada'    => ['bg'=>'#fee2e2','txt'=>'#b91c1c','ico'=>'fa-lock'],
-    'cancelada'  => ['bg'=>'#fef3c7','txt'=>'#92400e','ico'=>'fa-ban'],
+        'borrador'   => ['bg'=>'#f1f5f9','txt'=>'#475569','ico'=>'fa-pen'],
+        'programada' => ['bg'=>'#e0f2fe','txt'=>'#0369a1','ico'=>'fa-calendar-days'],
+        'publicada'  => ['bg'=>'#dbeafe','txt'=>'#1d4ed8','ico'=>'fa-paper-plane'],
+        'activa'     => ['bg'=>'#dcfce7','txt'=>'#15803d','ico'=>'fa-circle-play'],
+        'cerrada'    => ['bg'=>'#fee2e2','txt'=>'#b91c1c','ico'=>'fa-lock'],
+        'cancelada'  => ['bg'=>'#fef3c7','txt'=>'#92400e','ico'=>'fa-ban'],
 ];
 ?>
 <!DOCTYPE html>
