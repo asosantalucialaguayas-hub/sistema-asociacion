@@ -10,10 +10,7 @@ require __DIR__ . "/layout/bootstrap.php";
 $id = intval($_GET['id'] ?? 0);
 if (!$id) { header('Location: convocatorias.php'); exit; }
 
-$st = $pdo->prepare("SELECT c.*, u.nombre AS nombre_real, u.apellido AS apellido_real
-                     FROM convocatorias c
-                     LEFT JOIN usuarios u ON u.id = c.creado_por
-                     WHERE c.id = ?");
+$st = $pdo->prepare("SELECT * FROM convocatorias WHERE id = ?");
 $st->execute([$id]);
 $c = $st->fetch(PDO::FETCH_ASSOC);
 if (!$c) { header('Location: convocatorias.php'); exit; }
@@ -61,8 +58,7 @@ $esGeneral   = $c['tipo_asistentes'] === 'general';
 $asistentes  = $esGeneral ? 'señores socios activos' : 'señores miembros de la Directiva';
 $asambleaTxt = $esGeneral ? 'Asamblea General de Socios' : 'Reunión de Directivos';
 
-$nombreCreador = trim(($c['nombre_real'] ?? '') . ' ' . ($c['apellido_real'] ?? ''));
-if (!$nombreCreador) $nombreCreador = $c['nombre_creador'] ?? 'Secretaría';
+$nombreCreador = $c['nombre_creador'] ?? 'Secretaría';
 ?>
 <!DOCTYPE html>
 <html lang="es">
