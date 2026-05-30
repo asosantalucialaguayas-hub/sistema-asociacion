@@ -57,12 +57,7 @@ if (!$socio) {
 }
 
 if (!$socio) {
-    echo json_encode([
-        "ok"        => false,
-        "msg"       => "Socio no encontrado",
-        "buscado"   => $empLimpio,
-        "original"  => $employeeNo
-    ]);
+    echo json_encode(["ok" => true, "msg" => "No es socio", "duplicado" => true]);
     exit;
 }
 
