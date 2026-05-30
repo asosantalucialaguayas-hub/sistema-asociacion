@@ -29,10 +29,7 @@ function formatFechaES(string $fecha): string {
             1=>'enero',2=>'febrero',3=>'marzo',4=>'abril',5=>'mayo',6=>'junio',
             7=>'julio',8=>'agosto',9=>'septiembre',10=>'octubre',11=>'noviembre',12=>'diciembre'
     ];
-    $dias = [
-            0=>'Domingo',1=>'Lunes',2=>'Martes',3=>'Miércoles',
-            4=>'Jueves',5=>'Viernes',6=>'Sábado'
-    ];
+    $dias = [0=>'Domingo',1=>'Lunes',2=>'Martes',3=>'Miércoles',4=>'Jueves',5=>'Viernes',6=>'Sábado'];
     $ts  = strtotime($fecha);
     $dia = (int)date('j', $ts);
     $mes = (int)date('n', $ts);
@@ -42,310 +39,217 @@ function formatFechaES(string $fecha): string {
 }
 
 function formatHora(string $hora): string {
-    // Convierte "09:00:00" -> "09H00"
     [$h, $m] = explode(':', $hora);
     return sprintf('%02dH%02d', (int)$h, (int)$m);
 }
 
-$tipoMap = [
-        'ordinaria'      => 'ORDINARIA',
-        'extraordinaria' => 'EXTRAORDINARIA',
-        'urgente'        => 'URGENTE',
-];
-$tipoLabel   = $tipoMap[$c['tipo_reunion']] ?? strtoupper($c['tipo_reunion']);
-$tipoLower   = ucfirst(strtolower($tipoLabel));
-$esGeneral   = $c['tipo_asistentes'] === 'general';
-$asistentes  = $esGeneral ? 'señores socios activos' : 'señores miembros de la Directiva';
-$asambleaTxt = $esGeneral ? 'Asamblea General de Socios' : 'Reunión de Directivos';
+$tipoMap  = ['ordinaria'=>'ORDINARIA','extraordinaria'=>'EXTRAORDINARIA','urgente'=>'URGENTE'];
+$tipoLabel = $tipoMap[$c['tipo_reunion']] ?? strtoupper($c['tipo_reunion']);
+$tipoLower = ucfirst(strtolower($tipoLabel));
 
-$nombreCreador = $c['nombre_creador'] ?? 'Secretaría';
+// Condicional socios vs directivos
+$esGeneral = ($c['tipo_asistentes'] === 'general');
+$saludo    = $esGeneral ? 'Estimados socios:' : 'Estimados directivos:';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Convocatoria – <?= htmlspecialchars($c['titulo']) ?></title>
     <style>
-        /* ---- Reset ---- */
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
         body {
             font-family: 'Times New Roman', Times, serif;
-            background: #e8e8e8;
+            background: #e0e0e0;
             color: #111;
             font-size: 12pt;
             line-height: 1.55;
         }
 
-        /* ---- Controles (no imprimir) ---- */
+        /* Toolbar */
         .toolbar {
-            background: #1f3a5f;
+            background: #1c3557;
             color: #fff;
-            padding: 10px 24px;
+            padding: 9px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             font-family: Arial, sans-serif;
             font-size: 13px;
-            gap: 12px;
         }
-        .toolbar span { opacity: .75; }
-        .toolbar-btns { display: flex; gap: 8px; }
+        .toolbar-btns { display:flex; gap:8px; }
         .toolbar-btns button {
             background: rgba(255,255,255,.15);
             color: #fff;
-            border: 1px solid rgba(255,255,255,.3);
+            border: 1px solid rgba(255,255,255,.35);
             padding: 6px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
             font-family: Arial, sans-serif;
             font-weight: 600;
-            transition: background .2s;
         }
-        .toolbar-btns button:hover { background: rgba(255,255,255,.28); }
-        .toolbar-btns button.btn-print { background: #fff; color: #1f3a5f; }
-        .toolbar-btns button.btn-print:hover { background: #e8f0fb; }
+        .toolbar-btns button.btn-print { background:#fff; color:#1c3557; }
 
-        /* ---- Hoja ---- */
-        .sheet-wrap {
-            display: flex;
-            justify-content: center;
-            padding: 30px 20px 50px;
-        }
+        /* Hoja */
+        .sheet-wrap { display:flex; justify-content:center; padding:28px 16px 50px; }
         .sheet {
             background: #fff;
-            width: 720px;
-            min-height: 980px;
-            padding: 48px 60px 50px;
-            box-shadow: 0 4px 30px rgba(0,0,0,.18);
+            width: 740px;
+            min-height: 1000px;
+            padding: 44px 56px 48px;
+            box-shadow: 0 4px 28px rgba(0,0,0,.20);
             position: relative;
         }
 
-        /* ---- Marca de agua ---- */
+        /* Marca de agua */
         .watermark {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-30deg);
-            width: 480px;
-            opacity: .06;
+            transform: translate(-50%,-50%) rotate(-30deg);
+            width: 500px;
+            opacity: .055;
             pointer-events: none;
-            user-select: none;
         }
 
-        /* ---- Cabecera ---- */
+        /* ====== CABECERA ====== */
+        /* Igual al original: logo+nombre a la izquierda, tipo/fecha/hora a la derecha */
         .header {
-            display: flex;
-            align-items: flex-start;
-            gap: 20px;
-            margin-bottom: 20px;
+            display: table;
+            width: 100%;
+            margin-bottom: 14px;
         }
-        .header-logo {
-            flex-shrink: 0;
-            width: 88px;
-            height: 88px;
+        .header-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 46%;
+        }
+        .header-left-inner {
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
         .header-logo img {
-            width: 100%;
-            height: 100%;
+            width: 82px;
+            height: 82px;
             object-fit: contain;
+            flex-shrink: 0;
         }
-        .header-text {
-            flex: 1;
-        }
-        .header-text .org-name {
-            font-size: 12pt;
+        .org-name {
+            font-size: 10.5pt;
             font-weight: 700;
             text-transform: uppercase;
-            line-height: 1.3;
-            margin-bottom: 4px;
+            line-height: 1.35;
             color: #111;
         }
         .header-right {
-            flex-shrink: 0;
+            display: table-cell;
+            vertical-align: middle;
             text-align: right;
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
+            padding-left: 10px;
         }
-        .header-right .conv-label {
-            font-size: 12pt;
-            font-weight: 700;
-            text-transform: uppercase;
-            color: #111;
-        }
-        .header-right .fecha-bold {
-            font-size: 11.5pt;
-            font-weight: 700;
-            color: #111;
-        }
-        .header-right .hora-line {
-            font-size: 11pt;
-            color: #111;
-        }
+        .conv-label  { font-size:12pt; font-weight:700; text-transform:uppercase; display:block; }
+        .fecha-bold  { font-size:11.5pt; font-weight:700; display:block; }
+        .hora-line   { font-size:11pt; display:block; }
 
-        /* ---- Línea divisoria ---- */
-        .divider {
-            border: none;
-            border-top: 2px solid #111;
-            margin: 12px 0 16px;
-        }
+        /* Divisor */
+        .divider { border:none; border-top:2px solid #111; margin:12px 0 16px; }
 
-        /* ---- Intro ---- */
-        .saludo {
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .intro-p {
-            text-align: justify;
-            margin-bottom: 14px;
-            font-size: 12pt;
-        }
-        .intro-p strong { font-weight: 700; }
+        /* Saludos */
+        .saludo { font-weight:700; margin-bottom:6px; font-size:12pt; }
 
-        /* ---- Orden del día ---- */
-        .oda-title {
-            font-size: 12pt;
-            font-weight: 700;
-            margin: 6px 0 8px;
-            text-decoration: underline;
-        }
-        .oda-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 18px;
-            font-size: 11.5pt;
-        }
-        .oda-table td {
-            border: 1px solid #333;
-            padding: 5px 10px;
-            vertical-align: top;
-        }
-        .oda-table td:first-child {
-            width: 36px;
-            text-align: center;
-            font-weight: 700;
-            white-space: nowrap;
-        }
+        /* Intro */
+        .intro-p { text-align:justify; margin: 10px 0 16px; font-size:12pt; }
+        .intro-p strong { font-weight:700; }
 
-        /* ---- Cierre ---- */
-        .cierre-p {
-            text-align: justify;
-            font-size: 11.5pt;
-            margin-bottom: 18px;
-        }
-        .atentamente {
-            font-size: 12pt;
-            margin-bottom: 52px;
-        }
+        /* Orden del día */
+        .oda-title { font-size:12pt; font-weight:700; text-decoration:underline; margin: 4px 0 10px; }
+        .oda-table { width:100%; border-collapse:collapse; margin-bottom:18px; font-size:11.5pt; }
+        .oda-table td { border:1px solid #333; padding:5px 10px; vertical-align:top; }
+        .oda-table td:first-child { width:38px; text-align:center; font-weight:700; white-space:nowrap; }
 
-        /* ---- Firmas ---- */
-        .firmas-wrap {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-        .firma-bloque {
-            flex: 1;
-            min-width: 160px;
-        }
-        .firma-nombre {
-            font-size: 12pt;
-            font-weight: 700;
-            border-top: 1.5px solid #111;
-            padding-top: 4px;
-            text-align: left;
-        }
-        .firma-cargo {
-            font-size: 11.5pt;
-            font-weight: 400;
-            text-align: left;
-            padding-left: 28px;
-        }
+        /* Cierre */
+        .cierre-p { text-align:justify; font-size:11.5pt; margin-bottom:18px; }
+        .atentamente { font-size:12pt; margin-bottom:54px; }
 
-        /* ---- Pie ---- */
+        /* Firmas */
+        .firmas-wrap { display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-top:8px; }
+        .firma-bloque { flex:1; min-width:160px; }
+        .firma-nombre { font-size:12pt; font-weight:700; border-top:1.5px solid #111; padding-top:4px; }
+        .firma-cargo  { font-size:11.5pt; padding-left:26px; }
+
+        /* Pie */
         .pie {
-            text-align: center;
-            font-size: 8pt;
-            color: #aaa;
-            border-top: 1px solid #ddd;
-            margin-top: 38px;
-            padding-top: 8px;
-            font-family: Arial, sans-serif;
+            text-align:center; font-size:8pt; color:#aaa;
+            border-top:1px solid #ddd; margin-top:36px; padding-top:8px;
+            font-family:Arial,sans-serif;
         }
 
-        /* ---- IMPRESIÓN ---- */
+        /* IMPRESIÓN */
         @media print {
-            body { background: #fff; }
-            .toolbar { display: none !important; }
-            .sheet-wrap { padding: 0; }
-            .sheet {
-                box-shadow: none;
-                width: 100%;
-                padding: 20mm 22mm 18mm;
-                min-height: unset;
-            }
-            .pie { display: none; }
-            @page { size: A4; margin: 0; }
+            body { background:#fff; }
+            .toolbar { display:none !important; }
+            .sheet-wrap { padding:0; }
+            .sheet { box-shadow:none; width:100%; padding:16mm 20mm 16mm; min-height:unset; }
+            .pie { display:none; }
+            @page { size:A4; margin:0; }
         }
     </style>
 </head>
 <body>
 
-<!-- Toolbar -->
-<div class="toolbar no-print">
-    <span>📄 Vista previa — Convocatoria #<?= $id ?></span>
+<div class="toolbar">
+    <span>📄 Convocatoria #<?= $id ?> — <?= htmlspecialchars($c['titulo']) ?></span>
     <div class="toolbar-btns">
         <button onclick="window.close()">✕ Cerrar</button>
         <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
     </div>
 </div>
 
-<!-- Hoja -->
 <div class="sheet-wrap">
     <div class="sheet">
 
-        <!-- Marca de agua -->
         <?php if (file_exists(__DIR__.'/img/logo.png')): ?>
             <img class="watermark" src="img/logo.png" alt="">
         <?php endif; ?>
 
-        <!-- Cabecera: logo + nombre | tipo + fecha + hora -->
+        <!-- CABECERA -->
         <div class="header">
-            <div class="header-logo">
-                <?php if (file_exists(__DIR__.'/img/logo.png')): ?>
-                    <img src="img/logo.png" alt="Logo">
-                <?php endif; ?>
-            </div>
-            <div class="header-text">
-                <div class="org-name">
-                    Asociación de Trabajadores Agrícolas Autónomos<br>"Santa Lucia Corotú"
+            <div class="header-left">
+                <div class="header-left-inner">
+                    <?php if (file_exists(__DIR__.'/img/logo.png')): ?>
+                        <div class="header-logo">
+                            <img src="img/logo.png" alt="Logo">
+                        </div>
+                    <?php endif; ?>
+                    <div class="org-name">
+                        Asociación de Trabajadores Agrícolas Autónomos<br>"Santa Lucia Corotú"
+                    </div>
                 </div>
             </div>
             <div class="header-right">
-                <div class="conv-label">CONVOCATORIA A REUNION <?= $tipoLabel ?></div>
-                <div class="fecha-bold"><?= formatFechaES($c['fecha']) ?></div>
-                <div class="hora-line"><strong>Hora:</strong> <?= formatHora($c['hora']) ?></div>
+                <span class="conv-label">CONVOCATORIA A REUNION <?= $tipoLabel ?></span>
+                <span class="fecha-bold"><?= formatFechaES($c['fecha']) ?></span>
+                <span class="hora-line"><strong>Hora:</strong> <?= formatHora($c['hora']) ?></span>
             </div>
         </div>
 
         <hr class="divider">
 
-        <!-- Saludo e intro -->
-        <p class="saludo">Estimados socios:</p>
-        <p class="saludo">Estimados socios:</p>
-        <br>
+        <!-- SALUDOS — cambia según tipo de asistentes -->
+        <p class="saludo"><?= $saludo ?></p>
+        <p class="saludo"><?= $saludo ?></p>
+
+        <!-- INTRO -->
         <p class="intro-p">
             Se convoca a una reunión <strong><?= $tipoLower ?></strong> que se efectuará de manera presencial.<br>
             La cual se realizará el día <strong><?= formatFechaES($c['fecha']) ?></strong>
-            para tratarse el siguiente orden del día.
+            del presente año para tratarse el siguiente orden del día.
         </p>
 
-        <!-- Orden del día -->
+        <!-- ORDEN DEL DÍA -->
         <p class="oda-title">Orden del Día</p>
         <?php if ($puntos): ?>
             <table class="oda-table">
@@ -360,16 +264,16 @@ $nombreCreador = $c['nombre_creador'] ?? 'Secretaría';
             <p style="font-style:italic;color:#888;margin-bottom:18px;">Sin puntos registrados.</p>
         <?php endif; ?>
 
-        <!-- Cierre -->
+        <!-- CIERRE -->
         <p class="cierre-p">
             Agradecemos de antemano su puntualidad y compromiso, los cuales son esenciales para avanzar
             en los objetivos de nuestra organización y consolidar las acciones necesarias para el beneficio de
-            todos los socios.
+            todos los <?= $esGeneral ? 'socios' : 'directivos' ?>.
         </p>
 
         <p class="atentamente">Atentamente</p>
 
-        <!-- Firmas -->
+        <!-- FIRMAS -->
         <div class="firmas-wrap">
             <?php if ($firmas): ?>
                 <?php foreach ($firmas as $f): ?>
@@ -379,7 +283,6 @@ $nombreCreador = $c['nombre_creador'] ?? 'Secretaría';
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <!-- Firmas por defecto si no hay registradas -->
                 <div class="firma-bloque">
                     <div class="firma-nombre">Ing. Rosendo Muñoz</div>
                     <div class="firma-cargo">Presidente</div>
@@ -391,13 +294,11 @@ $nombreCreador = $c['nombre_creador'] ?? 'Secretaría';
             <?php endif; ?>
         </div>
 
-        <!-- Pie generado -->
         <div class="pie">
             Generado por el Sistema de Gestión · Asociación Santa Lucía Corotú · <?= date('d/m/Y H:i') ?>
         </div>
 
-    </div><!-- /sheet -->
-</div><!-- /sheet-wrap -->
-
+    </div>
+</div>
 </body>
 </html>
